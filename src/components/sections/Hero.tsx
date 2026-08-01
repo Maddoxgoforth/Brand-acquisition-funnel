@@ -1,7 +1,7 @@
 import Container from "@/components/ui/Container";
 import Pill from "@/components/ui/Pill";
-import EmbedPlaceholder from "@/components/ui/EmbedPlaceholder";
 import TypeformEmbed from "@/components/ui/TypeformEmbed";
+import VslEmbed from "@/components/ui/VslEmbed";
 
 export default function Hero() {
   return (
@@ -23,7 +23,7 @@ export default function Hero() {
           guessing.
         </p>
 
-        <EmbedPlaceholder label="VSL EMBED" className="min-h-[320px]" />
+        <VslEmbed mediaId="p3h2xpk8hb" />
 
         <TypeformEmbed id="zKqvPAGW" />
       </Container>
