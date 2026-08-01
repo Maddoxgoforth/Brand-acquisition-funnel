@@ -4,31 +4,54 @@ Guidance for Claude Code (and other AI assistants) working in this repository.
 
 ## What this is
 
-A single-page marketing/funnel site for **Maddox** — a 1-on-1 mentorship offer
-that teaches teens/young adults to sell AI digital products. It's a long
-vertical scroll of sections (hero → social proof → results → pitch → mentor
-bio → objection handling → FAQ → footer), ending in a repeated "Apply Now"
-CTA that's meant to open an application flow (Typeform) after a video sales
-letter (VSL).
+A marketing/funnel site for **Maddox** — a 1-on-1 mentorship offer that
+teaches teens/young adults to sell AI digital products. It has two pages:
+
+- **`/` (the funnel)** — a long vertical scroll of sections (hero → social
+  proof → results → pitch → mentor bio → objection handling → FAQ →
+  footer), ending in a repeated "Apply Now" CTA that opens an inline
+  Typeform application after a Wistia video sales letter (VSL).
+- **`/thank-you`** — the page qualified applicants land on after booking a
+  call. It's a self-contained "watch these before your call" page (objection
+  breakdown videos + more client results), same theme/components as `/`.
 
 It is built to be deployed on Vercel (see `AGENTS.md` — the Next.js version
 in this repo is newer than most training data; consult
 `node_modules/next/dist/docs/` before assuming an API).
 
 Original reference design: a live Vercel deployment the site owner shared as
-screenshots (mobile Chrome captures). The VSL and Typeform embeds are
-**intentionally placeholder boxes** (`[ VSL EMBED ]`, `[ TYPEFORM EMBED ]`) —
-that matches the reference site's current state, not an oversight. Swap in
-real embed code only if asked.
+screenshots (mobile Chrome captures). On `/`, the VSL is a real Wistia embed
+(`VslEmbed`, media id `p3h2xpk8hb`) and the application form is a real inline
+Typeform (`TypeformEmbed`, form id `zKqvPAGW`) — see "Conversion flow" below
+for how a visitor moves from `/` through Typeform, to Cal.com, to
+`/thank-you`. The objection-breakdown videos and extra result cards on
+`/thank-you` **are** intentionally placeholder boxes (`[ BREAKDOWN VIDEO 1 ]`,
+`[ CLIENT RESULT 1 ]`, via `EmbedPlaceholder`) — real Wistia embeds and
+screenshots for those go in only when the site owner provides them, the same
+way the `/` page's placeholders got filled in.
 
-The results/mentor proof images (Shopify dashboards, DM screenshot, TikTok
-profile, mentor headshot), however, are **real cropped screenshots** the
-site owner provided, stored in `public/images/` and rendered via
-`next/image`. There used to be a `src/components/mocks/` folder with
-hand-built CSS/SVG recreations of this UI as a stand-in before the real
-screenshots existed — that folder is gone now that real assets are wired
-in; don't recreate it unless a new proof point needs a mock before its real
-screenshot is available.
+The results/mentor proof images on `/` (Shopify dashboards, DM screenshot,
+TikTok profile, mentor headshot) are **real cropped screenshots** the site
+owner provided, stored in `public/images/` and rendered via `next/image`.
+There used to be a `src/components/mocks/` folder with hand-built CSS/SVG
+recreations of this UI as a stand-in before the real screenshots existed —
+that folder is gone now that real assets are wired in; don't recreate it
+unless a new proof point needs a mock before its real screenshot is
+available.
+
+## Conversion flow
+
+1. Visitor lands on `/`, watches the VSL, fills out the inline Typeform.
+2. Typeform's own logic (configured in the site owner's Typeform account,
+   not in this codebase) redirects qualified respondents to the owner's
+   Cal.com booking link.
+3. After booking, Cal.com needs to redirect to `/thank-you` on this site.
+   That redirect is a Cal.com **Event Type → Advanced → "Redirect on
+   booking"** setting in the owner's Cal.com dashboard — also not something
+   this codebase controls. If `/thank-you` ever moves or the domain changes,
+   that Cal.com setting needs updating too.
+4. `/thank-you` plays a few objection-breakdown videos and shows more
+   results while they wait for the call.
 
 ## Stack
 
@@ -59,12 +82,16 @@ There is no test suite. Before calling a change done:
 
 ```
 src/app/
-  layout.tsx        # root layout: font, <html>/<body>, metadata
-  globals.css        # Tailwind import + design tokens (@theme inline)
-  page.tsx            # composes the page: one <SectionComponent /> per section, in scroll order
+  layout.tsx          # root layout: font, <html>/<body>, metadata (applies to every route)
+  globals.css         # Tailwind import + design tokens (@theme inline) + the
+                       # wistia-player :not(:defined) placeholder rule
+  page.tsx             # the funnel ("/"): one <SectionComponent /> per section, in scroll order
+  thank-you/page.tsx    # the post-booking page ("/thank-you"), same pattern
 src/components/
   ui/                 # generic, content-agnostic primitives
-  sections/           # one file per page section, matches page.tsx order
+  sections/           # one file per page section; funnel and thank-you
+                       # sections both live here, matching their page.tsx order
+src/types/wistia.d.ts  # JSX.IntrinsicElements augmentation for <wistia-player>
 public/images/         # real proof screenshots (Shopify dashboards, DM
                         # thread, TikTok profile, mentor headshot), cropped
                         # tight and rendered via next/image in Results.tsx
@@ -84,7 +111,10 @@ public/images/         # real proof screenshots (Shopify dashboards, DM
     results, blueprint, and comparison sections — always via this component,
     never hand-rolled, so copy/style stays in sync.
   - `Card` — bordered, rounded, dark "elevated" panel background.
-  - `EmbedPlaceholder` — the bracketed `[ LABEL ]` placeholder box style.
+  - `EmbedPlaceholder` — the bracketed `[ LABEL ]` placeholder box style, used
+    on `/thank-you` for content the site owner hasn't provided yet. `/` no
+    longer uses it directly (its VSL/Typeform boxes are real embeds now) —
+    don't reintroduce it there unless a section goes back to placeholder.
   - `SectionHeading` — eyebrow + title + optional subtitle, centered.
 - **Copy is hardcoded** in the section components (this is a single fixed
   offer page, not a CMS-driven site). FAQ entries live as a `FAQS` array at
@@ -118,10 +148,11 @@ photos of a *different* UI — that's expected, don't try to recolor them.
 
 ## Content/behavior notes worth knowing before editing
 
-- The three "Apply Now" buttons and the hero's Typeform placeholder all link
-  to the same in-page anchor (`#apply`, set on the hero's
-  `EmbedPlaceholder`). If you replace the Typeform placeholder with a real
-  embed, keep that `id="apply"` (or update every `CtaButton` href to match).
+- The three "Apply Now" buttons on `/` and the hero's `TypeformEmbed` all
+  target the same in-page anchor (`#apply`, set as the `id` on the
+  `TypeformEmbed` wrapper div in `Hero.tsx`). If you change how the Typeform
+  is embedded, keep that `id="apply"` (or update every `CtaButton` href to
+  match).
 - Numbers throughout ($20k/mo, 300K+, $102,988, 224K sessions, 290K+
   followers, etc.) are specific claims from the real reference page — don't
   round or "clean up" them without being asked, they're presumably accurate
@@ -130,12 +161,22 @@ photos of a *different* UI — that's expected, don't try to recolor them.
   app chrome removed, see `public/images/`), not generated graphics — if a
   new proof point comes in, crop it the same way (tight to the content,
   no phone status bar) rather than adding a new CSS/SVG recreation.
+- The Wistia (`VslEmbed`) and Typeform (`TypeformEmbed`) embeds both make
+  outbound requests to third-party domains (`fast.wistia.com`,
+  `form.typeform.com`) — they won't render in network-sandboxed dev
+  environments. A clean `npm run build` with no console errors is the
+  correct way to verify them there; don't conclude they're broken just
+  because a sandboxed screenshot shows an empty box.
 
 ## What's intentionally not built yet
 
-- Real VSL video and Typeform application embeds (placeholders by design —
-  see above).
+- Real breakdown videos and result screenshots on `/thank-you` (currently
+  `EmbedPlaceholder` boxes — see "What this is" above).
 - `/privacy` and `/terms` — footer links currently point to `#`.
 - No analytics/pixel wiring (Meta/TikTok pixels etc.) — ask before adding
   third-party tracking scripts, since that's a product/legal decision, not a
   styling one.
+- The Typeform → Cal.com and Cal.com → `/thank-you` redirects live in the
+  site owner's Typeform/Cal.com dashboards, not in this codebase (see
+  "Conversion flow" above) — there's nothing to "fix" here if that hand-off
+  breaks, it's a config check on those platforms.
