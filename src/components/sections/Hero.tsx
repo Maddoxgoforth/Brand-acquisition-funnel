@@ -10,7 +10,7 @@ export default function Hero() {
 
         <Pill>No Audience. No Experience Needed.</Pill>
 
-        <h1 className="text-4xl font-extrabold leading-[1.1] sm:text-5xl">
+        <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">
           Learn exactly how I went from a broke student to{" "}
           <span className="text-accent">$20k/mo</span> selling AI Digital
           Products
