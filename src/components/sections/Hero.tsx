@@ -1,6 +1,7 @@
 import Container from "@/components/ui/Container";
 import Pill from "@/components/ui/Pill";
 import EmbedPlaceholder from "@/components/ui/EmbedPlaceholder";
+import TypeformEmbed from "@/components/ui/TypeformEmbed";
 
 export default function Hero() {
   return (
@@ -24,7 +25,7 @@ export default function Hero() {
 
         <EmbedPlaceholder label="VSL EMBED" className="min-h-[320px]" />
 
-        <EmbedPlaceholder id="apply" label="TYPEFORM EMBED" />
+        <TypeformEmbed id="zKqvPAGW" />
       </Container>
     </section>
   );
