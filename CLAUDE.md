@@ -21,6 +21,15 @@ screenshots (mobile Chrome captures). The VSL and Typeform embeds are
 that matches the reference site's current state, not an oversight. Swap in
 real embed code only if asked.
 
+The results/mentor proof images (Shopify dashboards, DM screenshot, TikTok
+profile, mentor headshot), however, are **real cropped screenshots** the
+site owner provided, stored in `public/images/` and rendered via
+`next/image`. There used to be a `src/components/mocks/` folder with
+hand-built CSS/SVG recreations of this UI as a stand-in before the real
+screenshots existed — that folder is gone now that real assets are wired
+in; don't recreate it unless a new proof point needs a mock before its real
+screenshot is available.
+
 ## Stack
 
 - **Next.js 16** (App Router, Turbopack), React 19, TypeScript
@@ -56,10 +65,10 @@ src/app/
 src/components/
   ui/                 # generic, content-agnostic primitives
   sections/           # one file per page section, matches page.tsx order
-  mocks/              # fake UI-within-UI (Shopify admin panel, DM thread,
-                       # TikTok profile) used inside the "results" section —
-                       # these are hand-built CSS/SVG recreations standing in
-                       # for real screenshots, not actual embeds/images
+public/images/         # real proof screenshots (Shopify dashboards, DM
+                        # thread, TikTok profile, mentor headshot), cropped
+                        # tight and rendered via next/image in Results.tsx
+                        # and Mentor.tsx
 ```
 
 - **Sections are Server Components by default.** Only `Faq.tsx` has
@@ -102,10 +111,10 @@ exposed as Tailwind colors via `@theme inline`:
 | `border` | `#22243a` | card/panel borders |
 
 Use these via Tailwind classes (`bg-background-elevated`, `text-accent`,
-`border-border`, etc.) instead of introducing new raw hex values. The
-`mocks/` components intentionally break this palette (white Shopify-admin
-chrome, black TikTok/DM chrome) because they're recreating a *different*
-UI nested inside a card — that's expected, don't "fix" it to the dark palette.
+`border-border`, etc.) instead of introducing new raw hex values. The real
+proof screenshots in `public/images/` (white Shopify-admin chrome, black
+iMessage/TikTok chrome) intentionally break this palette because they're
+photos of a *different* UI — that's expected, don't try to recolor them.
 
 ## Content/behavior notes worth knowing before editing
 
@@ -117,9 +126,10 @@ UI nested inside a card — that's expected, don't "fix" it to the dark palette.
   followers, etc.) are specific claims from the real reference page — don't
   round or "clean up" them without being asked, they're presumably accurate
   to the offer.
-- `Results.tsx` hardcodes two SVG path strings (`CHART_A`, `CHART_B`) that
-  approximate the growth curves from the reference dashboards. They're
-  illustrative, not plotted from real data — fine to tweak by eye.
+- The result-card and mentor images are cropped screenshots (status bars /
+  app chrome removed, see `public/images/`), not generated graphics — if a
+  new proof point comes in, crop it the same way (tight to the content,
+  no phone status bar) rather than adding a new CSS/SVG recreation.
 
 ## What's intentionally not built yet
 

@@ -1,6 +1,6 @@
+import Image from "next/image";
 import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
-import TikTokProfile from "@/components/mocks/TikTokProfile";
 
 const STATS = [
   { value: "$20K/MO", label: "selling his own AI digital products" },
@@ -12,9 +12,25 @@ export default function Mentor() {
   return (
     <section className="py-16">
       <Container className="flex flex-col items-center gap-8">
-        <TikTokProfile />
+        <div className="w-full overflow-hidden rounded-2xl border border-border shadow-lg">
+          <Image
+            src="/images/tiktok-profile.jpg"
+            alt="Maddox Goforth's TikTok profile: @maddox.goforth, 290.2K followers, 5.9M likes"
+            width={1206}
+            height={1037}
+            className="w-full h-auto"
+            sizes="(min-width: 576px) 512px, 100vw"
+          />
+        </div>
 
         <div className="flex flex-col items-center gap-3 text-center">
+          <Image
+            src="/images/mentor-headshot.jpg"
+            alt="Maddox Goforth"
+            width={205}
+            height={205}
+            className="h-24 w-24 rounded-full border-2 border-accent object-cover"
+          />
           <p className="text-sm font-bold uppercase tracking-widest text-accent">
             Your Mentor
           </p>
