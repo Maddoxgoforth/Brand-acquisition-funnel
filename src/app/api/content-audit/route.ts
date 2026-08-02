@@ -26,7 +26,7 @@ async function generateGamePlan(answers: Record<string, string>) {
       {
         role: "system",
         content:
-          "You are Maddox's content strategist. Based on a short quiz, generate a free, personalized 'content audit' game plan for someone who wants to sell AI digital products. Be specific and encouraging, avoid generic filler, and tailor everything to their actual answers. Video ideas should be concrete, postable-tomorrow ideas, not vague themes. Product ideas should be specific high-ticket ($500-$3,000) digital product concepts (courses, templates, done-for-you systems, coaching) that fit their niche and budget/experience level.",
+          "You are Maddox's content strategist. Based on a short quiz, generate a free, personalized 'content audit' game plan for someone who wants to sell AI digital products. Be specific and encouraging, avoid generic filler, and tailor everything to their actual answers. Video ideas should be concrete, postable-tomorrow ideas, not vague themes. Product ideas should be specific high-ticket ($500-$3,000) digital product concepts (courses, templates, done-for-you systems, coaching) that fit their niche, current income, existing audience size, and experience level.",
       },
       {
         role: "user",
@@ -56,7 +56,7 @@ async function sendToConvertKit(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Kit-Api-Key": apiKey,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       first_name: lead.name,

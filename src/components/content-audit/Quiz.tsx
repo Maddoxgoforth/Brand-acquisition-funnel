@@ -56,6 +56,21 @@ export default function Quiz() {
     }
   }
 
+  function submitText(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const value = String(
+      new FormData(e.currentTarget).get("text-answer") || ""
+    ).trim();
+    if (!value) return;
+    const nextAnswers = { ...answers, [question.id]: value };
+    setAnswers(nextAnswers);
+    if (isLastQuestion) {
+      submit(nextAnswers, lead);
+    } else {
+      setStep(step + 1);
+    }
+  }
+
   function goBack() {
     if (step > 0) setStep(step - 1);
   }
@@ -128,6 +143,27 @@ export default function Quiz() {
               </button>
             ))}
           </div>
+        ) : question.type === "text" ? (
+          <form
+            key={step}
+            onSubmit={submitText}
+            className="mt-6 flex flex-col gap-4"
+          >
+            <textarea
+              required
+              name="text-answer"
+              rows={4}
+              placeholder={question.placeholder}
+              defaultValue={answers[question.id] || ""}
+              className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 outline-none focus:border-accent"
+            />
+            <button
+              type="submit"
+              className="w-full rounded-xl bg-accent px-6 py-4 font-extrabold text-white hover:bg-accent-dim"
+            >
+              Continue
+            </button>
+          </form>
         ) : (
           <form onSubmit={submitLead} className="mt-6 flex flex-col gap-4">
             <input
