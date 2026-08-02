@@ -10,7 +10,8 @@ export default function ThankYouHero() {
         <Pill>You&apos;re Booked</Pill>
 
         <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">
-          You&apos;re In. <span className="text-accent">Call Confirmed.</span>
+          Congratulations on{" "}
+          <span className="text-accent">taking your next step.</span>
         </h1>
 
         <p className="max-w-md text-lg text-muted">
