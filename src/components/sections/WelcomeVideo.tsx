@@ -5,7 +5,7 @@ export default function WelcomeVideo() {
   return (
     <section className="pb-16">
       <Container>
-        <WistiaEmbed mediaId="ynkriiuux3" />
+        <WistiaEmbed mediaId="872u3hcmss" />
       </Container>
     </section>
   );

@@ -30,7 +30,7 @@ body {
 }
 
 wistia-player[media-id="p3h2xpk8hb"]:not(:defined),
-wistia-player[media-id="ynkriiuux3"]:not(:defined),
+wistia-player[media-id="872u3hcmss"]:not(:defined),
 wistia-player[media-id="dtzh09vaul"]:not(:defined),
 wistia-player[media-id="66hfb05ixg"]:not(:defined),
 wistia-player[media-id="i2adhy6vaa"]:not(:defined),
@@ -46,9 +46,9 @@ wistia-player[media-id="p3h2xpk8hb"]:not(:defined) {
     url("https://fast.wistia.com/embed/medias/p3h2xpk8hb/swatch");
 }
 
-wistia-player[media-id="ynkriiuux3"]:not(:defined) {
+wistia-player[media-id="872u3hcmss"]:not(:defined) {
   background: center / contain no-repeat
-    url("https://fast.wistia.com/embed/medias/ynkriiuux3/swatch");
+    url("https://fast.wistia.com/embed/medias/872u3hcmss/swatch");
 }
 
 wistia-player[media-id="dtzh09vaul"]:not(:defined) {
