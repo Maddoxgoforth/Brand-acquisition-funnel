@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import ThankYouHero from "@/components/sections/ThankYouHero";
+import WelcomeVideo from "@/components/sections/WelcomeVideo";
 import ObjectionVideos from "@/components/sections/ObjectionVideos";
 import MoreResults from "@/components/sections/MoreResults";
 import Footer from "@/components/sections/Footer";
@@ -14,6 +15,7 @@ export default function ThankYou() {
   return (
     <main>
       <ThankYouHero />
+      <WelcomeVideo />
       <ObjectionVideos />
       <MoreResults />
       <Footer />

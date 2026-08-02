@@ -12,8 +12,12 @@ teaches teens/young adults to sell AI digital products. It has two pages:
   footer), ending in a repeated "Apply Now" CTA that opens an inline
   Typeform application after a Wistia video sales letter (VSL).
 - **`/thank-you`** — the page qualified applicants land on after booking a
-  call. It's a self-contained "watch these before your call" page (objection
-  breakdown videos + more client results), same theme/components as `/`.
+  call. It's a self-contained "watch these before your call" page: one main
+  welcome/congrats video (`WelcomeVideo`), then five question-and-answer
+  breakdown videos (`ObjectionVideos` — each answers a specific question the
+  site owner supplies, framed as an FAQ rather than "limiting beliefs" even
+  though that's the underlying intent), then more client results
+  (`MoreResults`). Same theme/components as `/`.
 
 It is built to be deployed on Vercel (see `AGENTS.md` — the Next.js version
 in this repo is newer than most training data; consult
@@ -24,11 +28,16 @@ screenshots (mobile Chrome captures). On `/`, the VSL is a real Wistia embed
 (`VslEmbed`, media id `p3h2xpk8hb`) and the application form is a real inline
 Typeform (`TypeformEmbed`, form id `zKqvPAGW`) — see "Conversion flow" below
 for how a visitor moves from `/` through Typeform, to Cal.com, to
-`/thank-you`. The objection-breakdown videos and extra result cards on
-`/thank-you` **are** intentionally placeholder boxes (`[ BREAKDOWN VIDEO 1 ]`,
-`[ CLIENT RESULT 1 ]`, via `EmbedPlaceholder`) — real Wistia embeds and
-screenshots for those go in only when the site owner provides them, the same
-way the `/` page's placeholders got filled in.
+`/thank-you`. The welcome video, five question breakdown videos, and extra
+result cards on `/thank-you` **are** intentionally placeholder boxes
+(`[ WELCOME VIDEO ]`, `[ BREAKDOWN VIDEO 1 ]`, `[ CLIENT RESULT 1 ]`, via
+`EmbedPlaceholder`) — real Wistia embeds and screenshots for those go in
+only when the site owner provides them, the same way the `/` page's
+placeholders got filled in. The `QUESTIONS` array in `ObjectionVideos.tsx`
+currently holds generic "Question 1"–"Question 5" labels; the site owner
+will supply the actual question wording for each slot, then a Wistia
+media id per video — update both in place, don't add/remove slots unless
+asked.
 
 The results/mentor proof images on `/` (Shopify dashboards, DM screenshot,
 TikTok profile, mentor headshot) are **real cropped screenshots** the site
