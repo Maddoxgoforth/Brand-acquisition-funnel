@@ -1,11 +1,11 @@
 import Container from "@/components/ui/Container";
-import EmbedPlaceholder from "@/components/ui/EmbedPlaceholder";
+import WistiaEmbed from "@/components/ui/WistiaEmbed";
 
 export default function WelcomeVideo() {
   return (
     <section className="pb-16">
       <Container>
-        <EmbedPlaceholder label="WELCOME VIDEO" className="min-h-[320px]" />
+        <WistiaEmbed mediaId="ynkriiuux3" />
       </Container>
     </section>
   );

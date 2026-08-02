@@ -1,6 +1,6 @@
 import Script from "next/script";
 
-export default function VslEmbed({ mediaId }: { mediaId: string }) {
+export default function WistiaEmbed({ mediaId }: { mediaId: string }) {
   return (
     <div className="w-full overflow-hidden rounded-2xl border border-border">
       <Script src="https://fast.wistia.com/player.js" strategy="afterInteractive" />

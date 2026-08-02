@@ -1,14 +1,14 @@
 import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
 import SectionHeading from "@/components/ui/SectionHeading";
-import EmbedPlaceholder from "@/components/ui/EmbedPlaceholder";
+import WistiaEmbed from "@/components/ui/WistiaEmbed";
 
 const QUESTIONS = [
-  "HOW FAST CAN I SEE RESULTS?",
-  "HOW MUCH DOES THIS COST?",
-  "WHAT DO I NEED TO KNOW ABOUT AI?",
-  "WHAT IF I'M BUSY?",
-  "DO I NEED AN AUDIENCE ALREADY?",
+  { question: "HOW FAST CAN I SEE RESULTS?", mediaId: "dtzh09vaul" },
+  { question: "HOW MUCH DOES THIS COST?", mediaId: "66hfb05ixg" },
+  { question: "WHAT DO I NEED TO KNOW ABOUT AI?", mediaId: "i2adhy6vaa" },
+  { question: "WHAT IF I'M BUSY?", mediaId: "cx7vo9e5ql" },
+  { question: "DO I NEED AN AUDIENCE ALREADY?", mediaId: "v2purp6i2r" },
 ];
 
 export default function ObjectionVideos() {
@@ -21,13 +21,10 @@ export default function ObjectionVideos() {
         />
 
         <div className="flex w-full flex-col gap-6">
-          {QUESTIONS.map((question, index) => (
-            <Card key={question} className="w-full">
+          {QUESTIONS.map(({ question, mediaId }) => (
+            <Card key={mediaId} className="w-full">
               <p className="mb-4 text-lg font-extrabold">{question}</p>
-              <EmbedPlaceholder
-                label={`BREAKDOWN VIDEO ${index + 1}`}
-                className="min-h-[220px]"
-              />
+              <WistiaEmbed mediaId={mediaId} />
             </Card>
           ))}
         </div>

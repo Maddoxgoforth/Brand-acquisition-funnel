@@ -1,7 +1,7 @@
 import Container from "@/components/ui/Container";
 import Pill from "@/components/ui/Pill";
 import TypeformEmbed from "@/components/ui/TypeformEmbed";
-import VslEmbed from "@/components/ui/VslEmbed";
+import WistiaEmbed from "@/components/ui/WistiaEmbed";
 
 export default function Hero() {
   return (
@@ -23,7 +23,7 @@ export default function Hero() {
           guessing.
         </p>
 
-        <VslEmbed mediaId="p3h2xpk8hb" />
+        <WistiaEmbed mediaId="p3h2xpk8hb" />
 
         <TypeformEmbed id="zKqvPAGW" />
       </Container>

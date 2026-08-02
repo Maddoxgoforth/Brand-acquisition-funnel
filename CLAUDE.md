@@ -24,20 +24,18 @@ in this repo is newer than most training data; consult
 `node_modules/next/dist/docs/` before assuming an API).
 
 Original reference design: a live Vercel deployment the site owner shared as
-screenshots (mobile Chrome captures). On `/`, the VSL is a real Wistia embed
-(`VslEmbed`, media id `p3h2xpk8hb`) and the application form is a real inline
-Typeform (`TypeformEmbed`, form id `zKqvPAGW`) — see "Conversion flow" below
-for how a visitor moves from `/` through Typeform, to Cal.com, to
-`/thank-you`. The welcome video, five question breakdown videos, and extra
-result cards on `/thank-you` **are** intentionally placeholder boxes
-(`[ WELCOME VIDEO ]`, `[ BREAKDOWN VIDEO 1 ]`, `[ CLIENT RESULT 1 ]`, via
-`EmbedPlaceholder`) — real Wistia embeds and screenshots for those go in
-only when the site owner provides them, the same way the `/` page's
-placeholders got filled in. The `QUESTIONS` array in `ObjectionVideos.tsx`
-currently holds generic "Question 1"–"Question 5" labels; the site owner
-will supply the actual question wording for each slot, then a Wistia
-media id per video — update both in place, don't add/remove slots unless
-asked.
+screenshots (mobile Chrome captures). Every video on the site is a real
+Wistia embed via the shared `WistiaEmbed` component (`src/components/ui/WistiaEmbed.tsx`,
+takes a `mediaId` prop): the `/` VSL (`p3h2xpk8hb`), the `/thank-you` welcome
+video (`ynkriiuux3`), and its five question-breakdown videos (see the
+`QUESTIONS` array in `ObjectionVideos.tsx` for the question text → media id
+mapping). The `/` application form is a real inline Typeform
+(`TypeformEmbed`, form id `zKqvPAGW`) — see "Conversion flow" below for how a
+visitor moves from `/` through Typeform, to Cal.com, to `/thank-you`. The
+extra client-result cards on `/thank-you` are still **intentionally
+placeholder boxes** (`[ CLIENT RESULT 1 ]`, via `EmbedPlaceholder`) — real
+screenshots for those go in only when the site owner provides them, the same
+way every other placeholder on this site got filled in.
 
 The results/mentor proof images on `/` (Shopify dashboards, DM screenshot,
 TikTok profile, mentor headshot) are **real cropped screenshots** the site
@@ -120,10 +118,11 @@ public/images/         # real proof screenshots (Shopify dashboards, DM
     results, blueprint, and comparison sections — always via this component,
     never hand-rolled, so copy/style stays in sync.
   - `Card` — bordered, rounded, dark "elevated" panel background.
-  - `EmbedPlaceholder` — the bracketed `[ LABEL ]` placeholder box style, used
-    on `/thank-you` for content the site owner hasn't provided yet. `/` no
-    longer uses it directly (its VSL/Typeform boxes are real embeds now) —
-    don't reintroduce it there unless a section goes back to placeholder.
+  - `EmbedPlaceholder` — the bracketed `[ LABEL ]` placeholder box style,
+    used on `/thank-you` for the client-result cards (real screenshots not
+    provided yet). Every video slot on both pages now uses `WistiaEmbed`
+    instead — don't reintroduce `EmbedPlaceholder` for video unless a new
+    video slot is added before its real Wistia link exists.
   - `SectionHeading` — eyebrow + title + optional subtitle, centered.
 - **Copy is hardcoded** in the section components (this is a single fixed
   offer page, not a CMS-driven site). FAQ entries live as a `FAQS` array at
@@ -170,17 +169,22 @@ photos of a *different* UI — that's expected, don't try to recolor them.
   app chrome removed, see `public/images/`), not generated graphics — if a
   new proof point comes in, crop it the same way (tight to the content,
   no phone status bar) rather than adding a new CSS/SVG recreation.
-- The Wistia (`VslEmbed`) and Typeform (`TypeformEmbed`) embeds both make
+- The Wistia (`WistiaEmbed`) and Typeform (`TypeformEmbed`) embeds both make
   outbound requests to third-party domains (`fast.wistia.com`,
   `form.typeform.com`) — they won't render in network-sandboxed dev
   environments. A clean `npm run build` with no console errors is the
   correct way to verify them there; don't conclude they're broken just
   because a sandboxed screenshot shows an empty box.
+- Every `wistia-player[media-id="..."]:not(:defined)` blur-placeholder CSS
+  rule in `globals.css` is per-media-id (Wistia's own snippet ties the
+  poster-swatch URL to that specific id) — adding a new video means adding
+  its own rule there, not reusing an existing one.
 
 ## What's intentionally not built yet
 
-- Real breakdown videos and result screenshots on `/thank-you` (currently
-  `EmbedPlaceholder` boxes — see "What this is" above).
+- Real client-result screenshots on `/thank-you` (currently `EmbedPlaceholder`
+  boxes in `MoreResults.tsx` — see "What this is" above). Every video on
+  both pages is wired up with a real Wistia embed already.
 - `/privacy` and `/terms` — footer links currently point to `#`.
 - No analytics/pixel wiring (Meta/TikTok pixels etc.) — ask before adding
   third-party tracking scripts, since that's a product/legal decision, not a
