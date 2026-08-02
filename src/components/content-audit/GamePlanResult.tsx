@@ -178,7 +178,7 @@ export default function GamePlanResult({ plan }: { plan: GamePlan }) {
       <CtaButton
         label="WATCH THE FREE TRAINING"
         subtext="See exactly how Maddox does it"
-        href="/#apply"
+        href="/"
       />
     </div>
   );

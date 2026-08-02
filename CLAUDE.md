@@ -36,7 +36,9 @@ teaches teens/young adults to sell AI digital products. It has two pages:
   and a real download link), a "Real Client Results" section with real
   testimonial screenshots (two Shopify sales dashboards, plus a before/after
   pair of the same creator's TikTok view counts — `public/images/testimonial-*`),
-  and a final CTA back to `/#apply` on the main funnel. See "Content-audit setup"
+  and a final CTA back to `/` (the top of the main funnel, where the VSL
+  is — deliberately not `/#apply`, so visitors watch the VSL instead of
+  jumping straight to the Typeform). See "Content-audit setup"
   below for what has to be configured outside this repo before it works.
 
 It is built to be deployed on Vercel (see `AGENTS.md` — the Next.js version
