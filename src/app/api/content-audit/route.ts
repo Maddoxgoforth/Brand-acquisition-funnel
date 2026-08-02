@@ -56,7 +56,7 @@ async function sendToConvertKit(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Kit-Api-Key": apiKey,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       first_name: lead.name,
@@ -83,7 +83,7 @@ async function sendToConvertKit(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Kit-Api-Key": apiKey,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({ email_address: lead.email }),
     }
