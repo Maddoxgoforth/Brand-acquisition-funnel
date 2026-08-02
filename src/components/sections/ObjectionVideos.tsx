@@ -4,11 +4,11 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import EmbedPlaceholder from "@/components/ui/EmbedPlaceholder";
 
 const QUESTIONS = [
-  "Question 1",
-  "Question 2",
-  "Question 3",
-  "Question 4",
-  "Question 5",
+  "HOW FAST CAN I SEE RESULTS?",
+  "HOW MUCH DOES THIS COST?",
+  "WHAT DO I NEED TO KNOW ABOUT AI?",
+  "WHAT IF I'M BUSY?",
+  "DO I NEED AN AUDIENCE ALREADY?",
 ];
 
 export default function ObjectionVideos() {
