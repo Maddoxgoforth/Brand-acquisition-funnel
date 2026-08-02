@@ -20,16 +20,22 @@ teaches teens/young adults to sell AI digital products. It has two pages:
   (`MoreResults`). Same theme/components as `/`.
 - **`/content-audit`** — a standalone lead-gen quiz funnel, unrelated to the
   Typeform/Cal.com flow above. Visitors answer a 9-question quiz
-  (`src/components/content-audit/Quiz.tsx`); question 5 collects
-  name/email/phone. On the final answer it POSTs to
-  `src/app/api/content-audit/route.ts`, which calls OpenAI to generate a
-  personalized "game plan" (niche + content ideas + 3 high-ticket product
-  ideas, schema-validated with Zod) and pushes the lead + that generated
-  content into ConvertKit (Kit) as subscriber custom fields, subscribing
-  them to a form that triggers the site owner's own email automation. The
-  result also renders directly on the page (`GamePlanResult.tsx`) so the
-  visitor sees it immediately, not just via email. See "Content-audit setup"
-  below for what has to be configured outside this repo before it works.
+  (`src/components/content-audit/Quiz.tsx`, questions defined in
+  `questions.ts` — niche and goal are open-ended textareas for specificity,
+  the rest are quick-tap selects); question 5 collects name/email/phone. On
+  the final answer it POSTs to `src/app/api/content-audit/route.ts`, which
+  calls OpenAI to generate a personalized "game plan" (niche + content ideas
+  + 3 high-ticket product ideas, schema-validated with Zod) and pushes the
+  lead + that generated content into ConvertKit (Kit) as subscriber custom
+  fields, subscribing them to a form that triggers the site owner's own
+  email automation. The result renders directly on the page
+  (`GamePlanResult.tsx`) so the visitor sees it immediately, not just via
+  email, followed by a link to `/content-audit/hooks` (a free "100+ viral
+  hook templates" download page — file and preview still placeholder,
+  pending the site owner's actual file), a client-results testimonials
+  placeholder section, and a final CTA back to `/#apply` on the main funnel.
+  See "Content-audit setup" below for what has to be configured outside
+  this repo before it works.
 
 It is built to be deployed on Vercel (see `AGENTS.md` — the Next.js version
 in this repo is newer than most training data; consult
@@ -107,6 +113,7 @@ src/app/
   page.tsx                 # the funnel ("/"): one <SectionComponent /> per section, in scroll order
   thank-you/page.tsx        # the post-booking page ("/thank-you"), same pattern
   content-audit/page.tsx    # the lead-gen quiz page ("/content-audit")
+  content-audit/hooks/page.tsx # free "100+ viral hook templates" download page
   api/content-audit/route.ts # POST handler: OpenAI game-plan generation + ConvertKit upsert
 src/components/
   ui/                     # generic, content-agnostic primitives

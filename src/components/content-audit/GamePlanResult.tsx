@@ -1,10 +1,14 @@
 import Card from "@/components/ui/Card";
+import EmbedPlaceholder from "@/components/ui/EmbedPlaceholder";
+import CtaButton from "@/components/ui/CtaButton";
 
 export type GamePlan = {
   niche: string;
   videoIdeas: string[];
   productIdeas: string[];
 };
+
+const TESTIMONIALS = ["CLIENT RESULT 1", "CLIENT RESULT 2", "CLIENT RESULT 3"];
 
 export default function GamePlanResult({ plan }: { plan: GamePlan }) {
   return (
@@ -59,6 +63,35 @@ export default function GamePlanResult({ plan }: { plan: GamePlan }) {
           ))}
         </ul>
       </Card>
+
+      <div className="mt-4 flex w-full flex-col items-center gap-4">
+        <p className="text-sm font-bold uppercase tracking-widest text-accent">
+          More Free Resources
+        </p>
+        <a
+          href="/content-audit/hooks"
+          className="flex w-full items-center justify-center gap-3 rounded-2xl border border-border bg-background-elevated px-6 py-5 text-center font-extrabold transition-colors hover:border-accent hover:text-accent"
+        >
+          📄 100+ Free Viral Hook Templates
+        </a>
+      </div>
+
+      <div className="flex w-full flex-col items-center gap-6">
+        <p className="text-sm font-bold uppercase tracking-widest text-accent">
+          Real Client Results
+        </p>
+        {TESTIMONIALS.map((label) => (
+          <Card key={label} className="w-full">
+            <EmbedPlaceholder label={label} className="min-h-[180px]" />
+          </Card>
+        ))}
+      </div>
+
+      <CtaButton
+        label="WATCH THE FREE TRAINING"
+        subtext="See exactly how Maddox does it"
+        href="/#apply"
+      />
     </div>
   );
 }
