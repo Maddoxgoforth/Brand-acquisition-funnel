@@ -6,6 +6,14 @@ export type SelectQuestion = {
   options: string[];
 };
 
+export type TextQuestion = {
+  id: string;
+  type: "text";
+  question: string;
+  helper?: string;
+  placeholder?: string;
+};
+
 export type LeadQuestion = {
   id: "lead";
   type: "lead";
@@ -13,23 +21,15 @@ export type LeadQuestion = {
   helper?: string;
 };
 
-export type Question = SelectQuestion | LeadQuestion;
+export type Question = SelectQuestion | TextQuestion | LeadQuestion;
 
 export const QUESTIONS: Question[] = [
   {
     id: "niche",
-    type: "select",
+    type: "text",
     question: "What do you already know a lot about, or could talk about for hours?",
-    options: [
-      "Fitness & Health",
-      "Beauty & Skincare",
-      "Business & Money",
-      "Gaming",
-      "Fashion & Style",
-      "Self-Improvement",
-      "Tech & AI",
-      "Something else",
-    ],
+    helper: "Be as specific as you can — the more detail, the better your game plan.",
+    placeholder: "e.g. budgeting for freelancers, skincare for teens, powerlifting for beginners...",
   },
   {
     id: "camera",
@@ -61,13 +61,10 @@ export const QUESTIONS: Question[] = [
   },
   {
     id: "goal",
-    type: "select",
+    type: "text",
     question: "What's your main goal right now?",
-    options: [
-      "Make extra income on the side",
-      "Replace my current income",
-      "Build a long-term brand",
-    ],
+    helper: "In your own words — extra income, replacing your job, building a brand, whatever it is.",
+    placeholder: "e.g. I want to replace my 9-5 as a nurse and build something in wellness...",
   },
   {
     id: "budget",
