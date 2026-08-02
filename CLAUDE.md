@@ -183,8 +183,12 @@ photos of a *different* UI — that's expected, don't try to recolor them.
 ## What's intentionally not built yet
 
 - Real client-result screenshots on `/thank-you` (currently `EmbedPlaceholder`
-  boxes in `MoreResults.tsx` — see "What this is" above). Every video on
-  both pages is wired up with a real Wistia embed already.
+  boxes in `MoreResults.tsx` — see "What this is" above). The copy/numbers
+  around them (JJ's $39,549 JJVending result; Derek's TikTok views going
+  3K → 1.8M) are real, supplied by the site owner — only the actual
+  screenshots are still pending because file uploads weren't reaching this
+  environment; swap the placeholders for real images once that's resolved.
+  Every video on both pages is wired up with a real Wistia embed already.
 - `/privacy` and `/terms` — footer links currently point to `#`.
 - No analytics/pixel wiring (Meta/TikTok pixels etc.) — ask before adding
   third-party tracking scripts, since that's a product/legal decision, not a
