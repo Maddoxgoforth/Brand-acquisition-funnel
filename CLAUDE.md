@@ -225,11 +225,16 @@ photos of a *different* UI — that's expected, don't try to recolor them.
    numeric ID, and build an **automation/sequence** triggered by that form
    with the actual game-plan email. That email template is built in Kit's
    own editor, not in this codebase — use Liquid merge tags to pull in the
-   generated content, e.g.:
+   generated content. Use the **flat** form, not `subscriber.custom_fields.X`
+   — the nested form is what Kit's own docs/support suggest, but in practice
+   it does not resolve in Visual Automation emails even when the field has
+   real data (confirmed by testing: `{{ subscriber.first_name }}` rendered,
+   `{{ subscriber.custom_fields.niche }}` rendered as empty on the same send).
+   The flat form works:
    ```
-   Your niche: {{ subscriber.custom_fields.niche }}
-   Video ideas: {{ subscriber.custom_fields.video_ideas }}
-   Product ideas: {{ subscriber.custom_fields.product_ideas }}
+   Your niche: {{ subscriber.niche }}
+   Video ideas: {{ subscriber.video_ideas }}
+   Product ideas: {{ subscriber.product_ideas }}
    ```
 5. Set all four env vars in Vercel's project settings for production, and in
    a local `.env.local` (gitignored) for `npm run dev`.
