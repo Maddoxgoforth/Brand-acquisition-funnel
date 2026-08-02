@@ -33,10 +33,10 @@ teaches teens/young adults to sell AI digital products. It has two pages:
   email, followed by a link to `/content-audit/hooks` (a free "100+ viral
   hook templates" download page — the real PDF, `public/downloads/viral-hooks.pdf`,
   with a short text preview of the first few hooks pulled from that file
-  and a real download link), a "Real Client Results" section with three
-  real testimonial screenshots (a Shopify dashboard, a monthly-sales
-  screenshot, and a customer DM — `public/images/testimonial-*`), and a
-  final CTA back to `/#apply` on the main funnel. See "Content-audit setup"
+  and a real download link), a "Real Client Results" section with real
+  testimonial screenshots (two Shopify sales dashboards, plus a before/after
+  pair of the same creator's TikTok view counts — `public/images/testimonial-*`),
+  and a final CTA back to `/#apply` on the main funnel. See "Content-audit setup"
   below for what has to be configured outside this repo before it works.
 
 It is built to be deployed on Vercel (see `AGENTS.md` — the Next.js version
