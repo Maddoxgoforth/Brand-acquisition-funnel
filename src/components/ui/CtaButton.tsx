@@ -1,14 +1,16 @@
 export default function CtaButton({
   label = "APPLY NOW",
   subtext = "Book your intro call",
+  href = "#apply",
 }: {
   label?: string;
   subtext?: string;
+  href?: string;
 }) {
   return (
     <div className="flex flex-col items-center gap-4">
       <a
-        href="#apply"
+        href={href}
         className="flex w-full items-center justify-center gap-3 rounded-2xl bg-accent px-8 py-5 text-center transition-colors hover:bg-accent-dim"
       >
         <span className="flex flex-col items-center">
