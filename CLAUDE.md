@@ -18,6 +18,18 @@ teaches teens/young adults to sell AI digital products. It has two pages:
   site owner supplies, framed as an FAQ rather than "limiting beliefs" even
   though that's the underlying intent), then more client results
   (`MoreResults`). Same theme/components as `/`.
+- **`/content-audit`** — a standalone lead-gen quiz funnel, unrelated to the
+  Typeform/Cal.com flow above. Visitors answer a 9-question quiz
+  (`src/components/content-audit/Quiz.tsx`); question 5 collects
+  name/email/phone. On the final answer it POSTs to
+  `src/app/api/content-audit/route.ts`, which calls OpenAI to generate a
+  personalized "game plan" (niche + content ideas + 3 high-ticket product
+  ideas, schema-validated with Zod) and pushes the lead + that generated
+  content into ConvertKit (Kit) as subscriber custom fields, subscribing
+  them to a form that triggers the site owner's own email automation. The
+  result also renders directly on the page (`GamePlanResult.tsx`) so the
+  visitor sees it immediately, not just via email. See "Content-audit setup"
+  below for what has to be configured outside this repo before it works.
 
 It is built to be deployed on Vercel (see `AGENTS.md` — the Next.js version
 in this repo is newer than most training data; consult
@@ -62,7 +74,10 @@ screenshot is available.
 - **Next.js 16** (App Router, Turbopack), React 19, TypeScript
 - **Tailwind CSS v4** (CSS-first config via `@theme inline` in
   `src/app/globals.css` — there is no `tailwind.config.ts`)
-- No database, no API routes, no auth — this is a static marketing page.
+- No database, no auth. `/` and `/thank-you` are fully static. `/content-audit`
+  is the one exception: it has a real server-side API route
+  (`/api/content-audit`) that calls OpenAI and ConvertKit — see
+  "Content-audit setup" below.
 - Font: `next/font/google` Geist, loaded once in `src/app/layout.tsx`.
 
 ## Dev workflow
@@ -86,20 +101,24 @@ There is no test suite. Before calling a change done:
 
 ```
 src/app/
-  layout.tsx          # root layout: font, <html>/<body>, metadata (applies to every route)
-  globals.css         # Tailwind import + design tokens (@theme inline) + the
-                       # wistia-player :not(:defined) placeholder rule
-  page.tsx             # the funnel ("/"): one <SectionComponent /> per section, in scroll order
-  thank-you/page.tsx    # the post-booking page ("/thank-you"), same pattern
+  layout.tsx              # root layout: font, <html>/<body>, metadata (applies to every route)
+  globals.css             # Tailwind import + design tokens (@theme inline) + the
+                          # wistia-player :not(:defined) placeholder rule
+  page.tsx                 # the funnel ("/"): one <SectionComponent /> per section, in scroll order
+  thank-you/page.tsx        # the post-booking page ("/thank-you"), same pattern
+  content-audit/page.tsx    # the lead-gen quiz page ("/content-audit")
+  api/content-audit/route.ts # POST handler: OpenAI game-plan generation + ConvertKit upsert
 src/components/
-  ui/                 # generic, content-agnostic primitives
-  sections/           # one file per page section; funnel and thank-you
-                       # sections both live here, matching their page.tsx order
-src/types/wistia.d.ts  # JSX.IntrinsicElements augmentation for <wistia-player>
-public/images/         # real proof screenshots (Shopify dashboards, DM
-                        # thread, TikTok profile, mentor headshot), cropped
-                        # tight and rendered via next/image in Results.tsx
-                        # and Mentor.tsx
+  ui/                     # generic, content-agnostic primitives
+  sections/               # one file per page section; funnel and thank-you
+                          # sections both live here, matching their page.tsx order
+  content-audit/          # Quiz.tsx, questions.ts, GamePlanResult.tsx — scoped to
+                          # /content-audit only, not shared with the rest of the site
+src/types/wistia.d.ts      # JSX.IntrinsicElements augmentation for <wistia-player>
+public/images/             # real proof screenshots (Shopify dashboards, DM
+                            # thread, TikTok profile, mentor headshot), cropped
+                            # tight and rendered via next/image in Results.tsx
+                            # and Mentor.tsx
 ```
 
 - **Sections are Server Components by default.** Only `Faq.tsx` has
@@ -171,6 +190,41 @@ photos of a *different* UI — that's expected, don't try to recolor them.
   rule in `globals.css` is per-media-id (Wistia's own snippet ties the
   poster-swatch URL to that specific id) — adding a new video means adding
   its own rule there, not reusing an existing one.
+
+## Content-audit setup
+
+`/content-audit` won't actually send anything until these exist. See
+`.env.example` for the variable names.
+
+1. **OpenAI**: create an API key at platform.openai.com and set
+   `OPENAI_API_KEY`. The route defaults to `gpt-4o-mini` — verify that's
+   still a current, available model before relying on it long-term (model
+   names/availability change over time; override with `OPENAI_MODEL` if
+   not).
+2. **ConvertKit (Kit)**: create an API key (Account Settings → Developer)
+   and set `CONVERTKIT_API_KEY`.
+3. In Kit's dashboard, create **custom fields** with exactly these slugs
+   (unknown field keys are silently dropped by their API, and renaming a
+   slug later breaks any email template merge tags built on the old name):
+   `phone_number`, `niche`, `video_ideas`, `product_ideas`.
+4. Create a **Form** in Kit for this funnel, set `CONVERTKIT_FORM_ID` to its
+   numeric ID, and build an **automation/sequence** triggered by that form
+   with the actual game-plan email. That email template is built in Kit's
+   own editor, not in this codebase — use Liquid merge tags to pull in the
+   generated content, e.g.:
+   ```
+   Your niche: {{ subscriber.custom_fields.niche }}
+   Video ideas: {{ subscriber.custom_fields.video_ideas }}
+   Product ideas: {{ subscriber.custom_fields.product_ideas }}
+   ```
+5. Set all four env vars in Vercel's project settings for production, and in
+   a local `.env.local` (gitignored) for `npm run dev`.
+
+The ConvertKit API details here (`https://api.kit.com/v4`, `X-Kit-Api-Key`
+header, `/subscribers` then `/forms/{id}/subscribers`) came from research
+that couldn't load Kit's docs directly (network-blocked) and reconstructed
+them from search results instead — internally consistent, but do one live
+test end-to-end before treating this as fully verified.
 
 ## What's intentionally not built yet
 
