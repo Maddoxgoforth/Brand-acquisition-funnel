@@ -31,11 +31,13 @@ teaches teens/young adults to sell AI digital products. It has two pages:
   email automation. The result renders directly on the page
   (`GamePlanResult.tsx`) so the visitor sees it immediately, not just via
   email, followed by a link to `/content-audit/hooks` (a free "100+ viral
-  hook templates" download page — file and preview still placeholder,
-  pending the site owner's actual file), a client-results testimonials
-  placeholder section, and a final CTA back to `/#apply` on the main funnel.
-  See "Content-audit setup" below for what has to be configured outside
-  this repo before it works.
+  hook templates" download page — the real PDF, `public/downloads/viral-hooks.pdf`,
+  with a short text preview of the first few hooks pulled from that file
+  and a real download link), a "Real Client Results" section with three
+  real testimonial screenshots (a Shopify dashboard, a monthly-sales
+  screenshot, and a customer DM — `public/images/testimonial-*`), and a
+  final CTA back to `/#apply` on the main funnel. See "Content-audit setup"
+  below for what has to be configured outside this repo before it works.
 
 It is built to be deployed on Vercel (see `AGENTS.md` — the Next.js version
 in this repo is newer than most training data; consult
@@ -51,9 +53,10 @@ mapping). The `/` application form is a real inline Typeform
 (`TypeformEmbed`, form id `zKqvPAGW`) — see "Conversion flow" below for how a
 visitor moves from `/` through Typeform, to Cal.com, to `/thank-you`.
 
-The results/mentor proof images on both pages (Shopify dashboards, DM
+The results/mentor proof images on all three pages (Shopify dashboards, DM
 screenshot, TikTok profile, mentor headshot, `/thank-you`'s JJVending
-dashboard and Derek's 4 TikTok clips) are **real cropped screenshots** the
+dashboard and Derek's 4 TikTok clips, `/content-audit`'s three
+`testimonial-*` results cards) are **real cropped screenshots** the
 site owner provided, stored in `public/images/` and rendered via
 `next/image`. There used to be a `src/components/mocks/` folder with
 hand-built CSS/SVG recreations of this UI as a stand-in before the real
@@ -123,9 +126,11 @@ src/components/
                           # /content-audit only, not shared with the rest of the site
 src/types/wistia.d.ts      # JSX.IntrinsicElements augmentation for <wistia-player>
 public/images/             # real proof screenshots (Shopify dashboards, DM
-                            # thread, TikTok profile, mentor headshot), cropped
-                            # tight and rendered via next/image in Results.tsx
-                            # and Mentor.tsx
+                            # thread, TikTok profile, mentor headshot,
+                            # content-audit testimonial-* cards), cropped
+                            # tight and rendered via next/image
+public/downloads/          # real downloadable lead-magnet files, e.g.
+                            # viral-hooks.pdf served from /content-audit/hooks
 ```
 
 - **Sections are Server Components by default.** Only `Faq.tsx` has

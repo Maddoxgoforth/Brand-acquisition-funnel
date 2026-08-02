@@ -1,5 +1,5 @@
+import Image from "next/image";
 import Card from "@/components/ui/Card";
-import EmbedPlaceholder from "@/components/ui/EmbedPlaceholder";
 import CtaButton from "@/components/ui/CtaButton";
 
 export type GamePlan = {
@@ -8,7 +8,32 @@ export type GamePlan = {
   productIdeas: string[];
 };
 
-const TESTIMONIALS = ["CLIENT RESULT 1", "CLIENT RESULT 2", "CLIENT RESULT 3"];
+const TESTIMONIALS = [
+  {
+    stat: "$4,005 IN SALES",
+    caption: "JT Vendors — total sales climbing week over week",
+    src: "/images/testimonial-jtvendors-4005.jpg",
+    alt: "JT Vendors Shopify dashboard showing $4,005.41 in total sales",
+    width: 887,
+    height: 970,
+  },
+  {
+    stat: "$5K THIS MONTH",
+    caption: "A student watching their store climb past $5,000 in a month",
+    src: "/images/testimonial-5k-month.png",
+    alt: "Shopify dashboard screenshot showing $5,000.94 in sales for the month",
+    width: 828,
+    height: 606,
+  },
+  {
+    stat: "“ACTUALLY CRAZY QUALITY”",
+    caption: "A real customer, happy with their order from a student's store",
+    src: "/images/testimonial-dm-hoodie.jpg",
+    alt: "DM conversation with a customer thanking a student for a high-quality order",
+    width: 1170,
+    height: 2140,
+  },
+];
 
 export default function GamePlanResult({ plan }: { plan: GamePlan }) {
   return (
@@ -80,9 +105,22 @@ export default function GamePlanResult({ plan }: { plan: GamePlan }) {
         <p className="text-sm font-bold uppercase tracking-widest text-accent">
           Real Client Results
         </p>
-        {TESTIMONIALS.map((label) => (
-          <Card key={label} className="w-full">
-            <EmbedPlaceholder label={label} className="min-h-[180px]" />
+        {TESTIMONIALS.map((testimonial) => (
+          <Card key={testimonial.src} className="w-full text-left">
+            <p className="text-2xl font-extrabold text-accent">
+              {testimonial.stat}
+            </p>
+            <p className="mt-1 text-sm text-muted">{testimonial.caption}</p>
+            <div className="mt-5 overflow-hidden rounded-2xl shadow-lg">
+              <Image
+                src={testimonial.src}
+                alt={testimonial.alt}
+                width={testimonial.width}
+                height={testimonial.height}
+                className="w-full h-auto"
+                sizes="(min-width: 576px) 512px, 100vw"
+              />
+            </div>
           </Card>
         ))}
       </div>
