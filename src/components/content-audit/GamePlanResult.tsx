@@ -25,15 +25,24 @@ const TESTIMONIALS = [
     width: 828,
     height: 606,
   },
-  {
-    stat: "“ACTUALLY CRAZY QUALITY”",
-    caption: "A real customer, happy with their order from a student's store",
-    src: "/images/testimonial-dm-hoodie.jpg",
-    alt: "DM conversation with a customer thanking a student for a high-quality order",
-    width: 1170,
-    height: 2140,
-  },
 ];
+
+const VIEWS_BEFORE_AFTER = {
+  stat: "23.9K → 2.7M VIEWS",
+  caption: "Same creator, same account — before and after learning the system",
+  before: {
+    src: "/images/testimonial-before-24k.jpg",
+    alt: "TikTok video with 23.9K views before learning the content system",
+    width: 397,
+    height: 499,
+  },
+  after: {
+    src: "/images/testimonial-after-2-7m.jpg",
+    alt: "TikTok video with 2.7M views after learning the content system",
+    width: 403,
+    height: 528,
+  },
+};
 
 export default function GamePlanResult({ plan }: { plan: GamePlan }) {
   return (
@@ -123,6 +132,47 @@ export default function GamePlanResult({ plan }: { plan: GamePlan }) {
             </div>
           </Card>
         ))}
+
+        <Card className="w-full text-left">
+          <p className="text-2xl font-extrabold text-accent">
+            {VIEWS_BEFORE_AFTER.stat}
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            {VIEWS_BEFORE_AFTER.caption}
+          </p>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <div>
+              <p className="mb-2 text-center text-xs font-bold uppercase tracking-widest text-muted">
+                Before
+              </p>
+              <div className="overflow-hidden rounded-2xl shadow-lg">
+                <Image
+                  src={VIEWS_BEFORE_AFTER.before.src}
+                  alt={VIEWS_BEFORE_AFTER.before.alt}
+                  width={VIEWS_BEFORE_AFTER.before.width}
+                  height={VIEWS_BEFORE_AFTER.before.height}
+                  className="w-full h-auto"
+                  sizes="(min-width: 576px) 256px, 50vw"
+                />
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-center text-xs font-bold uppercase tracking-widest text-accent">
+                After
+              </p>
+              <div className="overflow-hidden rounded-2xl shadow-lg">
+                <Image
+                  src={VIEWS_BEFORE_AFTER.after.src}
+                  alt={VIEWS_BEFORE_AFTER.after.alt}
+                  width={VIEWS_BEFORE_AFTER.after.width}
+                  height={VIEWS_BEFORE_AFTER.after.height}
+                  className="w-full h-auto"
+                  sizes="(min-width: 576px) 256px, 50vw"
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
       </div>
 
       <CtaButton
