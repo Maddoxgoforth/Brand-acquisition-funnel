@@ -95,7 +95,7 @@ export default function GamePlanResult({ plan }: { plan: GamePlan }) {
         </p>
         <a
           href="/content-audit/hooks"
-          className="flex w-full items-center justify-center gap-3 rounded-2xl border border-border bg-background-elevated px-6 py-5 text-center font-extrabold transition-colors hover:border-accent hover:text-accent"
+          className="flex w-full items-center justify-center gap-3 rounded-2xl bg-accent px-6 py-5 text-center font-extrabold text-white transition-colors hover:bg-accent-dim"
         >
           📄 100+ Free Viral Hook Templates
         </a>
