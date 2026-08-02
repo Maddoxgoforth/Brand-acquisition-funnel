@@ -31,20 +31,17 @@ video (`ynkriiuux3`), and its five question-breakdown videos (see the
 `QUESTIONS` array in `ObjectionVideos.tsx` for the question text → media id
 mapping). The `/` application form is a real inline Typeform
 (`TypeformEmbed`, form id `zKqvPAGW`) — see "Conversion flow" below for how a
-visitor moves from `/` through Typeform, to Cal.com, to `/thank-you`. The
-extra client-result cards on `/thank-you` are still **intentionally
-placeholder boxes** (`[ CLIENT RESULT 1 ]`, via `EmbedPlaceholder`) — real
-screenshots for those go in only when the site owner provides them, the same
-way every other placeholder on this site got filled in.
+visitor moves from `/` through Typeform, to Cal.com, to `/thank-you`.
 
-The results/mentor proof images on `/` (Shopify dashboards, DM screenshot,
-TikTok profile, mentor headshot) are **real cropped screenshots** the site
-owner provided, stored in `public/images/` and rendered via `next/image`.
-There used to be a `src/components/mocks/` folder with hand-built CSS/SVG
-recreations of this UI as a stand-in before the real screenshots existed —
-that folder is gone now that real assets are wired in; don't recreate it
-unless a new proof point needs a mock before its real screenshot is
-available.
+The results/mentor proof images on both pages (Shopify dashboards, DM
+screenshot, TikTok profile, mentor headshot, `/thank-you`'s JJVending
+dashboard and Derek's 4 TikTok clips) are **real cropped screenshots** the
+site owner provided, stored in `public/images/` and rendered via
+`next/image`. There used to be a `src/components/mocks/` folder with
+hand-built CSS/SVG recreations of this UI as a stand-in before the real
+screenshots existed — that folder is gone now that real assets are wired
+in; don't recreate it unless a new proof point needs a mock before its real
+screenshot is available.
 
 ## Conversion flow
 
@@ -118,11 +115,6 @@ public/images/         # real proof screenshots (Shopify dashboards, DM
     results, blueprint, and comparison sections — always via this component,
     never hand-rolled, so copy/style stays in sync.
   - `Card` — bordered, rounded, dark "elevated" panel background.
-  - `EmbedPlaceholder` — the bracketed `[ LABEL ]` placeholder box style,
-    used on `/thank-you` for the client-result cards (real screenshots not
-    provided yet). Every video slot on both pages now uses `WistiaEmbed`
-    instead — don't reintroduce `EmbedPlaceholder` for video unless a new
-    video slot is added before its real Wistia link exists.
   - `SectionHeading` — eyebrow + title + optional subtitle, centered.
 - **Copy is hardcoded** in the section components (this is a single fixed
   offer page, not a CMS-driven site). FAQ entries live as a `FAQS` array at
@@ -182,13 +174,6 @@ photos of a *different* UI — that's expected, don't try to recolor them.
 
 ## What's intentionally not built yet
 
-- Real client-result screenshots on `/thank-you` (currently `EmbedPlaceholder`
-  boxes in `MoreResults.tsx` — see "What this is" above). The copy/numbers
-  around them (JJ's $39,549 JJVending result; Derek's TikTok views going
-  3K → 1.8M) are real, supplied by the site owner — only the actual
-  screenshots are still pending because file uploads weren't reaching this
-  environment; swap the placeholders for real images once that's resolved.
-  Every video on both pages is wired up with a real Wistia embed already.
 - `/privacy` and `/terms` — footer links currently point to `#`.
 - No analytics/pixel wiring (Meta/TikTok pixels etc.) — ask before adding
   third-party tracking scripts, since that's a product/legal decision, not a
