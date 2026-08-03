@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Container from "@/components/ui/Container";
 import Pill from "@/components/ui/Pill";
 import Quiz from "@/components/content-audit/Quiz";
+import RecentActivityToast from "@/components/content-audit/RecentActivityToast";
 import Footer from "@/components/sections/Footer";
 
 export const metadata: Metadata = {
@@ -13,6 +14,8 @@ export const metadata: Metadata = {
 export default function ContentAudit() {
   return (
     <main>
+      <RecentActivityToast />
+
       <section className="pt-12 pb-10">
         <Container className="flex flex-col items-center gap-6 text-center">
           <p className="text-xl font-black tracking-[0.3em]">MADDOX</p>
