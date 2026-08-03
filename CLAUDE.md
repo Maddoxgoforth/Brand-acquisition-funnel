@@ -40,9 +40,9 @@ teaches teens/young adults to sell AI digital products. It has two pages:
   is — deliberately not `/#apply`, so visitors watch the VSL instead of
   jumping straight to the Typeform). A `RecentActivityToast` client
   component also mounts on this page only: every 45-90s (randomized) it
-  slides in a "[First name] from [City, ST] just got their free content
-  audit" notice at the top of the viewport for 5s, then hides. Names/cities
-  are a hardcoded random pool (`FIRST_NAMES`/`CITIES` in
+  slides in a "[First name] [Last name] just got their free content audit"
+  notice at the top of the viewport for 5s, then hides. Names are a
+  hardcoded random pool (`FIRST_NAMES`/`LAST_NAMES` in
   `RecentActivityToast.tsx`), not real signups — purely a social-proof
   FOMO widget, same pattern as tools like Fomo/Proof. See "Content-audit
   setup" below for what has to be configured outside this repo before the
