@@ -12,12 +12,24 @@ teaches teens/young adults to sell AI digital products. It has two pages:
   footer), ending in a repeated "Apply Now" CTA that opens an inline
   Typeform application after a Wistia video sales letter (VSL).
 - **`/thank-you`** — the page qualified applicants land on after booking a
-  call. It's a self-contained "watch these before your call" page: one main
-  welcome/congrats video (`WelcomeVideo`), then five question-and-answer
-  breakdown videos (`ObjectionVideos` — each answers a specific question the
-  site owner supplies, framed as an FAQ rather than "limiting beliefs" even
-  though that's the underlying intent), then more client results
-  (`MoreResults`). Same theme/components as `/`.
+  call for the **high-ticket** offer. It's a self-contained "watch these
+  before your call" page: one main welcome/congrats video (`WelcomeVideo`),
+  then five question-and-answer breakdown videos (`ObjectionVideos` — each
+  answers a specific question the site owner supplies, framed as an FAQ
+  rather than "limiting beliefs" even though that's the underlying intent),
+  then more client results (`MoreResults`). Same theme/components as `/`.
+- **`/thank-you-mid`** — the same post-booking page, but for applicants who
+  book the **mid-ticket** offer instead. Identical layout/copy to
+  `/thank-you` (same `ThankYouHero` and `MoreResults`, reused directly), but
+  with its own `WelcomeVideoMid`/`ObjectionVideosMid` sections since the
+  mid-ticket offer needs its own video recordings — those videos don't
+  exist yet, so both sections currently render `EmbedPlaceholder` boxes
+  labeled "COMING SOON" instead of a real `WistiaEmbed`. Once the site
+  owner records the mid-ticket videos, swap the placeholders for
+  `WistiaEmbed mediaId="..."` the same way `WelcomeVideo`/`ObjectionVideos`
+  do. Which page a given applicant lands on is decided by which Cal.com
+  event type they booked (see "Conversion flow" below) — not by anything in
+  this codebase.
 - **`/content-audit`** — a standalone lead-gen quiz funnel, unrelated to the
   Typeform/Cal.com flow above. Visitors answer a 9-question quiz
   (`src/components/content-audit/Quiz.tsx`, questions defined in
@@ -77,24 +89,26 @@ screenshot is available.
 
 1. Visitor lands on `/`, watches the VSL, fills out the inline Typeform.
 2. Typeform's own logic (configured in the site owner's Typeform account,
-   not in this codebase) redirects qualified respondents to the owner's
-   Cal.com booking link.
-3. After booking, Cal.com needs to redirect to `/thank-you` on this site.
-   That redirect is a Cal.com **Event Type → Advanced → "Redirect on
-   booking"** setting in the owner's Cal.com dashboard — also not something
-   this codebase controls. If `/thank-you` ever moves or the domain changes,
-   that Cal.com setting needs updating too.
-4. `/thank-you` plays a few objection-breakdown videos and shows more
-   results while they wait for the call.
+   not in this codebase) routes qualified respondents to one of two Cal.com
+   booking links depending on whether they qualify for the high-ticket or
+   mid-ticket offer.
+3. After booking, each Cal.com **Event Type** needs its own **Advanced →
+   "Redirect on booking"** setting pointing at the matching page on this
+   site: the high-ticket event type → `/thank-you`, the mid-ticket event
+   type → `/thank-you-mid`. Both are Cal.com dashboard settings, not
+   anything this codebase controls. If either page ever moves or the domain
+   changes, both Cal.com settings need updating.
+4. `/thank-you` (or `/thank-you-mid`) plays a few objection-breakdown
+   videos and shows more results while they wait for the call.
 
 ## Stack
 
 - **Next.js 16** (App Router, Turbopack), React 19, TypeScript
 - **Tailwind CSS v4** (CSS-first config via `@theme inline` in
   `src/app/globals.css` — there is no `tailwind.config.ts`)
-- No database, no auth. `/` and `/thank-you` are fully static. `/content-audit`
-  is the one exception: it has a real server-side API route
-  (`/api/content-audit`) that calls OpenAI and ConvertKit — see
+- No database, no auth. `/`, `/thank-you`, and `/thank-you-mid` are fully
+  static. `/content-audit` is the one exception: it has a real server-side
+  API route (`/api/content-audit`) that calls OpenAI and ConvertKit — see
   "Content-audit setup" below.
 - Font: `next/font/google` Geist, loaded once in `src/app/layout.tsx`.
 
@@ -123,14 +137,19 @@ src/app/
   globals.css             # Tailwind import + design tokens (@theme inline) + the
                           # wistia-player :not(:defined) placeholder rule
   page.tsx                 # the funnel ("/"): one <SectionComponent /> per section, in scroll order
-  thank-you/page.tsx        # the post-booking page ("/thank-you"), same pattern
+  thank-you/page.tsx        # the high-ticket post-booking page ("/thank-you"), same pattern
+  thank-you-mid/page.tsx    # the mid-ticket post-booking page ("/thank-you-mid") — identical
+                            # layout, its own Welcome/Objection video sections (placeholders
+                            # until the site owner records mid-ticket videos)
   content-audit/page.tsx    # the lead-gen quiz page ("/content-audit")
   content-audit/hooks/page.tsx # free "100+ viral hook templates" download page
   api/content-audit/route.ts # POST handler: OpenAI game-plan generation + ConvertKit upsert
 src/components/
-  ui/                     # generic, content-agnostic primitives
-  sections/               # one file per page section; funnel and thank-you
-                          # sections both live here, matching their page.tsx order
+  ui/                     # generic, content-agnostic primitives (including
+                          # EmbedPlaceholder, used wherever a real video/file
+                          # isn't recorded/available yet)
+  sections/               # one file per page section; funnel and both thank-you
+                          # pages' sections all live here, matching their page.tsx order
   content-audit/          # Quiz.tsx, questions.ts, GamePlanResult.tsx — scoped to
                           # /content-audit only, not shared with the rest of the site
 src/types/wistia.d.ts      # JSX.IntrinsicElements augmentation for <wistia-player>
@@ -258,7 +277,14 @@ test end-to-end before treating this as fully verified.
 - No analytics/pixel wiring (Meta/TikTok pixels etc.) — ask before adding
   third-party tracking scripts, since that's a product/legal decision, not a
   styling one.
-- The Typeform → Cal.com and Cal.com → `/thank-you` redirects live in the
-  site owner's Typeform/Cal.com dashboards, not in this codebase (see
-  "Conversion flow" above) — there's nothing to "fix" here if that hand-off
-  breaks, it's a config check on those platforms.
+- The Typeform → Cal.com and Cal.com → `/thank-you`/`/thank-you-mid`
+  redirects live in the site owner's Typeform/Cal.com dashboards, not in
+  this codebase (see "Conversion flow" above) — there's nothing to "fix"
+  here if that hand-off breaks, it's a config check on those platforms.
+- `/thank-you-mid`'s welcome video and five objection-breakdown videos —
+  the site owner hasn't recorded the mid-ticket versions yet, so
+  `WelcomeVideoMid`/`ObjectionVideosMid` currently render `EmbedPlaceholder`
+  boxes. Once real Wistia media IDs exist, swap them in the same way
+  `WelcomeVideo`/`ObjectionVideos` use `WistiaEmbed`, and add the
+  corresponding `wistia-player[media-id="..."]:not(:defined)` placeholder
+  rules to `globals.css`.
