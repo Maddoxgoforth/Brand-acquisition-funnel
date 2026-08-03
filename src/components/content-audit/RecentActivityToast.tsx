@@ -8,17 +8,16 @@ const FIRST_NAMES = [
   "Blake", "Hayden", "Sawyer", "Finley",
 ];
 
-const CITIES = [
-  "Austin, TX", "Miami, FL", "Phoenix, AZ", "Denver, CO", "Nashville, TN",
-  "Charlotte, NC", "Columbus, OH", "Tampa, FL", "San Diego, CA", "Atlanta, GA",
-  "Dallas, TX", "Orlando, FL", "Seattle, WA", "Portland, OR", "Raleigh, NC",
+const LAST_NAMES = [
+  "Carter", "Brooks", "Reed", "Bennett", "Hayes", "Foster", "Coleman", "Price",
+  "Sanders", "Wells", "Mitchell", "Sullivan", "Barnes", "Fisher", "Simmons",
 ];
 
 const MIN_DELAY_MS = 45_000;
 const MAX_DELAY_MS = 90_000;
 const VISIBLE_MS = 5_000;
 
-type Notice = { name: string; city: string };
+type Notice = { firstName: string; lastName: string };
 
 function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -26,8 +25,8 @@ function randomInt(min: number, max: number) {
 
 function randomNotice(): Notice {
   return {
-    name: FIRST_NAMES[randomInt(0, FIRST_NAMES.length - 1)],
-    city: CITIES[randomInt(0, CITIES.length - 1)],
+    firstName: FIRST_NAMES[randomInt(0, FIRST_NAMES.length - 1)],
+    lastName: LAST_NAMES[randomInt(0, LAST_NAMES.length - 1)],
   };
 }
 
@@ -67,11 +66,12 @@ export default function RecentActivityToast() {
     >
       <div className="flex items-center gap-3 rounded-2xl border border-border bg-background-elevated px-4 py-3 shadow-lg">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-white">
-          {notice.name[0]}
+          {notice.firstName[0]}
         </span>
         <p className="flex-1 text-left text-sm">
-          <span className="font-bold">{notice.name}</span>
-          <span className="text-muted"> from {notice.city} </span>
+          <span className="font-bold">
+            {notice.firstName} {notice.lastName}
+          </span>{" "}
           just got their free content audit
         </p>
         <button
