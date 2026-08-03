@@ -17,13 +17,13 @@ export default function OfferHero() {
 
         <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">
           The <span className="text-accent">$50/Month</span>{" "}
-          System To Build Your Personal Brand &amp; Sell Digital Products
+          System That Made Me <span className="text-accent">$200K</span>
         </h1>
 
         <p className="max-w-md text-lg text-muted">
-          I&apos;ve built a 290K+ following and sold six figures in AI digital
-          products. This is the exact playbook I use, broken down into a
-          monthly membership so you can start today.
+          I&apos;ve built a 400K+ following and sold six figures in digital
+          products using AI. This is the exact playbook I use, broken down
+          into a monthly membership so you can start today.
         </p>
 
         <EmbedPlaceholder label="VSL — COMING SOON" />

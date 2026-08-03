@@ -5,7 +5,9 @@ Guidance for Claude Code (and other AI assistants) working in this repository.
 ## What this is
 
 A marketing/funnel site for **Maddox** — a 1-on-1 mentorship offer that
-teaches teens/young adults to sell AI digital products.
+teaches teens/young adults to sell digital products using AI. (Maddox sells
+digital products and uses AI as a tool in that business — he does not sell
+"AI products" — keep that distinction in any new copy.)
 
 - **`/` (the funnel)** — a long vertical scroll of sections (hero → social
   proof → results → pitch → mentor bio → objection handling → FAQ →
@@ -234,10 +236,15 @@ photos of a *different* UI — that's expected, don't try to recolor them.
   `TypeformEmbed` wrapper div in `Hero.tsx`). If you change how the Typeform
   is embedded, keep that `id="apply"` (or update every `CtaButton` href to
   match).
-- Numbers throughout ($20k/mo, 300K+, $102,988, 224K sessions, 290K+
+- Numbers throughout ($20k/mo, 300K+, $102,988, 224K sessions, 400K+
   followers, etc.) are specific claims from the real reference page — don't
   round or "clean up" them without being asked, they're presumably accurate
-  to the offer.
+  to the offer. Note: the follower count in *copy* (stats, bio text) is
+  400K+ (updated from an earlier 290K+ figure as the account has grown),
+  but the real `tiktok-profile.jpg` screenshot itself still shows 290.2K
+  since it's a point-in-time photo — its `alt` text intentionally still
+  says 290.2K to accurately describe what's actually in that image. Don't
+  "fix" that alt text to say 400K; it would misdescribe the screenshot.
 - The result-card and mentor images are cropped screenshots (status bars /
   app chrome removed, see `public/images/`), not generated graphics — if a
   new proof point comes in, crop it the same way (tight to the content,

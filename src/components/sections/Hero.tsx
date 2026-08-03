@@ -13,14 +13,14 @@ export default function Hero() {
 
         <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">
           Learn exactly how I went from a broke student and made{" "}
-          <span className="text-accent">$200k</span> selling AI Digital
-          Products
+          <span className="text-accent">$200k</span>{" "}
+          selling digital products using AI
         </h1>
 
         <p className="max-w-md text-lg text-muted">
-          The exact 90-day system I used to make real money selling my own AI
-          digital product before I turned 18. No audience, no experience, no
-          guessing.
+          The exact 90-day system I used to make real money selling my own
+          digital products using AI before I turned 18. No audience, no
+          experience, no guessing.
         </p>
 
         <WistiaEmbed mediaId="p3h2xpk8hb" />
