@@ -99,8 +99,8 @@ export default function OfferResults() {
         ))}
 
         <CtaButton
-          label="GET INSTANT ACCESS — $50/MO"
-          subtext="Cancel anytime. Start today."
+          label="START YOUR OWN RESULTS — $50/MO"
+          subtext="This could be your dashboard next."
           href="#"
         />
 
@@ -124,8 +124,8 @@ export default function OfferResults() {
         ))}
 
         <CtaButton
-          label="GET INSTANT ACCESS — $50/MO"
-          subtext="Cancel anytime. Start today."
+          label="BE THE NEXT SUCCESS STORY — $50/MO"
+          subtext="No experience needed to start."
           href="#"
         />
 
@@ -197,8 +197,8 @@ export default function OfferResults() {
         </Card>
 
         <CtaButton
-          label="GET INSTANT ACCESS — $50/MO"
-          subtext="Cancel anytime. Start today."
+          label="UNLOCK THE PLAYBOOK — $50/MO"
+          subtext="Cancel anytime. Start whenever you're ready."
           href="#"
         />
       </Container>

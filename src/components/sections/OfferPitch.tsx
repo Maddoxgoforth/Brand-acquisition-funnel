@@ -4,10 +4,11 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import CtaButton from "@/components/ui/CtaButton";
 
 const INCLUDES = [
-  "Weekly training on building a personal brand and selling digital products",
+  "10+ hours of course material on content, AI, and building your own digital product",
   "Proven frameworks, scripts, and templates you can copy directly",
   "Direct access to get feedback on your content and your product",
   "New lessons, tools, and resources added every month",
+  "Access to a private community of people doing the same thing and starting out",
 ];
 
 export default function OfferPitch() {
@@ -34,8 +35,8 @@ export default function OfferPitch() {
         </Card>
 
         <CtaButton
-          label="GET INSTANT ACCESS — $50/MO"
-          subtext="Cancel anytime. Start today."
+          label="CLAIM YOUR SPOT — $50/MO"
+          subtext="Everything above, unlocked today."
           href="#"
         />
       </Container>
