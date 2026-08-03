@@ -5,7 +5,7 @@ Guidance for Claude Code (and other AI assistants) working in this repository.
 ## What this is
 
 A marketing/funnel site for **Maddox** — a 1-on-1 mentorship offer that
-teaches teens/young adults to sell AI digital products. It has two pages:
+teaches teens/young adults to sell AI digital products.
 
 - **`/` (the funnel)** — a long vertical scroll of sections (hero → social
   proof → results → pitch → mentor bio → objection handling → FAQ →
@@ -30,6 +30,23 @@ teaches teens/young adults to sell AI digital products. It has two pages:
   do. Which page a given applicant lands on is decided by which Cal.com
   event type they booked (see "Conversion flow" below) — not by anything in
   this codebase.
+- **`/offer`** — a self-contained sales page for the **low-ticket** offer
+  ($50/month), which respondents land on directly from Typeform (no Cal.com
+  call for this tier — it's a self-serve purchase). Structured like a
+  classic long-form VSL sales page: hero with a "Watch This Video Now"
+  eyebrow over a VSL placeholder (`OfferHero` — real Wistia embed pending,
+  the site owner hasn't recorded this VSL yet), an "Everything Inside The
+  Membership" bullet list (`OfferPitch`), a long stack of real proof
+  reusing every dashboard/DM/view-count screenshot already on the site
+  (`OfferResults`), an authority/credibility section reusing Maddox's real
+  TikTok profile and headshot but with copy specific to the membership
+  (`OfferAuthority` — deliberately not a reuse of the homepage's `Mentor.tsx`,
+  since that component's copy pitches 1-on-1 coaching, which this $50/mo
+  tier does not include), and a closing push (`OfferClose`). A `CtaButton`
+  ("GET INSTANT ACCESS — $50/MO") repeats after every section to keep a buy
+  CTA within reach while scrolling. Every buy button currently points to
+  `href="#"` — a real checkout link (e.g. a Stripe Payment Link or Whop
+  checkout URL) needs to be dropped in before this page is live.
 - **`/content-audit`** — a standalone lead-gen quiz funnel, unrelated to the
   Typeform/Cal.com flow above. Visitors answer a 9-question quiz
   (`src/components/content-audit/Quiz.tsx`, questions defined in
@@ -89,9 +106,10 @@ screenshot is available.
 
 1. Visitor lands on `/`, watches the VSL, fills out the inline Typeform.
 2. Typeform's own logic (configured in the site owner's Typeform account,
-   not in this codebase) routes qualified respondents to one of two Cal.com
-   booking links depending on whether they qualify for the high-ticket or
-   mid-ticket offer.
+   not in this codebase) routes respondents one of three ways: high-ticket
+   and mid-ticket qualifiers each get a Cal.com booking link (different
+   links per tier); low-ticket qualifiers instead get redirected straight
+   to `/offer` — no call to book, since it's a self-serve monthly purchase.
 3. After booking, each Cal.com **Event Type** needs its own **Advanced →
    "Redirect on booking"** setting pointing at the matching page on this
    site: the high-ticket event type → `/thank-you`, the mid-ticket event
@@ -99,17 +117,19 @@ screenshot is available.
    anything this codebase controls. If either page ever moves or the domain
    changes, both Cal.com settings need updating.
 4. `/thank-you` (or `/thank-you-mid`) plays a few objection-breakdown
-   videos and shows more results while they wait for the call.
+   videos and shows more results while they wait for the call. `/offer`
+   instead pitches the $50/mo membership directly with a VSL and repeated
+   buy CTAs — see the `/offer` bullet above.
 
 ## Stack
 
 - **Next.js 16** (App Router, Turbopack), React 19, TypeScript
 - **Tailwind CSS v4** (CSS-first config via `@theme inline` in
   `src/app/globals.css` — there is no `tailwind.config.ts`)
-- No database, no auth. `/`, `/thank-you`, and `/thank-you-mid` are fully
-  static. `/content-audit` is the one exception: it has a real server-side
-  API route (`/api/content-audit`) that calls OpenAI and ConvertKit — see
-  "Content-audit setup" below.
+- No database, no auth. `/`, `/thank-you`, `/thank-you-mid`, and `/offer`
+  are fully static. `/content-audit` is the one exception: it has a real
+  server-side API route (`/api/content-audit`) that calls OpenAI and
+  ConvertKit — see "Content-audit setup" below.
 - Font: `next/font/google` Geist, loaded once in `src/app/layout.tsx`.
 
 ## Dev workflow
@@ -141,6 +161,7 @@ src/app/
   thank-you-mid/page.tsx    # the mid-ticket post-booking page ("/thank-you-mid") — identical
                             # layout, its own Welcome/Objection video sections (placeholders
                             # until the site owner records mid-ticket videos)
+  offer/page.tsx            # the low-ticket ($50/mo) sales page ("/offer")
   content-audit/page.tsx    # the lead-gen quiz page ("/content-audit")
   content-audit/hooks/page.tsx # free "100+ viral hook templates" download page
   api/content-audit/route.ts # POST handler: OpenAI game-plan generation + ConvertKit upsert
@@ -148,8 +169,9 @@ src/components/
   ui/                     # generic, content-agnostic primitives (including
                           # EmbedPlaceholder, used wherever a real video/file
                           # isn't recorded/available yet)
-  sections/               # one file per page section; funnel and both thank-you
-                          # pages' sections all live here, matching their page.tsx order
+  sections/               # one file per page section; funnel, both thank-you pages, and
+                          # /offer's sections (Offer*.tsx) all live here, matching their
+                          # page.tsx order
   content-audit/          # Quiz.tsx, questions.ts, GamePlanResult.tsx — scoped to
                           # /content-audit only, not shared with the rest of the site
 src/types/wistia.d.ts      # JSX.IntrinsicElements augmentation for <wistia-player>
@@ -288,3 +310,11 @@ test end-to-end before treating this as fully verified.
   `WelcomeVideo`/`ObjectionVideos` use `WistiaEmbed`, and add the
   corresponding `wistia-player[media-id="..."]:not(:defined)` placeholder
   rules to `globals.css`.
+- `/offer`'s VSL — not recorded yet, `OfferHero` renders an
+  `EmbedPlaceholder` where the real `WistiaEmbed mediaId="..."` will go.
+- `/offer`'s checkout — there's no payment processor wired up. Every
+  "GET INSTANT ACCESS" button on that page currently links to `href="#"`.
+  Once the site owner sets up a real checkout (e.g. a Stripe Payment Link
+  or a Whop product URL) for the $50/mo offer, swap that placeholder href
+  everywhere it appears (`OfferHero`, `OfferPitch`, `OfferResults`,
+  `OfferAuthority`, `OfferClose`).
