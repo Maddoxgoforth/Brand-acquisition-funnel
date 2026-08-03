@@ -3,7 +3,7 @@ import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
 
 const STATS = [
-  { value: "$20K/MO", label: "selling digital products using AI" },
+  { value: "$30K/MO", label: "selling digital products using AI" },
   { value: "400K+", label: "followers, 5.9M+ likes" },
   { value: "$100K+", label: "a single student's store did it" },
 ];
@@ -38,7 +38,7 @@ export default function Mentor() {
             MEET <span className="text-accent">MADDOX</span>
           </h2>
           <p className="max-w-md text-muted">
-            Maddox built a 400K+ following and hit $20K/mo selling his own
+            Maddox built a 400K+ following and hit $30K/mo selling his own
             digital products using AI as a teenager. Now he coaches you
             one-on-one through the exact system he used, the same one his
             students run to do six figures from a single store.

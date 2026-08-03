@@ -45,9 +45,12 @@ digital products and uses AI as a tool in that business — he does not sell
   (`OfferAuthority` — deliberately not a reuse of the homepage's `Mentor.tsx`,
   since that component's copy pitches 1-on-1 coaching, which this $50/mo
   tier does not include), and a closing push (`OfferClose`). A `CtaButton`
-  ("GET INSTANT ACCESS — $50/MO") repeats after every section to keep a buy
-  CTA within reach while scrolling. Every buy button currently points to
-  `href="#"` — a real checkout link (e.g. a Stripe Payment Link or Whop
+  repeats after every section to keep a buy CTA within reach while
+  scrolling — each one has deliberately different label/subtext copy
+  ("CLAIM YOUR SPOT", "START YOUR OWN RESULTS", "BE THE NEXT SUCCESS
+  STORY", etc.) rather than repeating the same line seven times down the
+  page. Every buy button currently points to `href="#"` — a real checkout
+  link (e.g. a Stripe Payment Link or Whop
   checkout URL) needs to be dropped in before this page is live.
 - **`/content-audit`** — a standalone lead-gen quiz funnel, unrelated to the
   Typeform/Cal.com flow above. Visitors answer a 9-question quiz
@@ -236,14 +239,16 @@ photos of a *different* UI — that's expected, don't try to recolor them.
   `TypeformEmbed` wrapper div in `Hero.tsx`). If you change how the Typeform
   is embedded, keep that `id="apply"` (or update every `CtaButton` href to
   match).
-- Numbers throughout ($20k/mo, 300K+, $102,988, 224K sessions, 400K+
+- Numbers throughout ($30k/mo, 300K+, $102,988, 224K sessions, 400K+
   followers, etc.) are specific claims from the real reference page — don't
   round or "clean up" them without being asked, they're presumably accurate
-  to the offer. Note: the follower count in *copy* (stats, bio text) is
-  400K+ (updated from an earlier 290K+ figure as the account has grown),
-  but the real `tiktok-profile.jpg` screenshot itself still shows 290.2K
-  since it's a point-in-time photo — its `alt` text intentionally still
-  says 290.2K to accurately describe what's actually in that image. Don't
+  to the offer. Note: the monthly-income figure in *copy* (Mentor.tsx,
+  OfferAuthority.tsx) is $30K/mo (updated from an earlier $20K/mo figure),
+  and the follower count in copy is 400K+ (updated from an earlier 290K+
+  figure as the account has grown), but the real `tiktok-profile.jpg`
+  screenshot itself still shows 290.2K since it's a point-in-time photo —
+  its `alt` text intentionally still says 290.2K to accurately describe
+  what's actually in that image. Don't
   "fix" that alt text to say 400K; it would misdescribe the screenshot.
 - The result-card and mentor images are cropped screenshots (status bars /
   app chrome removed, see `public/images/`), not generated graphics — if a
