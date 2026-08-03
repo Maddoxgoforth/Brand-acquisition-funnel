@@ -4,11 +4,11 @@ import SectionHeading from "@/components/ui/SectionHeading";
 import CtaButton from "@/components/ui/CtaButton";
 
 const INCLUDES = [
-  "10+ hours of course material on content, AI, and building your own digital product",
+  "10+ hours of step-by-step training on content, AI, and building your own digital product from scratch",
   "Proven frameworks, scripts, and templates you can copy directly",
   "Direct access to get feedback on your content and your product",
   "New lessons, tools, and resources added every month",
-  "Access to a private community of people doing the same thing and starting out",
+  "A private community of people building the exact same thing, right alongside you",
 ];
 
 export default function OfferPitch() {
