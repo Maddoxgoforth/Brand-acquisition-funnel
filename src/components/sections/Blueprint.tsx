@@ -33,7 +33,7 @@ export default function Blueprint() {
           </span>{" "}
           IT&apos;S A BLUEPRINT TO YOUR FIRST{" "}
           <span className="text-accent">$10K</span> SELLING{" "}
-          <span className="text-accent">AI DIGITAL PRODUCTS</span>
+          <span className="text-accent">DIGITAL PRODUCTS USING AI</span>
         </h2>
 
         <p className="text-center text-lg text-muted">

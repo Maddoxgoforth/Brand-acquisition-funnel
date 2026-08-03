@@ -4,8 +4,8 @@ import Card from "@/components/ui/Card";
 import CtaButton from "@/components/ui/CtaButton";
 
 const STATS = [
-  { value: "$20K/MO", label: "selling his own AI digital products" },
-  { value: "290K+", label: "followers, 5.9M+ likes" },
+  { value: "$20K/MO", label: "selling digital products using AI" },
+  { value: "400K+", label: "followers, 5.9M+ likes" },
   { value: "$100K+", label: "a single student's store did it" },
 ];
 
@@ -39,10 +39,10 @@ export default function OfferAuthority() {
             MEET <span className="text-accent">MADDOX</span>
           </h2>
           <p className="max-w-md text-muted">
-            Maddox built a 290K+ following and hit $20K/mo selling his own AI
-            digital products as a teenager. The membership is the same
-            playbook he uses, distilled into weekly training you can follow
-            at your own pace.
+            Maddox built a 400K+ following and hit $20K/mo selling his own
+            digital products using AI as a teenager. The membership is the
+            same playbook he uses, distilled into weekly training you can
+            follow at your own pace.
           </p>
         </div>
 
