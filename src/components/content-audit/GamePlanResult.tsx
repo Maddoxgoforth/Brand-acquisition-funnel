@@ -54,8 +54,18 @@ export default function GamePlanResult({ plan }: { plan: GamePlan }) {
         <h2 className="text-3xl font-extrabold sm:text-4xl">
           You&apos;re All Set
         </h2>
-        <p className="max-w-md text-muted">
-          We also sent a copy of this to your email so you don&apos;t lose it.
+      </div>
+
+      <div className="w-full rounded-2xl border-2 border-accent bg-accent/10 p-6 text-center">
+        <p className="text-lg font-extrabold">
+          📬 We Emailed Your Game Plan To You
+        </p>
+        <p className="mt-2 text-muted">
+          Don&apos;t see it in your inbox?{" "}
+          <span className="font-bold text-foreground">
+            Check your spam or promotions folder
+          </span>{" "}
+          — it sometimes ends up there instead of your main inbox.
         </p>
       </div>
 
