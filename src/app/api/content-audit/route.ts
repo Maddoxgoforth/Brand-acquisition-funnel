@@ -94,6 +94,39 @@ async function sendToConvertKit(
   }
 }
 
+async function sendToZapier(
+  answers: Record<string, string>,
+  lead: { name: string; email: string; phone: string },
+  plan: z.infer<typeof GamePlanSchema>
+) {
+  const webhookUrl = process.env.ZAPIER_CONTENT_AUDIT_WEBHOOK_URL;
+  if (!webhookUrl) return;
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: lead.name,
+        email: lead.email,
+        phone: lead.phone,
+        answers,
+        niche: plan.niche,
+        video_ideas: plan.videoIdeas.map((v, i) => `${i + 1}) ${v}`).join(" "),
+        product_ideas: plan.productIdeas
+          .map((v, i) => `${i + 1}) ${v}`)
+          .join(" "),
+      }),
+    });
+
+    if (!res.ok) {
+      console.error(`Zapier webhook failed: ${res.status}`);
+    }
+  } catch (error) {
+    console.error("Zapier webhook request failed:", error);
+  }
+}
+
 export async function POST(request: Request) {
   let body: RequestBody;
   try {
@@ -110,6 +143,7 @@ export async function POST(request: Request) {
   try {
     const plan = await generateGamePlan(answers);
     await sendToConvertKit(lead, plan);
+    await sendToZapier(answers, lead, plan);
     return NextResponse.json({ plan });
   } catch (error) {
     console.error("content-audit submission failed:", error);
