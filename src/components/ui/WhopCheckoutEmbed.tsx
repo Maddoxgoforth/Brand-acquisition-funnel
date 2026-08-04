@@ -9,7 +9,7 @@ export default function WhopCheckoutEmbed({ planId }: { planId: string }) {
       />
       <div
         data-whop-checkout-plan-id={planId}
-        data-whop-checkout-theme="light"
+        data-whop-checkout-theme="dark"
         data-whop-checkout-theme-accent-color="#3358d4"
         data-whop-checkout-hide-price="true"
       />
