@@ -297,8 +297,18 @@ photos of a *different* UI — that's expected, don't try to recolor them.
    Video ideas: {{ subscriber.video_ideas }}
    Product ideas: {{ subscriber.product_ideas }}
    ```
-5. Set all four env vars in Vercel's project settings for production, and in
-   a local `.env.local` (gitignored) for `npm run dev`.
+5. **Optional — Zapier**: to also notify the team (e.g. in Discord) on every
+   submission, create a Zap with trigger **Webhooks by Zapier → Catch Hook**,
+   copy its URL into `ZAPIER_CONTENT_AUDIT_WEBHOOK_URL`, and add an action
+   step in Zapier (e.g. **Discord → Send Channel Message**) that formats a
+   message from the payload fields (`name`, `email`, `phone`, `answers` —
+   an object keyed by question id from `questions.ts`, `niche`,
+   `video_ideas`, `product_ideas`). This step is entirely optional and
+   best-effort: `sendToZapier` in `route.ts` no-ops if the env var is unset,
+   and swallows its own errors, so a broken/missing Zap never blocks the
+   visitor's game plan or the ConvertKit delivery.
+6. Set all env vars in Vercel's project settings for production, and in a
+   local `.env.local` (gitignored) for `npm run dev`.
 
 The ConvertKit API details here (`https://api.kit.com/v4`, `X-Kit-Api-Key`
 header, `/subscribers` then `/forms/{id}/subscribers`) came from research
