@@ -18,7 +18,7 @@ export default function OfferClose() {
         <CtaButton
           label="CHOOSE THE SYSTEM — $50/MO"
           subtext="Don't overthink it. Just start."
-          href="#"
+          href="https://whop.com/checkout/plan_LYj5o1sOR9YRW"
         />
       </Container>
     </section>

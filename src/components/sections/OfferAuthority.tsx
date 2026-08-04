@@ -63,7 +63,7 @@ export default function OfferAuthority() {
         <CtaButton
           label="LEARN DIRECTLY FROM ME — $50/MO"
           subtext="Get the same system I used."
-          href="#"
+          href="https://whop.com/checkout/plan_LYj5o1sOR9YRW"
         />
       </Container>
     </section>

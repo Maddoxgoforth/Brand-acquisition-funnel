@@ -48,9 +48,8 @@ digital products and uses AI as a tool in that business — he does not sell
   scrolling — each one has deliberately different label/subtext copy
   ("CLAIM YOUR SPOT", "START YOUR OWN RESULTS", "BE THE NEXT SUCCESS
   STORY", etc.) rather than repeating the same line seven times down the
-  page. Every buy button currently points to `href="#"` — a real checkout
-  link (e.g. a Stripe Payment Link or Whop
-  checkout URL) needs to be dropped in before this page is live.
+  page. Every buy button links to the real Whop checkout
+  (`https://whop.com/checkout/plan_LYj5o1sOR9YRW`).
 - **`/content-audit`** — a standalone lead-gen quiz funnel, unrelated to the
   Typeform/Cal.com flow above. Visitors answer a 9-question quiz
   (`src/components/content-audit/Quiz.tsx`, questions defined in
@@ -328,9 +327,3 @@ test end-to-end before treating this as fully verified.
   here if that hand-off breaks, it's a config check on those platforms.
 - `/offer`'s VSL — not recorded yet, `OfferHero` renders an
   `EmbedPlaceholder` where the real `WistiaEmbed mediaId="..."` will go.
-- `/offer`'s checkout — there's no payment processor wired up. Every
-  "GET INSTANT ACCESS" button on that page currently links to `href="#"`.
-  Once the site owner sets up a real checkout (e.g. a Stripe Payment Link
-  or a Whop product URL) for the $50/mo offer, swap that placeholder href
-  everywhere it appears (`OfferHero`, `OfferPitch`, `OfferResults`,
-  `OfferAuthority`, `OfferClose`).

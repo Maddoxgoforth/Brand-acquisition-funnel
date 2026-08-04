@@ -31,7 +31,7 @@ export default function OfferHero() {
         <CtaButton
           label="GET INSTANT ACCESS — $50/MO"
           subtext="Cancel anytime. Start today."
-          href="#"
+          href="https://whop.com/checkout/plan_LYj5o1sOR9YRW"
         />
       </Container>
     </section>

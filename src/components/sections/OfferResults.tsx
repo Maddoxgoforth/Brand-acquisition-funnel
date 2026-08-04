@@ -101,7 +101,7 @@ export default function OfferResults() {
         <CtaButton
           label="START YOUR OWN RESULTS — $50/MO"
           subtext="This could be your dashboard next."
-          href="#"
+          href="https://whop.com/checkout/plan_LYj5o1sOR9YRW"
         />
 
         {MESSAGE_RESULTS.map((result) => (
@@ -126,7 +126,7 @@ export default function OfferResults() {
         <CtaButton
           label="BE THE NEXT SUCCESS STORY — $50/MO"
           subtext="No experience needed to start."
-          href="#"
+          href="https://whop.com/checkout/plan_LYj5o1sOR9YRW"
         />
 
         <Card className="w-full text-left">
@@ -199,7 +199,7 @@ export default function OfferResults() {
         <CtaButton
           label="UNLOCK THE PLAYBOOK — $50/MO"
           subtext="Cancel anytime. Start whenever you're ready."
-          href="#"
+          href="https://whop.com/checkout/plan_LYj5o1sOR9YRW"
         />
       </Container>
     </section>
