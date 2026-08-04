@@ -1,7 +1,7 @@
 import Container from "@/components/ui/Container";
 import Pill from "@/components/ui/Pill";
 import EmbedPlaceholder from "@/components/ui/EmbedPlaceholder";
-import CtaButton from "@/components/ui/CtaButton";
+import WhopCheckoutEmbed from "@/components/ui/WhopCheckoutEmbed";
 
 export default function OfferHero() {
   return (
@@ -28,11 +28,7 @@ export default function OfferHero() {
 
         <EmbedPlaceholder label="VSL — COMING SOON" />
 
-        <CtaButton
-          label="GET INSTANT ACCESS — $50/MO"
-          subtext="Cancel anytime. Start today."
-          href="https://whop.com/checkout/plan_LYj5o1sOR9YRW"
-        />
+        <WhopCheckoutEmbed planId="plan_LYj5o1sOR9YRW" />
       </Container>
     </section>
   );

@@ -36,20 +36,25 @@ digital products and uses AI as a tool in that business — he does not sell
   call for this tier — it's a self-serve purchase). Structured like a
   classic long-form VSL sales page: hero with a "Watch This Video Now"
   eyebrow over a VSL placeholder (`OfferHero` — real Wistia embed pending,
-  the site owner hasn't recorded this VSL yet), an "Everything Inside The
-  Membership" bullet list (`OfferPitch`), a long stack of real proof
-  reusing every dashboard/DM/view-count screenshot already on the site
-  (`OfferResults`), an authority/credibility section reusing Maddox's real
-  TikTok profile and headshot but with copy specific to the membership
-  (`OfferAuthority` — deliberately not a reuse of the homepage's `Mentor.tsx`,
-  since that component's copy pitches 1-on-1 coaching, which this $50/mo
-  tier does not include), and a closing push (`OfferClose`). A `CtaButton`
-  repeats after every section to keep a buy CTA within reach while
-  scrolling — each one has deliberately different label/subtext copy
-  ("CLAIM YOUR SPOT", "START YOUR OWN RESULTS", "BE THE NEXT SUCCESS
-  STORY", etc.) rather than repeating the same line seven times down the
-  page. Every buy button links to the real Whop checkout
-  (`https://whop.com/checkout/plan_LYj5o1sOR9YRW`).
+  the site owner hasn't recorded this VSL yet), the real Whop checkout
+  embedded inline right below it (`WhopCheckoutEmbed`, plan id
+  `plan_LYj5o1sOR9YRW` — loads Whop's `js.whop.com/static/checkout/loader.js`
+  and renders their widget directly in the page, id="checkout" on the
+  wrapper), an "Everything Inside The Membership" bullet list
+  (`OfferPitch`), a long stack of real proof reusing every dashboard/DM/
+  view-count screenshot already on the site (`OfferResults`), an
+  authority/credibility section reusing Maddox's real TikTok profile and
+  headshot but with copy specific to the membership (`OfferAuthority` —
+  deliberately not a reuse of the homepage's `Mentor.tsx`, since that
+  component's copy pitches 1-on-1 coaching, which this $50/mo tier does
+  not include), and a closing push (`OfferClose`). A `CtaButton` repeats
+  after every section to keep a buy CTA within reach while scrolling —
+  each one has deliberately different label/subtext copy ("CLAIM YOUR
+  SPOT", "START YOUR OWN RESULTS", "BE THE NEXT SUCCESS STORY", etc.)
+  rather than repeating the same line down the page. Only the hero has the
+  actual embedded checkout; every other buy button is an `href="#checkout"`
+  anchor link that scrolls up to it — same pattern as the homepage's
+  `CtaButton`s all pointing at `#apply` on the embedded Typeform.
 - **`/content-audit`** — a standalone lead-gen quiz funnel, unrelated to the
   Typeform/Cal.com flow above. Visitors answer a 9-question quiz
   (`src/components/content-audit/Quiz.tsx`, questions defined in
@@ -254,12 +259,13 @@ photos of a *different* UI — that's expected, don't try to recolor them.
   app chrome removed, see `public/images/`), not generated graphics — if a
   new proof point comes in, crop it the same way (tight to the content,
   no phone status bar) rather than adding a new CSS/SVG recreation.
-- The Wistia (`WistiaEmbed`) and Typeform (`TypeformEmbed`) embeds both make
-  outbound requests to third-party domains (`fast.wistia.com`,
-  `form.typeform.com`) — they won't render in network-sandboxed dev
-  environments. A clean `npm run build` with no console errors is the
-  correct way to verify them there; don't conclude they're broken just
-  because a sandboxed screenshot shows an empty box.
+- The Wistia (`WistiaEmbed`), Typeform (`TypeformEmbed`), and Whop
+  (`WhopCheckoutEmbed`) embeds all make outbound requests to third-party
+  domains (`fast.wistia.com`, `form.typeform.com`, `js.whop.com`) — they
+  won't render in network-sandboxed dev environments. A clean `npm run
+  build` with no console errors is the correct way to verify them there;
+  don't conclude they're broken just because a sandboxed screenshot shows
+  an empty box.
 - Every `wistia-player[media-id="..."]:not(:defined)` blur-placeholder CSS
   rule in `globals.css` is per-media-id (Wistia's own snippet ties the
   poster-swatch URL to that specific id) — adding a new video means adding
