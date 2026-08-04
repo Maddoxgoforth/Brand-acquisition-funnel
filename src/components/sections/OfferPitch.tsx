@@ -37,7 +37,7 @@ export default function OfferPitch() {
         <CtaButton
           label="CLAIM YOUR SPOT — $50/MO"
           subtext="Everything above, unlocked today."
-          href="https://whop.com/checkout/plan_LYj5o1sOR9YRW"
+          href="#checkout"
         />
       </Container>
     </section>
