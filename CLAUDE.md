@@ -23,15 +23,14 @@ digital products and uses AI as a tool in that business — he does not sell
 - **`/thank-you-mid`** — the same post-booking page, but for applicants who
   book the **mid-ticket** offer instead. Identical layout/copy to
   `/thank-you` (same `ThankYouHero` and `MoreResults`, reused directly), but
-  with its own `WelcomeVideoMid`/`ObjectionVideosMid` sections since the
-  mid-ticket offer needs its own video recordings — those videos don't
-  exist yet, so both sections currently render `EmbedPlaceholder` boxes
-  labeled "COMING SOON" instead of a real `WistiaEmbed`. Once the site
-  owner records the mid-ticket videos, swap the placeholders for
-  `WistiaEmbed mediaId="..."` the same way `WelcomeVideo`/`ObjectionVideos`
-  do. Which page a given applicant lands on is decided by which Cal.com
-  event type they booked (see "Conversion flow" below) — not by anything in
-  this codebase.
+  with its own `WelcomeVideoMid`/`ObjectionVideosMid` sections and their own
+  real Wistia recordings, since the mid-ticket offer needed its own videos.
+  Note the mid-ticket FAQ set is **six** questions (not five like
+  `/thank-you`) and the wording differs slightly — see the `QUESTIONS` array
+  in `ObjectionVideosMid.tsx` for the question text → media id mapping.
+  Which page a given applicant lands on is decided by which Cal.com event
+  type they booked (see "Conversion flow" below) — not by anything in this
+  codebase.
 - **`/offer`** — a self-contained sales page for the **low-ticket** offer
   ($50/month), which respondents land on directly from Typeform (no Cal.com
   call for this tier — it's a self-serve purchase). Structured like a
@@ -90,11 +89,13 @@ Original reference design: a live Vercel deployment the site owner shared as
 screenshots (mobile Chrome captures). Every video on the site is a real
 Wistia embed via the shared `WistiaEmbed` component (`src/components/ui/WistiaEmbed.tsx`,
 takes a `mediaId` prop): the `/` VSL (`p3h2xpk8hb`), the `/thank-you` welcome
-video (`ynkriiuux3`), and its five question-breakdown videos (see the
+video (`872u3hcmss`), and its five question-breakdown videos (see the
 `QUESTIONS` array in `ObjectionVideos.tsx` for the question text → media id
-mapping). The `/` application form is a real inline Typeform
-(`TypeformEmbed`, form id `zKqvPAGW`) — see "Conversion flow" below for how a
-visitor moves from `/` through Typeform, to Cal.com, to `/thank-you`.
+mapping), plus the `/thank-you-mid` welcome video (`hyjp4f2ars`) and its own
+six question-breakdown videos (see `ObjectionVideosMid.tsx`). The `/`
+application form is a real inline Typeform (`TypeformEmbed`, form id
+`zKqvPAGW`) — see "Conversion flow" below for how a visitor moves from `/`
+through Typeform, to Cal.com, to `/thank-you`.
 
 The results/mentor proof images on all three pages (Shopify dashboards, DM
 screenshot, TikTok profile, mentor headshot, `/thank-you`'s JJVending
@@ -164,8 +165,8 @@ src/app/
   page.tsx                 # the funnel ("/"): one <SectionComponent /> per section, in scroll order
   thank-you/page.tsx        # the high-ticket post-booking page ("/thank-you"), same pattern
   thank-you-mid/page.tsx    # the mid-ticket post-booking page ("/thank-you-mid") — identical
-                            # layout, its own Welcome/Objection video sections (placeholders
-                            # until the site owner records mid-ticket videos)
+                            # layout, its own Welcome/Objection video sections with their
+                            # own real Wistia recordings (six FAQ videos, not five)
   offer/page.tsx            # the low-ticket ($50/mo) sales page ("/offer")
   content-audit/page.tsx    # the lead-gen quiz page ("/content-audit")
   content-audit/hooks/page.tsx # free "100+ viral hook templates" download page
@@ -315,13 +316,6 @@ test end-to-end before treating this as fully verified.
   redirects live in the site owner's Typeform/Cal.com dashboards, not in
   this codebase (see "Conversion flow" above) — there's nothing to "fix"
   here if that hand-off breaks, it's a config check on those platforms.
-- `/thank-you-mid`'s welcome video and five objection-breakdown videos —
-  the site owner hasn't recorded the mid-ticket versions yet, so
-  `WelcomeVideoMid`/`ObjectionVideosMid` currently render `EmbedPlaceholder`
-  boxes. Once real Wistia media IDs exist, swap them in the same way
-  `WelcomeVideo`/`ObjectionVideos` use `WistiaEmbed`, and add the
-  corresponding `wistia-player[media-id="..."]:not(:defined)` placeholder
-  rules to `globals.css`.
 - `/offer`'s VSL — not recorded yet, `OfferHero` renders an
   `EmbedPlaceholder` where the real `WistiaEmbed mediaId="..."` will go.
 - `/offer`'s checkout — there's no payment processor wired up. Every

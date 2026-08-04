@@ -35,7 +35,14 @@ wistia-player[media-id="dtzh09vaul"]:not(:defined),
 wistia-player[media-id="66hfb05ixg"]:not(:defined),
 wistia-player[media-id="i2adhy6vaa"]:not(:defined),
 wistia-player[media-id="cx7vo9e5ql"]:not(:defined),
-wistia-player[media-id="v2purp6i2r"]:not(:defined) {
+wistia-player[media-id="v2purp6i2r"]:not(:defined),
+wistia-player[media-id="hyjp4f2ars"]:not(:defined),
+wistia-player[media-id="dw5ztrjjn2"]:not(:defined),
+wistia-player[media-id="q31mbgjy09"]:not(:defined),
+wistia-player[media-id="3pzb63tfl6"]:not(:defined),
+wistia-player[media-id="oiwgvas4m0"]:not(:defined),
+wistia-player[media-id="4fahz7a1qq"]:not(:defined),
+wistia-player[media-id="obrkbsk60s"]:not(:defined) {
   display: block;
   filter: blur(5px);
   padding-top: 56.25%;
@@ -74,4 +81,39 @@ wistia-player[media-id="cx7vo9e5ql"]:not(:defined) {
 wistia-player[media-id="v2purp6i2r"]:not(:defined) {
   background: center / contain no-repeat
     url("https://fast.wistia.com/embed/medias/v2purp6i2r/swatch");
+}
+
+wistia-player[media-id="hyjp4f2ars"]:not(:defined) {
+  background: center / contain no-repeat
+    url("https://fast.wistia.com/embed/medias/hyjp4f2ars/swatch");
+}
+
+wistia-player[media-id="dw5ztrjjn2"]:not(:defined) {
+  background: center / contain no-repeat
+    url("https://fast.wistia.com/embed/medias/dw5ztrjjn2/swatch");
+}
+
+wistia-player[media-id="q31mbgjy09"]:not(:defined) {
+  background: center / contain no-repeat
+    url("https://fast.wistia.com/embed/medias/q31mbgjy09/swatch");
+}
+
+wistia-player[media-id="3pzb63tfl6"]:not(:defined) {
+  background: center / contain no-repeat
+    url("https://fast.wistia.com/embed/medias/3pzb63tfl6/swatch");
+}
+
+wistia-player[media-id="oiwgvas4m0"]:not(:defined) {
+  background: center / contain no-repeat
+    url("https://fast.wistia.com/embed/medias/oiwgvas4m0/swatch");
+}
+
+wistia-player[media-id="4fahz7a1qq"]:not(:defined) {
+  background: center / contain no-repeat
+    url("https://fast.wistia.com/embed/medias/4fahz7a1qq/swatch");
+}
+
+wistia-player[media-id="obrkbsk60s"]:not(:defined) {
+  background: center / contain no-repeat
+    url("https://fast.wistia.com/embed/medias/obrkbsk60s/swatch");
 }
