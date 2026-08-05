@@ -28,6 +28,8 @@ export default function OfferHero() {
 
         <EmbedPlaceholder label="VSL — COMING SOON" />
 
+        <p className="text-2xl font-extrabold text-accent">$50/Month</p>
+
         <WhopCheckoutEmbed planId="plan_LYj5o1sOR9YRW" />
       </Container>
     </section>
