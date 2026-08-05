@@ -1,6 +1,6 @@
 import Container from "@/components/ui/Container";
 import Pill from "@/components/ui/Pill";
-import EmbedPlaceholder from "@/components/ui/EmbedPlaceholder";
+import WistiaEmbed from "@/components/ui/WistiaEmbed";
 import WhopCheckoutEmbed from "@/components/ui/WhopCheckoutEmbed";
 
 export default function OfferHero() {
@@ -26,7 +26,7 @@ export default function OfferHero() {
           into a monthly membership so you can start today.
         </p>
 
-        <EmbedPlaceholder label="VSL — COMING SOON" />
+        <WistiaEmbed mediaId="as0pb8rxza" />
 
         <p className="text-2xl font-extrabold text-accent">$50/Month</p>
 
