@@ -35,11 +35,13 @@ digital products and uses AI as a tool in that business — he does not sell
   ($50/month), which respondents land on directly from Typeform (no Cal.com
   call for this tier — it's a self-serve purchase). Structured like a
   classic long-form VSL sales page: hero with a "Watch This Video Now"
-  eyebrow over a VSL placeholder (`OfferHero` — real Wistia embed pending,
-  the site owner hasn't recorded this VSL yet), the real Whop checkout
-  embedded inline right below it (`WhopCheckoutEmbed`, plan id
-  `plan_LYj5o1sOR9YRW` — loads Whop's `js.whop.com/static/checkout/loader.js`
-  and renders their widget directly in the page, id="checkout" on the
+  eyebrow over a real Wistia VSL embed (`OfferHero`, media id
+  `as0pb8rxza`), a `$50/Month` price label (the Whop embed below has
+  `data-whop-checkout-hide-price="true"`, so nothing else on the page
+  states the price), then the real Whop checkout embedded inline
+  (`WhopCheckoutEmbed`, plan id `plan_LYj5o1sOR9YRW` — loads Whop's
+  `js.whop.com/static/checkout/loader.js` and renders their widget
+  directly in the page, id="checkout" on the
   wrapper), an "Everything Inside The Membership" bullet list
   (`OfferPitch`), a long stack of real proof reusing every dashboard/DM/
   view-count screenshot already on the site (`OfferResults`), an
@@ -96,7 +98,8 @@ takes a `mediaId` prop): the `/` VSL (`p3h2xpk8hb`), the `/thank-you` welcome
 video (`872u3hcmss`), and its five question-breakdown videos (see the
 `QUESTIONS` array in `ObjectionVideos.tsx` for the question text → media id
 mapping), plus the `/thank-you-mid` welcome video (`hyjp4f2ars`) and its own
-six question-breakdown videos (see `ObjectionVideosMid.tsx`). The `/`
+six question-breakdown videos (see `ObjectionVideosMid.tsx`), and the
+`/offer` VSL (`as0pb8rxza`). The `/`
 application form is a real inline Typeform (`TypeformEmbed`, form id
 `zKqvPAGW`) — see "Conversion flow" below for how a visitor moves from `/`
 through Typeform, to Cal.com, to `/thank-you`.
@@ -176,9 +179,7 @@ src/app/
   content-audit/hooks/page.tsx # free "100+ viral hook templates" download page
   api/content-audit/route.ts # POST handler: OpenAI game-plan generation + ConvertKit upsert
 src/components/
-  ui/                     # generic, content-agnostic primitives (including
-                          # EmbedPlaceholder, used wherever a real video/file
-                          # isn't recorded/available yet)
+  ui/                     # generic, content-agnostic primitives
   sections/               # one file per page section; funnel, both thank-you pages, and
                           # /offer's sections (Offer*.tsx) all live here, matching their
                           # page.tsx order
@@ -331,5 +332,3 @@ test end-to-end before treating this as fully verified.
   redirects live in the site owner's Typeform/Cal.com dashboards, not in
   this codebase (see "Conversion flow" above) — there's nothing to "fix"
   here if that hand-off breaks, it's a config check on those platforms.
-- `/offer`'s VSL — not recorded yet, `OfferHero` renders an
-  `EmbedPlaceholder` where the real `WistiaEmbed mediaId="..."` will go.

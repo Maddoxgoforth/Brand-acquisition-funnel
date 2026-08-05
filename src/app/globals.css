@@ -42,7 +42,8 @@ wistia-player[media-id="q31mbgjy09"]:not(:defined),
 wistia-player[media-id="3pzb63tfl6"]:not(:defined),
 wistia-player[media-id="oiwgvas4m0"]:not(:defined),
 wistia-player[media-id="4fahz7a1qq"]:not(:defined),
-wistia-player[media-id="obrkbsk60s"]:not(:defined) {
+wistia-player[media-id="obrkbsk60s"]:not(:defined),
+wistia-player[media-id="as0pb8rxza"]:not(:defined) {
   display: block;
   filter: blur(5px);
   padding-top: 56.25%;
@@ -116,4 +117,9 @@ wistia-player[media-id="4fahz7a1qq"]:not(:defined) {
 wistia-player[media-id="obrkbsk60s"]:not(:defined) {
   background: center / contain no-repeat
     url("https://fast.wistia.com/embed/medias/obrkbsk60s/swatch");
+}
+
+wistia-player[media-id="as0pb8rxza"]:not(:defined) {
+  background: center / contain no-repeat
+    url("https://fast.wistia.com/embed/medias/as0pb8rxza/swatch");
 }
