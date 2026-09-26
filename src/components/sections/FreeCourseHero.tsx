@@ -16,7 +16,10 @@ export default function FreeCourseHero() {
           <span className="text-accent">Base44</span>
         </h1>
 
-        <EmbedPlaceholder label="VSL — swap in a real WistiaEmbed mediaId here" />
+        <EmbedPlaceholder
+          label="VSL (vertical) — swap in a real WistiaEmbed mediaId here"
+          aspect="vertical"
+        />
 
         <CtaButton
           label="GET FREE ACCESS"
