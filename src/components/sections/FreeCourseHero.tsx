@@ -7,7 +7,7 @@ export default function FreeCourseHero() {
   return (
     <section className="pt-6 pb-16">
       <Container className="flex flex-col items-center gap-4 text-center">
-        <Pill>MADDOX STARTER · FREE ACCESS</Pill>
+        <Pill>CREATOR BLUEPRINT · FREE ACCESS</Pill>
 
         <h1 className="text-2xl font-extrabold leading-tight sm:text-3xl">
           This Used To Be Part Of My{" "}
