@@ -1,44 +1,53 @@
 import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
-import SectionHeading from "@/components/ui/SectionHeading";
-import CtaButton from "@/components/ui/CtaButton";
 
 const INCLUDES = [
-  "The exact framework for building a personal brand from zero followers",
-  "How to identify your ICP and create content that actually converts",
-  "A step-by-step breakdown of how I built and sold my first digital product",
-  "How I use AI as leverage across content, offers, and funnels — not as the product itself",
-  "The funnel structure that turns viewers into buyers, broken down piece by piece",
+  "The Complete Personal Brand Starter System",
+  "3-Day Content Build Workshop (step-by-step setup)",
+  "Content & Hook Writing Module",
+  "AI Integration Module (automate the busywork)",
+  "Anti-Comparison Mindset Module",
+  "Offer Creation System (scripts + templates)",
+  "AI Content Assistant (script on autopilot)",
+  "AI Funnel Builder",
+  "AI Product Builder",
+  "1-on-1 Onboarding Call With A Coach",
 ];
 
 export default function FreeCoursePitch() {
   return (
     <section className="py-16">
-      <Container className="flex flex-col items-center gap-10">
-        <SectionHeading
-          eyebrow="What's Inside"
-          title="Everything In The Free Course"
-          subtitle="The full system. Zero cost. Courtesy of Base44."
-        />
-
+      <Container className="flex flex-col items-center gap-8">
         <Card className="w-full text-left">
+          <p className="mb-2 text-center text-lg font-black tracking-[0.2em]">
+            MADDOX
+          </p>
+          <div className="my-4 h-px w-full bg-border" />
           <ul className="flex flex-col gap-4">
-            {INCLUDES.map((item, i) => (
-              <li key={i} className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-white">
-                  {i + 1}
+            {INCLUDES.map((item) => (
+              <li
+                key={item}
+                className="flex items-center justify-between gap-3 border-b border-border pb-4 last:border-b-0 last:pb-0"
+              >
+                <span className="text-sm font-bold text-foreground">
+                  {item}
                 </span>
-                <span className="text-muted">{item}</span>
+                <span className="shrink-0 rounded-full bg-foreground px-3 py-1 text-xs font-bold text-background">
+                  Included
+                </span>
               </li>
             ))}
           </ul>
+          <div className="my-4 h-px w-full bg-border" />
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold uppercase tracking-widest text-muted">
+              Part Of My $4,000 Course
+            </p>
+            <p className="text-lg font-extrabold text-danger line-through">
+              $4,000
+            </p>
+          </div>
         </Card>
-
-        <CtaButton
-          label="CLAIM YOUR FREE SPOT"
-          subtext="Everything above, unlocked today."
-          href="#access"
-        />
       </Container>
     </section>
   );

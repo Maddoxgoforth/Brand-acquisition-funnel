@@ -7,7 +7,11 @@ Guidance for Claude Code (and other AI assistants) working in this repository.
 A marketing/funnel site for **Maddox** — a 1-on-1 mentorship offer that
 teaches teens/young adults to sell digital products using AI. (Maddox sells
 digital products and uses AI as a tool in that business — he does not sell
-"AI products" — keep that distinction in any new copy.)
+"AI products" — keep that distinction in any new copy, with one explicit
+exception: `/free-course` deliberately uses the simplified term "AI digital
+products" throughout, per the site owner's explicit request for that page
+specifically. Don't carry that simplified term over to any other page
+without being told to.)
 
 - **`/` (the funnel)** — a long vertical scroll of sections (hero → social
   proof → results → pitch → mentor bio → objection handling → FAQ →
@@ -86,6 +90,37 @@ digital products and uses AI as a tool in that business — he does not sell
   FOMO widget, same pattern as tools like Fomo/Proof. See "Content-audit
   setup" below for what has to be configured outside this repo before the
   quiz itself works.
+- **`/free-course`** — a separate, self-contained long-form landing page for
+  a free-course giveaway tied to a paid partnership with **Base44**
+  (an AI app builder — Base44 compensates the site owner for driving
+  people to it; see the disclosure text in `FreeCourseClose.tsx`). Not part
+  of the Typeform/Cal.com funnel at all — it's a standalone acquisition page,
+  reached via ads/link-in-bio, following the same long-form structure as a
+  reference page the site owner modeled it on (hero → what's included →
+  "how is this free" → why-the-skill-matters grid → 3-step system →  module
+  grid → tools list → 3-step access → results/testimonials → FAQ → final
+  offer card), with copy rewritten around personal branding + selling
+  "AI digital products" (see the note in "What this is" above about how
+  this simplified term differs from the rest of the site's positioning).
+  Every CTA on the page is a `FreeCourseCta`
+  button (`src/components/ui/FreeCourseCta.tsx`, a client component), never
+  a plain link — clicking any of them opens the same modal with a
+  name/email/phone form (with a required consent checkbox), not a Typeform.
+  On submit it POSTs to `/api/free-course-lead`
+  (`src/app/api/free-course-lead/route.ts`), which validates the fields and
+  forwards the lead directly to a **Discord webhook** as an embed — see
+  "Free-course lead setup" below for how to configure that. The VSL and
+  every other video on this page are `EmbedPlaceholder`s
+  (`src/components/ui/EmbedPlaceholder.tsx`, supports `"video"` / `"square"`
+  / `"vertical"` aspect ratios) since no real Wistia recordings exist for
+  this page yet — the VSL specifically is `aspect="vertical"` because the
+  real video is portrait, not landscape (see `WistiaEmbed`'s optional
+  `aspect` prop, added for exactly this — every other real video on the
+  site keeps the default 16:9). The results section reuses real proof
+  images already on the site rather than fabricating new testimonial
+  screenshots for this page. The $4,000 course-value figure used throughout
+  this page is the real Creator Blueprint high-ticket price; don't change
+  it without being asked.
 
 It is built to be deployed on Vercel (see `AGENTS.md` — the Next.js version
 in this repo is newer than most training data; consult
@@ -328,6 +363,29 @@ header, `/subscribers` then `/forms/{id}/subscribers`) came from research
 that couldn't load Kit's docs directly (network-blocked) and reconstructed
 them from search results instead — internally consistent, but do one live
 test end-to-end before treating this as fully verified.
+
+## Free-course lead setup
+
+`/free-course`'s lead form (opened by every `FreeCourseCta` button) POSTs to
+`/api/free-course-lead`, which forwards each lead straight to a Discord
+channel — no Zapier, no CRM, just a Discord "Incoming Webhook."
+
+1. In Discord, open the channel you want leads posted to → **Edit Channel**
+   → **Integrations** → **Webhooks** → **New Webhook**. Name it something
+   like "Free Course Leads" and click **Copy Webhook URL**.
+2. Set that URL as `DISCORD_FREE_COURSE_WEBHOOK_URL` — in Vercel's project
+   Environment Variables for production, and in `.env.local` for
+   `npm run dev`.
+3. That's it — no further Discord-side configuration needed. Each
+   submission (name, email, phone) arrives as an embed in that channel.
+
+If this env var is unset, the API route still returns success and the
+visitor still sees the "you're in" confirmation — it just silently skips
+the Discord notification, same best-effort pattern as
+`ZAPIER_CONTENT_AUDIT_WEBHOOK_URL` above. There's currently no email/CRM
+integration for these leads (no ConvertKit, no Zapier) — just the Discord
+notification. If you want these leads to also land somewhere like
+ConvertKit, that would need to be added explicitly.
 
 ## What's intentionally not built yet
 
