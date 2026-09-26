@@ -2,7 +2,7 @@ import Image from "next/image";
 import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
 import SectionHeading from "@/components/ui/SectionHeading";
-import CtaButton from "@/components/ui/CtaButton";
+import FreeCourseCta from "@/components/ui/FreeCourseCta";
 
 const RESULTS = [
   {
@@ -21,6 +21,22 @@ const RESULTS = [
     width: 1179,
     height: 2133,
   },
+  {
+    stat: "$4,005 IN SALES",
+    caption: "JT Vendors — total sales climbing week over week",
+    src: "/images/testimonial-jtvendors-4005.jpg",
+    alt: "JT Vendors Shopify dashboard showing $4,005.41 in total sales",
+    width: 887,
+    height: 970,
+  },
+  {
+    stat: "$5K THIS MONTH",
+    caption: "A student watching their store climb past $5,000 in a month",
+    src: "/images/testimonial-5k-month.png",
+    alt: "Shopify dashboard screenshot showing $5,000.94 in sales for the month",
+    width: 828,
+    height: 606,
+  },
 ];
 
 export default function FreeCourseResults() {
@@ -28,12 +44,8 @@ export default function FreeCourseResults() {
     <section className="py-16">
       <Container className="flex flex-col items-center gap-10">
         <SectionHeading
-          eyebrow="Real Results"
-          title={
-            <>
-              Same System. <span className="text-accent">Real Results.</span>
-            </>
-          }
+          eyebrow="Results"
+          title="What Students Are Saying"
           subtitle="This is the exact same system already covered in the free course — here's proof it works."
         />
 
@@ -56,10 +68,18 @@ export default function FreeCourseResults() {
           </Card>
         ))}
 
-        <CtaButton
+        <p className="max-w-md text-center text-xs leading-relaxed text-muted/80">
+          Income disclaimer: results are not typical and are not a guarantee
+          of earnings. The results shown above reflect the effort of
+          specific individuals. This is educational training that teaches a
+          skill, not a business opportunity. Learning a new skill takes
+          consistent work over time, and your results will vary. This is
+          educational and not financial, legal, or tax advice.
+        </p>
+
+        <FreeCourseCta
           label="START YOUR OWN RESULTS — FREE"
           subtext="This could be your dashboard next."
-          href="#access"
         />
       </Container>
     </section>
