@@ -218,25 +218,32 @@ public/downloads/          # real downloadable lead-magnet files, e.g.
 
 ## Design tokens (`src/app/globals.css`)
 
-Dark theme only — no light-mode media query, no toggle. Custom tokens are
-exposed as Tailwind colors via `@theme inline`:
+White/light-blue theme only — no dark-mode media query, no toggle (this
+replaced an earlier all-dark palette; if you see dark hex values referenced
+anywhere outside this file, they're stale). Custom tokens are exposed as
+Tailwind colors via `@theme inline`:
 
 | Token | Hex | Use |
 |---|---|---|
-| `background` | `#05060f` | page background |
-| `background-elevated` | `#0a0c1a` | cards, embed placeholders, pills |
-| `foreground` | `#f5f6fa` | primary text |
-| `muted` | `#9aa0b4` | secondary text |
-| `accent` | `#3d5afe` | brand blue — links, highlighted words, CTA, chart lines |
-| `accent-dim` | `#2a3ecf` | CTA hover state |
-| `danger` | `#e5484d` | the "X" / most-people-fail-because list |
-| `border` | `#22243a` | card/panel borders |
+| `background` | `#ffffff` | page background |
+| `background-elevated` | `#eff6ff` | cards, embed placeholders, pills |
+| `foreground` | `#0f172a` | primary text |
+| `muted` | `#64748b` | secondary text |
+| `accent` | `#2563eb` | brand blue — links, highlighted words, CTA, chart lines |
+| `accent-dim` | `#1d4ed8` | CTA hover state |
+| `danger` | `#dc2626` | the "X" / most-people-fail-because list |
+| `border` | `#bfdbfe` | card/panel borders |
 
 Use these via Tailwind classes (`bg-background-elevated`, `text-accent`,
 `border-border`, etc.) instead of introducing new raw hex values. The real
 proof screenshots in `public/images/` (white Shopify-admin chrome, black
 iMessage/TikTok chrome) intentionally break this palette because they're
 photos of a *different* UI — that's expected, don't try to recolor them.
+`Comparison.tsx`'s two panels intentionally use ad-hoc Tailwind colors
+(`bg-accent`/`bg-white` for the "with Maddox" panel, `bg-red-50`/`border-red-200`
+for the "most people your age" panel) rather than the shared tokens, since
+they needed a specific light-red danger tint that isn't one of the tokens
+above — don't "fix" those back to token classes.
 
 ## Content/behavior notes worth knowing before editing
 
