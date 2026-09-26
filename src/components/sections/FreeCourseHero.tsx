@@ -5,27 +5,16 @@ import EmbedPlaceholder from "@/components/ui/EmbedPlaceholder";
 
 export default function FreeCourseHero() {
   return (
-    <section className="pt-12 pb-16">
-      <Container className="flex flex-col items-center gap-6 text-center">
-        <p className="text-xl font-black tracking-[0.3em]">MADDOX</p>
+    <section className="pt-6 pb-16">
+      <Container className="flex flex-col items-center gap-4 text-center">
+        <p className="text-lg font-black tracking-[0.3em]">MADDOX</p>
 
         <Pill>In Partnership With Base44</Pill>
 
-        <p className="text-sm font-extrabold uppercase tracking-widest text-accent">
-          ▶ Watch This Video Now
-        </p>
-
-        <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">
-          I Partnered With A{" "}
-          <span className="text-accent">Billion-Dollar Company</span> To Give
-          Away My Entire Course For <span className="text-accent">Free</span>
+        <h1 className="text-2xl font-extrabold leading-tight sm:text-3xl">
+          My Course Is Free Thanks To{" "}
+          <span className="text-accent">Base44</span>
         </h1>
-
-        <p className="max-w-md text-lg text-muted">
-          The exact system I used to build a 400K+ following and sell six
-          figures in digital products using AI — normally behind a paywall,
-          free right now because Base44 is covering the cost.
-        </p>
 
         <EmbedPlaceholder label="VSL — swap in a real WistiaEmbed mediaId here" />
 
