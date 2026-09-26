@@ -85,8 +85,8 @@ export default function FreeCourseCta({
 
             {status === "success" ? (
               <p className="mt-6 text-center text-muted">
-                You&apos;re in! Check your email and phone — we&apos;ll be in
-                touch shortly to get you set up.
+                You&apos;re in! We&apos;ll give you a call in the next 5
+                minutes to get you set up.
               </p>
             ) : (
               <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-3">
