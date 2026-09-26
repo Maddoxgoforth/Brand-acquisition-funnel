@@ -39,7 +39,7 @@ export default function Comparison() {
             {WITH_MADDOX.map((item) => (
               <li
                 key={item}
-                className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-bold text-zinc-900"
+                className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-bold text-foreground"
               >
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-xs text-white">
                   ✓
@@ -50,8 +50,8 @@ export default function Comparison() {
           </ul>
         </div>
 
-        <div className="w-full rounded-2xl border border-rose-900/50 bg-rose-950/20 p-6">
-          <p className="mb-4 flex items-center gap-3 text-lg font-extrabold text-white">
+        <div className="w-full rounded-2xl border border-red-200 bg-red-50 p-6">
+          <p className="mb-4 flex items-center gap-3 text-lg font-extrabold text-foreground">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-danger text-white">
               ✕
             </span>
@@ -61,7 +61,7 @@ export default function Comparison() {
             {WITHOUT_MADDOX.map((item) => (
               <li
                 key={item}
-                className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-bold text-zinc-900"
+                className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-bold text-foreground"
               >
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-danger text-xs text-white">
                   ✕
