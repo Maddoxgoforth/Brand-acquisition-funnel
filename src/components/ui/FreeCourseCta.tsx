@@ -16,7 +16,6 @@ export default function FreeCourseCta({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [consent, setConsent] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -122,19 +121,6 @@ export default function FreeCourseCta({
                     className="w-full rounded-xl border border-border bg-background-elevated px-4 py-3 text-foreground placeholder:text-muted"
                   />
                 </div>
-
-                <label className="mt-1 flex items-start gap-2 text-xs text-muted">
-                  <input
-                    required
-                    type="checkbox"
-                    checked={consent}
-                    onChange={(e) => setConsent(e.target.checked)}
-                    className="mt-0.5"
-                  />
-                  I agree to be contacted by email, phone, and text
-                  (including automated messages) about my free course access.
-                  Msg &amp; data rates may apply. Reply STOP to opt out.
-                </label>
 
                 <button
                   type="submit"
