@@ -68,10 +68,7 @@ export default function FreeCourseResults() {
           </Card>
         ))}
 
-        <FreeCourseCta
-          label="START YOUR OWN RESULTS — FREE"
-          subtext="This could be your dashboard next."
-        />
+        <FreeCourseCta label="Start Your Own Results — Free" />
       </Container>
     </section>
   );

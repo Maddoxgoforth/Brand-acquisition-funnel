@@ -3,11 +3,9 @@
 import { useState, type FormEvent } from "react";
 
 export default function FreeCourseCta({
-  label = "GET FREE ACCESS",
-  subtext = "No card required. Just claim your spot.",
+  label = "Get Free Access",
 }: {
   label?: string;
-  subtext?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<
@@ -41,19 +39,9 @@ export default function FreeCourseCta({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex w-full items-center justify-center gap-3 rounded-2xl bg-accent px-8 py-5 text-center transition-colors hover:bg-accent-dim"
+          className="w-full rounded-full bg-accent px-10 py-5 text-center text-lg font-extrabold text-white shadow-lg shadow-accent/30 transition-colors hover:bg-accent-dim"
         >
-          <span className="flex flex-col items-center">
-            <span className="text-lg font-extrabold tracking-wide text-white">
-              {label}
-            </span>
-            <span className="text-sm font-medium text-white/80">
-              {subtext}
-            </span>
-          </span>
-          <span aria-hidden className="text-xl text-white">
-            ↘
-          </span>
+          {label}
         </button>
         <p className="text-center text-sm font-medium italic text-accent">
           No experience needed. Just action.
@@ -123,7 +111,7 @@ export default function FreeCourseCta({
                 <button
                   type="submit"
                   disabled={status === "submitting"}
-                  className="mt-2 rounded-xl bg-accent px-6 py-3 font-bold text-white transition-colors hover:bg-accent-dim disabled:opacity-60"
+                  className="mt-2 rounded-full bg-accent px-6 py-4 font-extrabold text-white shadow-lg shadow-accent/30 transition-colors hover:bg-accent-dim disabled:opacity-60"
                 >
                   {status === "submitting"
                     ? "Submitting..."

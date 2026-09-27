@@ -42,10 +42,7 @@ export default function FreeCourseSteps() {
           ))}
         </div>
 
-        <FreeCourseCta
-          label="GET YOUR FREE SYSTEM"
-          subtext="No card required. Just claim your spot."
-        />
+        <FreeCourseCta label="Get Your Free System" />
       </Container>
     </section>
   );
