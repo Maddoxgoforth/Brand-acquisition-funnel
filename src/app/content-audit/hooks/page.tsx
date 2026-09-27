@@ -4,7 +4,7 @@ import Pill from "@/components/ui/Pill";
 import Footer from "@/components/sections/Footer";
 
 export const metadata: Metadata = {
-  title: "100+ Free Viral Hook Templates — Maddox",
+  title: "100+ Free Viral Hook Templates: Maddox",
   description:
     "100+ free hook templates that have actually gone viral, hand-picked and used by Maddox.",
 };
@@ -29,7 +29,7 @@ export default function HookTemplates() {
             100+ Free <span className="text-accent">Viral Hook Templates</span>
           </h1>
           <p className="max-w-md text-lg text-muted">
-            Over 100 hooks that have actually gone viral — hand-picked and
+            Over 100 hooks that have actually gone viral, hand-picked and
             used by Maddox himself. Here&apos;s a preview, download the full
             file below.
           </p>

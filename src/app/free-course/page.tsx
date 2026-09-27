@@ -13,9 +13,9 @@ import FreeCourseClose from "@/components/sections/FreeCourseClose";
 import Footer from "@/components/sections/Footer";
 
 export const metadata: Metadata = {
-  title: "Free Course — Maddox",
+  title: "Free Course: Maddox",
   description:
-    "Get Maddox's full course on building a personal brand and selling AI digital products — free, courtesy of a billion-dollar AI company.",
+    "Get Maddox's full course on building a personal brand and selling AI digital products, free courtesy of a billion-dollar AI company.",
 };
 
 export default function FreeCourse() {

@@ -7,7 +7,7 @@ import OfferClose from "@/components/sections/OfferClose";
 import Footer from "@/components/sections/Footer";
 
 export const metadata: Metadata = {
-  title: "Get Instant Access — Maddox",
+  title: "Get Instant Access: Maddox",
   description:
     "The $50/month system to build your personal brand and sell digital products.",
 };

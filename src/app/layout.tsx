@@ -9,7 +9,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Maddox — No Audience. No Experience Needed.",
+  title: "Maddox: No Audience. No Experience Needed.",
   description:
     "The exact 90-day system Maddox used to make real money selling his own digital products using AI before he turned 18. No audience, no experience, no guessing.",
 };

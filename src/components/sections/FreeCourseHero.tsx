@@ -31,7 +31,7 @@ export default function FreeCourseHero() {
         </div>
 
         <EmbedPlaceholder
-          label="VSL (vertical) — swap in a real WistiaEmbed mediaId here"
+          label="VSL (vertical): swap in a real WistiaEmbed mediaId here"
           aspect="vertical"
         />
 

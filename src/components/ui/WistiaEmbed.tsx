@@ -5,7 +5,7 @@ export default function WistiaEmbed({
   aspect = 16 / 9,
 }: {
   mediaId: string;
-  /** Width/height ratio — pass 9/16 for a vertical/portrait video. Defaults to 16:9 landscape. */
+  /** Width/height ratio: pass 9/16 for a vertical/portrait video. Defaults to 16:9 landscape. */
   aspect?: number;
 }) {
   return (

@@ -16,7 +16,7 @@ export default function ThankYouHero() {
 
         <p className="max-w-md text-lg text-muted">
           Check your email for the calendar invite. Before we talk, watch the
-          quick video below — then the breakdowns after it cover the
+          quick video below. Then the breakdowns after it cover the
           questions most people ask me before joining.
         </p>
       </Container>

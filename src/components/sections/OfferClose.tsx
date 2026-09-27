@@ -16,7 +16,7 @@ export default function OfferClose() {
           start.
         </p>
         <CtaButton
-          label="CHOOSE THE SYSTEM — $50/MO"
+          label="CHOOSE THE SYSTEM · $50/MO"
           subtext="Don't overthink it. Just start."
           href="#checkout"
         />
