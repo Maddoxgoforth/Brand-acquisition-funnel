@@ -26,7 +26,7 @@ export default function MoreResults() {
         <Card className="w-full">
           <p className="text-3xl font-extrabold text-accent">$39,549</p>
           <p className="mt-1 text-sm text-muted">
-            JJ — JJVending total sales, 116.46K sessions, 1.94% conversion
+            JJ: JJVending total sales, 116.46K sessions, 1.94% conversion
             rate
           </p>
           <div className="mt-5 overflow-hidden rounded-2xl shadow-lg">
@@ -46,7 +46,7 @@ export default function MoreResults() {
             3K → 1.8M views
           </p>
           <p className="mt-1 text-sm text-muted">
-            Derek — taken from getting low views to high views
+            Derek: taken from getting low views to high views
           </p>
           <div className="mt-5 grid grid-cols-2 gap-4">
             {DEREK_CLIPS.map((clip) => (

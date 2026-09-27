@@ -61,7 +61,7 @@ export default function OfferAuthority() {
         </div>
 
         <CtaButton
-          label="LEARN DIRECTLY FROM ME — $50/MO"
+          label="LEARN DIRECTLY FROM ME · $50/MO"
           subtext="Get the same system I used."
           href="#checkout"
         />

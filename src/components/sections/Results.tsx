@@ -20,7 +20,7 @@ export default function Results() {
         <Card className="w-full">
           <p className="text-4xl font-extrabold text-accent">$102,988</p>
           <p className="mt-1 text-sm text-muted">
-            JT Vendors — total sales, 7,890 orders
+            JT Vendors: total sales, 7,890 orders
           </p>
           <div className="mt-5 overflow-hidden rounded-2xl shadow-lg">
             <Image
@@ -37,7 +37,7 @@ export default function Results() {
         <Card className="w-full">
           <p className="text-4xl font-extrabold text-accent">$530</p>
           <p className="mt-1 text-sm text-muted">
-            &ldquo;$530 I made because of you&rdquo; — a student&apos;s first
+            &ldquo;$530 I made because of you,&rdquo; a student&apos;s first
             days
           </p>
           <div className="mt-5 overflow-hidden rounded-2xl shadow-lg">
@@ -55,7 +55,7 @@ export default function Results() {
         <Card className="w-full">
           <p className="text-4xl font-extrabold text-accent">224K SESSIONS</p>
           <p className="mt-1 text-sm text-muted">
-            JT Vendors — $74,090 in sales as it scaled
+            JT Vendors: $74,090 in sales as it scaled
           </p>
           <div className="mt-5 overflow-hidden rounded-2xl shadow-lg">
             <Image

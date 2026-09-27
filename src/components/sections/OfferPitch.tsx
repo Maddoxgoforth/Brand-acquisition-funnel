@@ -35,7 +35,7 @@ export default function OfferPitch() {
         </Card>
 
         <CtaButton
-          label="CLAIM YOUR SPOT — $50/MO"
+          label="CLAIM YOUR SPOT · $50/MO"
           subtext="Everything above, unlocked today."
           href="#checkout"
         />

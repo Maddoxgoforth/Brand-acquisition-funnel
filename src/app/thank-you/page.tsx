@@ -6,7 +6,7 @@ import MoreResults from "@/components/sections/MoreResults";
 import Footer from "@/components/sections/Footer";
 
 export const metadata: Metadata = {
-  title: "You're Booked — Maddox",
+  title: "You're Booked: Maddox",
   description:
     "Your call is confirmed. Watch these quick breakdowns before we talk.",
 };

@@ -11,7 +11,7 @@ export type GamePlan = {
 const TESTIMONIALS = [
   {
     stat: "$4,005 IN SALES",
-    caption: "JT Vendors — total sales climbing week over week",
+    caption: "JT Vendors: total sales climbing week over week",
     src: "/images/testimonial-jtvendors-4005.jpg",
     alt: "JT Vendors Shopify dashboard showing $4,005.41 in total sales",
     width: 887,
@@ -29,7 +29,7 @@ const TESTIMONIALS = [
 
 const VIEWS_BEFORE_AFTER = {
   stat: "23.9K → 2.7M VIEWS",
-  caption: "Same creator, same account — before and after learning the system",
+  caption: "Same creator, same account, before and after learning the system",
   before: {
     src: "/images/testimonial-before-24k.jpg",
     alt: "TikTok video with 23.9K views before learning the content system",
@@ -64,8 +64,8 @@ export default function GamePlanResult({ plan }: { plan: GamePlan }) {
           Don&apos;t see it in your inbox?{" "}
           <span className="font-bold text-foreground">
             Check your spam or promotions folder
-          </span>{" "}
-          — it sometimes ends up there instead of your main inbox.
+          </span>
+          , since it sometimes ends up there instead of your main inbox.
         </p>
       </div>
 

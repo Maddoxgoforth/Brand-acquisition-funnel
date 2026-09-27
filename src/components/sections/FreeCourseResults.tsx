@@ -7,7 +7,7 @@ import FreeCourseCta from "@/components/ui/FreeCourseCta";
 const RESULTS = [
   {
     stat: "$102,988",
-    caption: "JT Vendors — total sales, 7,890 orders",
+    caption: "JT Vendors: total sales, 7,890 orders",
     src: "/images/dashboard-102988.jpg",
     alt: "JT Vendors Shopify dashboard showing $102,988.3 in total sales",
     width: 1206,
@@ -15,7 +15,7 @@ const RESULTS = [
   },
   {
     stat: "$530",
-    caption: "“$530 I made because of you” — a student's first days",
+    caption: "“$530 I made because of you,” a student's first days",
     src: "/images/dm-530.jpg",
     alt: "DM conversation where a student shares they made $530",
     width: 1179,
@@ -23,7 +23,7 @@ const RESULTS = [
   },
   {
     stat: "$4,005 IN SALES",
-    caption: "JT Vendors — total sales climbing week over week",
+    caption: "JT Vendors: total sales climbing week over week",
     src: "/images/testimonial-jtvendors-4005.jpg",
     alt: "JT Vendors Shopify dashboard showing $4,005.41 in total sales",
     width: 887,
@@ -46,7 +46,7 @@ export default function FreeCourseResults() {
         <SectionHeading
           eyebrow="Results"
           title="What Students Are Saying"
-          subtitle="This is the exact same system already covered in the free course — here's proof it works."
+          subtitle="This is the exact same system already covered in the free course. Here's proof it works."
         />
 
         {RESULTS.map((result) => (
@@ -68,7 +68,7 @@ export default function FreeCourseResults() {
           </Card>
         ))}
 
-        <FreeCourseCta label="Start Your Own Results — Free" />
+        <FreeCourseCta label="Start Your Own Results, Free" />
       </Container>
     </section>
   );

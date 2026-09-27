@@ -7,7 +7,7 @@ import CtaButton from "@/components/ui/CtaButton";
 const DASHBOARD_RESULTS = [
   {
     stat: "$102,988",
-    caption: "JT Vendors — total sales, 7,890 orders",
+    caption: "JT Vendors: total sales, 7,890 orders",
     src: "/images/dashboard-102988.jpg",
     alt: "JT Vendors Shopify dashboard showing $102,988.3 in total sales",
     width: 1206,
@@ -15,7 +15,7 @@ const DASHBOARD_RESULTS = [
   },
   {
     stat: "224K SESSIONS",
-    caption: "JT Vendors — $74,090 in sales as it scaled",
+    caption: "JT Vendors: $74,090 in sales as it scaled",
     src: "/images/dashboard-224k.jpg",
     alt: "JT Vendors Shopify dashboard showing 224.44K sessions and $74,090.47 in sales",
     width: 1206,
@@ -23,7 +23,7 @@ const DASHBOARD_RESULTS = [
   },
   {
     stat: "$39,549",
-    caption: "JJ — JJVending total sales, 116.46K sessions",
+    caption: "JJ: JJVending total sales, 116.46K sessions",
     src: "/images/dashboard-jjvending.jpg",
     alt: "JJVending Shopify dashboard showing $39,549 in total sales",
     width: 1284,
@@ -34,7 +34,7 @@ const DASHBOARD_RESULTS = [
 const MESSAGE_RESULTS = [
   {
     stat: "$530",
-    caption: "“$530 I made because of you” — a student's first days",
+    caption: "“$530 I made because of you,” a student's first days",
     src: "/images/dm-530.jpg",
     alt: "DM conversation where a student shares they made $530",
     width: 1179,
@@ -42,7 +42,7 @@ const MESSAGE_RESULTS = [
   },
   {
     stat: "$4,005 IN SALES",
-    caption: "JT Vendors — total sales climbing week over week",
+    caption: "JT Vendors: total sales climbing week over week",
     src: "/images/testimonial-jtvendors-4005.jpg",
     alt: "JT Vendors Shopify dashboard showing $4,005.41 in total sales",
     width: 887,
@@ -99,7 +99,7 @@ export default function OfferResults() {
         ))}
 
         <CtaButton
-          label="START YOUR OWN RESULTS — $50/MO"
+          label="START YOUR OWN RESULTS · $50/MO"
           subtext="This could be your dashboard next."
           href="#checkout"
         />
@@ -124,7 +124,7 @@ export default function OfferResults() {
         ))}
 
         <CtaButton
-          label="BE THE NEXT SUCCESS STORY — $50/MO"
+          label="BE THE NEXT SUCCESS STORY · $50/MO"
           subtext="No experience needed to start."
           href="#checkout"
         />
@@ -134,7 +134,7 @@ export default function OfferResults() {
             3K → 1.8M views
           </p>
           <p className="mt-1 text-sm text-muted">
-            Derek — taken from getting low views to high views
+            Derek: taken from getting low views to high views
           </p>
           <div className="mt-5 grid grid-cols-2 gap-4">
             {DEREK_CLIPS.map((clip) => (
@@ -160,7 +160,7 @@ export default function OfferResults() {
             23.9K → 2.7M VIEWS
           </p>
           <p className="mt-1 text-sm text-muted">
-            Same creator, same account — before and after learning the system
+            Same creator, same account, before and after learning the system
           </p>
           <div className="mt-5 grid grid-cols-2 gap-3">
             <div>
@@ -197,7 +197,7 @@ export default function OfferResults() {
         </Card>
 
         <CtaButton
-          label="UNLOCK THE PLAYBOOK — $50/MO"
+          label="UNLOCK THE PLAYBOOK · $50/MO"
           subtext="Cancel anytime. Start whenever you're ready."
           href="#checkout"
         />

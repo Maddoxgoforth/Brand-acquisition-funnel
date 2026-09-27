@@ -120,7 +120,7 @@ export default function FreeCourseCta({
 
                 {status === "error" ? (
                   <p className="text-sm text-danger">
-                    Something went wrong — try again.
+                    Something went wrong. Try again.
                   </p>
                 ) : null}
 

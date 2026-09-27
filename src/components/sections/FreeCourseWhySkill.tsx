@@ -31,7 +31,7 @@ const REASONS: {
   {
     icon: "repeat",
     title: "Recurring Demand",
-    body: "People will always want to learn how to get results faster — that demand doesn't go away.",
+    body: "People will always want to learn how to get results faster. That demand doesn't go away.",
   },
   {
     icon: "trending",
@@ -47,7 +47,7 @@ export default function FreeCourseWhySkill() {
         <SectionHeading
           eyebrow="The Skill"
           title="Why This Skill Is Worth Learning:"
-          subtitle="You don't build a physical product. You learn to build and sell AI digital products — real products people actually pay for."
+          subtitle="You don't build a physical product. You learn to build and sell AI digital products, real products people actually pay for."
         />
 
         <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">

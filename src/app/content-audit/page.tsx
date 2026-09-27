@@ -6,7 +6,7 @@ import RecentActivityToast from "@/components/content-audit/RecentActivityToast"
 import Footer from "@/components/sections/Footer";
 
 export const metadata: Metadata = {
-  title: "Free Content Audit — Maddox",
+  title: "Free Content Audit: Maddox",
   description:
     "Answer a few questions and get a free, personalized game plan: your niche, content ideas, and 3 high-ticket digital products you could sell.",
 };
@@ -27,7 +27,7 @@ export default function ContentAudit() {
           <p className="max-w-md text-lg text-muted">
             Answer a few quick questions and we&apos;ll send you your niche,
             a couple of content ideas, and 3 high-ticket digital products you
-            could sell — free.
+            could sell, completely free.
           </p>
         </Container>
       </section>
