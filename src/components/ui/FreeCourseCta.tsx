@@ -35,18 +35,13 @@ export default function FreeCourseCta({
 
   return (
     <>
-      <div className="flex flex-col items-center gap-4">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="w-full rounded-full bg-accent px-10 py-5 text-center text-lg font-extrabold text-white shadow-lg shadow-accent/30 transition-colors hover:bg-accent-dim"
-        >
-          {label}
-        </button>
-        <p className="text-center text-sm font-medium italic text-accent">
-          No experience needed. Just action.
-        </p>
-      </div>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="w-full rounded-full bg-accent px-10 py-7 text-center text-2xl font-extrabold text-white shadow-lg shadow-accent/30 transition-colors hover:bg-accent-dim"
+      >
+        {label}
+      </button>
 
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 px-6 py-10">
