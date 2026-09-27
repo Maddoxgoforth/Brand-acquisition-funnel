@@ -68,15 +68,6 @@ export default function FreeCourseResults() {
           </Card>
         ))}
 
-        <p className="max-w-md text-center text-xs leading-relaxed text-muted/80">
-          Income disclaimer: results are not typical and are not a guarantee
-          of earnings. The results shown above reflect the effort of
-          specific individuals. This is educational training that teaches a
-          skill, not a business opportunity. Learning a new skill takes
-          consistent work over time, and your results will vary. This is
-          educational and not financial, legal, or tax advice.
-        </p>
-
         <FreeCourseCta
           label="START YOUR OWN RESULTS — FREE"
           subtext="This could be your dashboard next."
