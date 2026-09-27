@@ -63,20 +63,18 @@ export default function FreeCourseCta({
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 px-6 py-10">
           <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-6 shadow-lg">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-accent">
-                  Free Access
-                </p>
-                <p className="mt-1 text-xl font-extrabold">
-                  Claim Your Free Course
-                </p>
-              </div>
+            <div className="relative text-center">
+              <p className="text-xs font-bold uppercase tracking-widest text-accent">
+                Free Access
+              </p>
+              <p className="mt-1 text-xl font-extrabold">
+                Claim Your Free Course
+              </p>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close"
-                className="text-muted hover:text-foreground"
+                className="absolute -top-1 right-0 text-muted hover:text-foreground"
               >
                 ✕
               </button>
