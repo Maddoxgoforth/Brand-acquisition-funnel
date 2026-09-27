@@ -27,10 +27,10 @@ export default function FreeCoursePartnership() {
         </p>
 
         <p className="max-w-md text-muted">
-          There is none. I partnered with Base44, a billion-dollar AI
-          company, and they pay me for giving you access to this. All you
-          need is the single AI tool I use in my business every day.
-          It&apos;s a win-win for everyone.
+          There is none. I partnered with a billion-dollar AI company, and
+          they pay me for giving you access to this. All you need is the
+          single AI tool I use in my business every day. It&apos;s a
+          win-win for everyone.
         </p>
 
         <Card className="w-full">

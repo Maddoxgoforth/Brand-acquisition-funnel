@@ -7,11 +7,11 @@ import SectionHeading from "@/components/ui/SectionHeading";
 const FAQS = [
   {
     q: "What's the catch? How is this actually free?",
-    a: "No catch. I partnered with Base44, a billion-dollar AI company, and they cover the cost of giving this away. All you need is the AI tool I already use every day.",
+    a: "No catch. I partnered with a billion-dollar AI company, and they cover the cost of giving this away. All you need is the AI tool I already use every day.",
   },
   {
     q: "Do I have to pay for anything?",
-    a: "The course, the templates, and the workshop are all free. The only thing you need is a Base44 subscription, which we walk you through on your onboarding call.",
+    a: "The course, the templates, and the workshop are all free. The only thing you need is a subscription to that AI tool, which we walk you through on your onboarding call.",
   },
   {
     q: "How long does setup take?",
