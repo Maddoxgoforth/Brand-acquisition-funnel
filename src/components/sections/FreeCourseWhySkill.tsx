@@ -1,35 +1,40 @@
 import Container from "@/components/ui/Container";
 import Card from "@/components/ui/Card";
 import SectionHeading from "@/components/ui/SectionHeading";
+import WhySkillIcon, { type WhySkillIconName } from "@/components/ui/WhySkillIcon";
 
-const REASONS = [
+const REASONS: {
+  icon: WhySkillIconName;
+  title: string;
+  body: string;
+}[] = [
   {
-    icon: "📦",
+    icon: "package",
     title: "No Inventory To Manage",
     body: "You're not shipping anything. You package what you know once and sell it forever.",
   },
   {
-    icon: "📱",
+    icon: "phone",
     title: "Work From Anywhere",
     body: "A phone and wifi. That's the whole setup.",
   },
   {
-    icon: "🤖",
+    icon: "bot",
     title: "AI Helps You",
     body: "AI helps you script content and build your systems faster so you move quicker.",
   },
   {
-    icon: "💸",
+    icon: "dollar",
     title: "Low Cost To Start",
     body: "No inventory, no ad spend to start. You start with what you already know.",
   },
   {
-    icon: "🔁",
+    icon: "repeat",
     title: "Recurring Demand",
     body: "People will always want to learn how to get results faster — that demand doesn't go away.",
   },
   {
-    icon: "📈",
+    icon: "trending",
     title: "Room To Grow",
     body: "Most people still don't know how to build a real personal brand. There's plenty of room.",
   },
@@ -49,9 +54,7 @@ export default function FreeCourseWhySkill() {
           {REASONS.map((reason, i) => (
             <Card key={reason.title} className="text-left">
               <div className="flex items-center justify-between">
-                <span className="text-2xl" aria-hidden>
-                  {reason.icon}
-                </span>
+                <WhySkillIcon name={reason.icon} />
                 <span className="text-sm font-bold text-muted">
                   {String(i + 1).padStart(2, "0")}
                 </span>
