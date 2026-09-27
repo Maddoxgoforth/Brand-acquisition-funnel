@@ -37,19 +37,19 @@ export default function FreeCoursePitch() {
           </ul>
           <div className="my-6 h-px w-full bg-border" />
           <div className="flex flex-col gap-4">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center justify-between gap-3">
               <span className="text-sm font-bold uppercase tracking-widest text-muted">
                 Part Of My $4,000 Course
               </span>
-              <span className="shrink-0 text-lg font-extrabold text-danger line-through">
+              <span className="shrink-0 text-3xl font-black text-danger line-through">
                 $4,000
               </span>
             </div>
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center justify-between gap-3">
               <span className="text-sm font-bold uppercase tracking-widest text-muted">
                 Your Price Today
               </span>
-              <span className="shrink-0 text-lg font-black text-green-600">
+              <span className="shrink-0 text-3xl font-black text-green-600">
                 FREE
               </span>
             </div>
