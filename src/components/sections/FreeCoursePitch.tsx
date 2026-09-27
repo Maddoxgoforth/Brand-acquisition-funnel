@@ -20,7 +20,7 @@ export default function FreeCoursePitch() {
       <Container className="flex flex-col items-center gap-4">
         <Card className="w-full text-left">
           <p className="mb-2 text-center text-lg font-black tracking-[0.2em]">
-            MADDOX
+            CREATOR BLUEPRINT
           </p>
           <div className="my-4 h-px w-full bg-border" />
           <ul className="flex flex-col gap-5">
