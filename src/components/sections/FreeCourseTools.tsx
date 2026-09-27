@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Container from "@/components/ui/Container";
 
 const TOOLS = [
@@ -12,23 +12,13 @@ const TOOLS = [
 ];
 
 export default function FreeCourseTools() {
-  const trackRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
-    function handleScroll() {
-      const track = trackRef.current;
-      if (!track) return;
-
-      const rect = track.getBoundingClientRect();
-      const progress = (window.innerHeight / 2 - rect.top) / rect.height;
-      const clamped = Math.min(Math.max(progress, 0), 0.999);
-      setActiveIndex(Math.floor(clamped * TOOLS.length));
-    }
-
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    const interval = setInterval(() => {
+      setActiveIndex((i) => (i + 1) % TOOLS.length);
+    }, 1600);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -38,25 +28,17 @@ export default function FreeCourseTools() {
           All The Built-In Tools
         </h2>
 
-        <div
-          ref={trackRef}
-          className="relative w-full"
-          style={{ height: `${TOOLS.length * 45}vh` }}
-        >
-          <div className="sticky top-1/2 flex -translate-y-1/2 flex-col items-center gap-7">
-            {TOOLS.map((tool, i) => (
-              <p
-                key={tool}
-                className={`text-2xl font-extrabold transition-all duration-300 sm:text-3xl ${
-                  i === activeIndex
-                    ? "scale-105 text-accent"
-                    : "text-muted/30"
-                }`}
-              >
-                {tool}
-              </p>
-            ))}
-          </div>
+        <div className="flex flex-col items-center gap-7">
+          {TOOLS.map((tool, i) => (
+            <p
+              key={tool}
+              className={`text-2xl font-extrabold transition-all duration-500 sm:text-3xl ${
+                i === activeIndex ? "scale-105 text-accent" : "text-muted/30"
+              }`}
+            >
+              {tool}
+            </p>
+          ))}
         </div>
       </Container>
     </section>

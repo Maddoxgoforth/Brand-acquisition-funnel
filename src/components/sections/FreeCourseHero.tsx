@@ -2,11 +2,13 @@ import Container from "@/components/ui/Container";
 import Pill from "@/components/ui/Pill";
 import EmbedPlaceholder from "@/components/ui/EmbedPlaceholder";
 import FreeCourseCta from "@/components/ui/FreeCourseCta";
+import SocialIconBackground from "@/components/ui/SocialIconBackground";
 
 export default function FreeCourseHero() {
   return (
-    <section className="pt-6 pb-16">
-      <Container className="flex flex-col items-center gap-4 text-center">
+    <section className="relative overflow-hidden bg-background-elevated pt-6 pb-16">
+      <SocialIconBackground />
+      <Container className="relative flex flex-col items-center gap-4 text-center">
         <Pill>CREATOR BLUEPRINT · FREE ACCESS</Pill>
 
         <h1 className="text-2xl font-extrabold leading-tight sm:text-3xl">
