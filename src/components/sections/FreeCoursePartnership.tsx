@@ -6,10 +6,7 @@ export default function FreeCoursePartnership() {
   return (
     <section className="py-16">
       <Container className="flex flex-col items-center gap-8 text-center">
-        <FreeCourseCta
-          label="GET YOUR FREE SYSTEM"
-          subtext="No card required. Just claim your spot."
-        />
+        <FreeCourseCta label="Get Your Free System" />
 
         <div className="flex flex-col items-center gap-3">
           <p className="text-sm font-bold uppercase tracking-widest text-accent">

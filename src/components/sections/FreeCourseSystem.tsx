@@ -43,10 +43,7 @@ export default function FreeCourseSystem() {
           ))}
         </div>
 
-        <FreeCourseCta
-          label="START BUILDING FREE"
-          subtext="No card required. Just claim your spot."
-        />
+        <FreeCourseCta label="Start Building Free" />
       </Container>
     </section>
   );

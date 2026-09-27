@@ -46,10 +46,7 @@ export default function FreeCourseClose() {
               ))}
             </ul>
 
-            <FreeCourseCta
-              label="CLAIM YOUR FREE COURSE"
-              subtext="Don't overthink it. Just start."
-            />
+            <FreeCourseCta label="Claim Your Free Course" />
 
             <p className="text-sm text-muted">
               This won&apos;t be free forever. Grab it while it&apos;s free.
