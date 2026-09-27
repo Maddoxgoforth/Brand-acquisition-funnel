@@ -25,11 +25,10 @@ export default function FreeCoursePitch() {
           <div className="my-4 h-px w-full bg-border" />
           <ul className="flex flex-col gap-5">
             {INCLUDES.map((item) => (
-              <li key={item} className="flex items-center gap-3">
-                <span className="shrink-0 text-sm font-bold text-foreground">
+              <li key={item} className="flex items-start justify-between gap-3">
+                <span className="text-sm font-bold text-foreground">
                   {item}
                 </span>
-                <span className="h-px flex-1 bg-border" />
                 <span className="shrink-0 rounded-full bg-foreground px-3 py-1 text-xs font-bold text-background">
                   Included
                 </span>
@@ -38,20 +37,18 @@ export default function FreeCoursePitch() {
           </ul>
           <div className="my-6 h-px w-full bg-border" />
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3">
-              <span className="shrink-0 text-sm font-bold uppercase tracking-widest text-muted">
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-sm font-bold uppercase tracking-widest text-muted">
                 Part Of My $4,000 Course
               </span>
-              <span className="h-px flex-1 bg-border" />
               <span className="shrink-0 text-lg font-extrabold text-danger line-through">
                 $4,000
               </span>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="shrink-0 text-sm font-bold uppercase tracking-widest text-muted">
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-sm font-bold uppercase tracking-widest text-muted">
                 Your Price Today
               </span>
-              <span className="h-px flex-1 bg-border" />
               <span className="shrink-0 text-lg font-black text-green-600">
                 FREE
               </span>
