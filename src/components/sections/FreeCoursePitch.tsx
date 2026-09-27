@@ -16,7 +16,7 @@ const INCLUDES = [
 
 export default function FreeCoursePitch() {
   return (
-    <section className="py-16">
+    <section className="pt-16 pb-4">
       <Container className="flex flex-col items-center gap-4">
         <Card className="w-full text-left">
           <p className="mb-2 text-center text-lg font-black tracking-[0.2em]">

@@ -1,10 +1,9 @@
 import Container from "@/components/ui/Container";
-import Card from "@/components/ui/Card";
 import FreeCourseCta from "@/components/ui/FreeCourseCta";
 
 export default function FreeCoursePartnership() {
   return (
-    <section className="py-16">
+    <section className="pt-4 pb-16">
       <Container className="flex flex-col items-center gap-8 text-center">
         <FreeCourseCta label="Get Your Free System" />
 
@@ -29,18 +28,6 @@ export default function FreeCoursePartnership() {
           single AI tool I use in my business every day. It&apos;s a
           win-win for everyone.
         </p>
-
-        <Card className="w-full">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <p className="text-sm font-bold uppercase tracking-widest text-accent">
-              See How It Works
-            </p>
-            <p className="text-muted">
-              Watch the video above for the full walkthrough of how the
-              partnership works and how you get access.
-            </p>
-          </div>
-        </Card>
       </Container>
     </section>
   );
