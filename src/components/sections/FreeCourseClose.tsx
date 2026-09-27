@@ -25,13 +25,15 @@ export default function FreeCourseClose() {
 
         <Card className="w-full">
           <div className="flex flex-col items-center gap-4 text-center">
-            <p className="text-lg font-black tracking-[0.2em]">MADDOX</p>
+            <p className="text-lg font-black tracking-[0.2em]">
+              CREATOR BLUEPRINT
+            </p>
 
             <div>
               <p className="text-lg font-extrabold text-danger line-through">
                 $4,000 course
               </p>
-              <p className="text-4xl font-black text-accent">FREE</p>
+              <p className="text-6xl font-black text-green-600">FREE</p>
               <p className="text-xs font-bold uppercase tracking-widest text-muted">
                 Today you pay nothing
               </p>
