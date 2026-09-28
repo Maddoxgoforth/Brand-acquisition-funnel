@@ -123,3 +123,11 @@ wistia-player[media-id="as0pb8rxza"]:not(:defined) {
   background: center / contain no-repeat
     url("https://fast.wistia.com/embed/medias/as0pb8rxza/swatch");
 }
+
+wistia-player[media-id="mmgcz1a9lr"]:not(:defined) {
+  display: block;
+  filter: blur(5px);
+  padding-top: 177.78%;
+  background: center / contain no-repeat
+    url("https://fast.wistia.com/embed/medias/mmgcz1a9lr/swatch");
+}
