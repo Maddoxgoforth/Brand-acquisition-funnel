@@ -109,14 +109,14 @@ without being told to.)
   On submit it POSTs to `/api/free-course-lead`
   (`src/app/api/free-course-lead/route.ts`), which validates the fields and
   forwards the lead directly to a **Discord webhook** as an embed — see
-  "Free-course lead setup" below for how to configure that. The VSL and
-  every other video on this page are `EmbedPlaceholder`s
-  (`src/components/ui/EmbedPlaceholder.tsx`, supports `"video"` / `"square"`
-  / `"vertical"` aspect ratios) since no real Wistia recordings exist for
-  this page yet — the VSL specifically is `aspect="vertical"` because the
-  real video is portrait, not landscape (see `WistiaEmbed`'s optional
-  `aspect` prop, added for exactly this — every other real video on the
-  site keeps the default 16:9). The results section reuses real proof
+  "Free-course lead setup" below for how to configure that. The VSL is a
+  real Wistia embed (`WistiaEmbed`, media id `mmgcz1a9lr`, `aspect={0.5625}`
+  since the real video is portrait, not landscape — see `WistiaEmbed`'s
+  optional `aspect` prop, added for exactly this; every other real video on
+  the site keeps the default 16:9). Every other video on this page is still
+  an `EmbedPlaceholder` (`src/components/ui/EmbedPlaceholder.tsx`, supports
+  `"video"` / `"square"` / `"vertical"` aspect ratios) since no other real
+  Wistia recordings exist for this page yet. The results section reuses real proof
   images already on the site rather than fabricating new testimonial
   screenshots for this page. The $4,000 course-value figure used throughout
   this page is the real Creator Blueprint high-ticket price; don't change
@@ -133,8 +133,9 @@ takes a `mediaId` prop): the `/` VSL (`p3h2xpk8hb`), the `/thank-you` welcome
 video (`872u3hcmss`), and its five question-breakdown videos (see the
 `QUESTIONS` array in `ObjectionVideos.tsx` for the question text → media id
 mapping), plus the `/thank-you-mid` welcome video (`hyjp4f2ars`) and its own
-six question-breakdown videos (see `ObjectionVideosMid.tsx`), and the
-`/offer` VSL (`as0pb8rxza`). The `/`
+six question-breakdown videos (see `ObjectionVideosMid.tsx`), the
+`/offer` VSL (`as0pb8rxza`), and the `/free-course` VSL (`mmgcz1a9lr`,
+portrait). The `/`
 application form is a real inline Typeform (`TypeformEmbed`, form id
 `zKqvPAGW`) — see "Conversion flow" below for how a visitor moves from `/`
 through Typeform, to Cal.com, to `/thank-you`.
