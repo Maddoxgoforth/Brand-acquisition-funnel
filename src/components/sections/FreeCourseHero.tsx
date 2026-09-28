@@ -1,6 +1,6 @@
 import Container from "@/components/ui/Container";
 import Pill from "@/components/ui/Pill";
-import EmbedPlaceholder from "@/components/ui/EmbedPlaceholder";
+import WistiaEmbed from "@/components/ui/WistiaEmbed";
 import FreeCourseCta from "@/components/ui/FreeCourseCta";
 import SocialIconBackground from "@/components/ui/SocialIconBackground";
 
@@ -30,10 +30,7 @@ export default function FreeCourseHero() {
           </span>
         </div>
 
-        <EmbedPlaceholder
-          label="VSL (vertical): swap in a real WistiaEmbed mediaId here"
-          aspect="vertical"
-        />
+        <WistiaEmbed mediaId="mmgcz1a9lr" aspect={0.5625} />
 
         <FreeCourseCta />
       </Container>
