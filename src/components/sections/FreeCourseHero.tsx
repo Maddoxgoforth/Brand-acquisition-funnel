@@ -30,7 +30,9 @@ export default function FreeCourseHero() {
           </span>
         </div>
 
-        <WistiaEmbed mediaId="mmgcz1a9lr" aspect={0.5625} />
+        <div className="mx-auto w-3/4">
+          <WistiaEmbed mediaId="mmgcz1a9lr" aspect={0.5625} />
+        </div>
 
         <FreeCourseCta />
       </Container>
