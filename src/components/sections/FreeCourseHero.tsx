@@ -31,7 +31,11 @@ export default function FreeCourseHero() {
         </div>
 
         <div className="mx-auto w-3/4">
-          <WistiaEmbed mediaId="mmgcz1a9lr" aspect={0.5625} />
+          <WistiaEmbed
+            mediaId="mmgcz1a9lr"
+            aspect={0.5625}
+            scrubbingDisabled
+          />
         </div>
 
         <FreeCourseCta />

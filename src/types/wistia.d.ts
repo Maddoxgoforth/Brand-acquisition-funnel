@@ -6,6 +6,7 @@ type WistiaPlayerElement = DetailedHTMLProps<
 > & {
   "media-id": string;
   aspect?: string | number;
+  "play-bar-control"?: string;
 };
 
 declare module "react" {
