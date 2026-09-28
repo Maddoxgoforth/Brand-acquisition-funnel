@@ -16,6 +16,13 @@ export const metadata: Metadata = {
   title: "Free Course: Maddox",
   description:
     "Get Maddox's full course on building a personal brand and selling AI digital products, free courtesy of a billion-dollar AI company.",
+  openGraph: {
+    title: "This Used To Be Part Of My $4,000 Course. Now It's Free.",
+    description:
+      "Get Maddox's full course on building a personal brand and selling AI digital products, free courtesy of a billion-dollar AI company.",
+    url: "https://brandacquisition.co/free-course",
+    siteName: "Maddox",
+  },
 };
 
 export default function FreeCourse() {
