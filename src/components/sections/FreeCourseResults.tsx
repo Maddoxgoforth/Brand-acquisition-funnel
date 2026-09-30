@@ -37,6 +37,29 @@ const RESULTS = [
     width: 828,
     height: 606,
   },
+  {
+    stat: "224K SESSIONS",
+    caption: "JT Vendors: $74,090 in sales as it scaled",
+    src: "/images/dashboard-224k.jpg",
+    alt: "JT Vendors Shopify dashboard showing 224.44K sessions and $74,090.47 in sales",
+    width: 1206,
+    height: 1879,
+  },
+  {
+    stat: "$39,549",
+    caption: "JJ: JJVending total sales, 116.46K sessions",
+    src: "/images/dashboard-jjvending.jpg",
+    alt: "JJVending Shopify dashboard showing $39,549 in total sales",
+    width: 1284,
+    height: 1289,
+  },
+];
+
+const DEREK_CLIPS = [
+  { src: "/images/derek-4542-views.jpg", alt: "Derek's TikTok clip with 4,542 views" },
+  { src: "/images/derek-375k-views.jpg", alt: "Derek's TikTok clip with 375K views" },
+  { src: "/images/derek-157k-views.jpg", alt: "Derek's TikTok clip with 157K views" },
+  { src: "/images/derek-1-8m-views.jpg", alt: "Derek's TikTok clip with 1.8M views" },
 ];
 
 export default function FreeCourseResults() {
@@ -67,6 +90,32 @@ export default function FreeCourseResults() {
             </div>
           </Card>
         ))}
+
+        <Card className="w-full text-left">
+          <p className="text-3xl font-extrabold text-accent">
+            3K → 1.8M views
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            Derek: taken from getting low views to high views
+          </p>
+          <div className="mt-5 grid grid-cols-2 gap-4">
+            {DEREK_CLIPS.map((clip) => (
+              <div
+                key={clip.src}
+                className="overflow-hidden rounded-2xl shadow-lg"
+              >
+                <Image
+                  src={clip.src}
+                  alt={clip.alt}
+                  width={400}
+                  height={700}
+                  className="w-full h-auto"
+                  sizes="(min-width: 576px) 256px, 50vw"
+                />
+              </div>
+            ))}
+          </div>
+        </Card>
 
         <FreeCourseCta label="Start Your Own Results, Free" />
       </Container>
