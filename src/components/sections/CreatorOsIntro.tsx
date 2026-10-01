@@ -18,10 +18,12 @@ export default function CreatorOsIntro() {
         </h1>
 
         <p className="max-w-md text-muted">
-          The dashboard that runs your content, your offer, your money, your
-          calendar, your habits, and your why, plus the agent that texts you
-          every morning and updates it when you text back. Same build as the
-          course. Compressed, so you can do it live in one sitting. Replace
+          The dashboard that runs your money, your health, your time, your
+          goals, your habits, and your why, plus the agent that texts you
+          morning and night and updates it when you text back. Built for the
+          business of selling digital products with AI, but it runs your
+          whole life, not just your content. Same build as the course.
+          Compressed, so you can do it live in one sitting. Replace
           everything in [[BRACKETS]] with your truth before you send.
         </p>
 
