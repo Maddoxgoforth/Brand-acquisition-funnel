@@ -28,22 +28,22 @@ const STEPS: Step[] = [
     blocks: [
       {
         mode: "DISCUSS",
-        text: `I am building my Creator OS. A personal dashboard that runs my content, my offer, and my money. This message is the full spec. Plan it with me before you build anything, and treat every decision below as final, so you only ask me about real gaps.
+        text: `I am building my Creator OS. A personal dashboard that runs my life, my money, my health, my time, my goals, my habits, and my why, while I build my business selling digital products with AI. This message is the full spec. Plan it with me before you build anything, and treat every decision below as final, so you only ask me about real gaps.
 
 WHAT IT IS
-One private app. Single user, just me. One home dashboard plus six rooms: Offer & Money, Content, Calendar, Goals, Habits, Why.
+One private app. Single user, just me. One home dashboard plus six rooms: Money, Health, Calendar, Goals, Habits, Why.
 
 WHAT IT STORES
-- ContentLog: date, posted yes or no, hook or topic used, views after 48 hours, one short note
-- OfferSnapshot: month, revenue, cost of running the business, total saved from it
-- Offer: name, format, price, progress percent toward launch
+- DailyLog: date, money spent, trained yes or no, hours slept, one thing I shipped (business or otherwise), short note
+- MoneySnapshot: month, income, fixed costs, total debt, total saved
 - Goal: horizon (90 day, 1 year, 3 year), the goal in one line, progress percent
 - Habit: name, trigger, current streak, last done date
 - TimeBlock: day, category, hours
 - WhyItem: who or what, one line about them
 
 LAYOUT AND STYLE
-- Home dashboard, top to bottom: my 30 day posting streak grid built from ContentLogs, my 90 day goal front and center, one row of freshness badges for all six rooms, then my Why panel.
+- Home dashboard, top to bottom: my Momentum Score, my 30 day streak grid built from DailyLogs with my current streak and my best streak ever shown side by side, my 90 day goal front and center, one row of freshness badges for all six rooms, then my Why panel.
+- Momentum Score is one number from 0 to 100, computed daily as an even blend of my current streak percent against target, my 90 day goal progress percent, and my best habit's streak percent against its own target. Show it big, with a one line label like "Momentum: 72, trending up" based on whether it rose or fell since 3 days ago.
 - Freshness badges show days since that room's last record: 0 to 1 green, 2 to 3 amber, 4 plus red.
 - Rooms show their data as a card based grid. Big numbers, small labels.
 - Dark theme, high contrast, minimal. Mobile first: the home screen must read on a phone in ten seconds.
@@ -54,8 +54,8 @@ THE RULE THAT MATTERS MOST
 
 WHAT NOT TO ADD
 - No user accounts, sign ups, or profiles. Just me.
-- No automatic weekly or daily summaries, and no insight pushes into the chat. I run my own reviews by prompting. One exception is allowed: goal milestone alerts.
-- No notifications from the app itself. My reminder system comes later and lives outside this app.
+- No automatic weekly or daily summaries, and no insight pushes into the chat. I run my own reviews by prompting. Two exceptions are allowed: goal milestone alerts, and streak milestone alerts.
+- No notifications from the app itself beyond those two exceptions. My reminder system comes later and lives outside this app.
 - No extra pages, settings screens, or features beyond this spec.
 
 If you ask me planning questions, assume whichever answer matches this spec. Ask me only about genuine gaps. Then show me the plan.`,
@@ -68,27 +68,27 @@ If you ask me planning questions, assume whichever answer matches this spec. Ask
   },
   {
     number: 3,
-    title: "Offer & Money",
+    title: "Money",
     before: ["Build mode from here through step 8. Fill your brackets, send, watch the room appear."],
     blocks: [
       {
         mode: "BUILD",
-        text: `My Offer & Money room, all answers, then build it. The product or offer I'm building or already selling: [[OFFER NAME]]. Its format: [[COURSE, GUIDE, MENTORSHIP, OR TEMPLATE PACK]]. Its price: [[NUMBER]]. My revenue from it so far this month: [[NUMBER OR ZERO]]. What it costs me to run, ads, tools, subscriptions: [[NUMBER]]. Saved or liquid from this business right now: [[NUMBER OR ZERO]]. The revenue number that would actually change something for me in the next 90 days: [[NUMBER]]. The one thing hitting it unlocks: [[ONE THING]].
+        text: `My Money room, all answers, then build it. My income per month: [[NUMBER]]. My fixed costs per month, what leaves no matter what: [[NUMBER]]. My total debt: [[NUMBER OR ZERO]]. Saved or liquid right now: [[NUMBER]]. The money number that would actually change something for me in the next 90 days: [[NUMBER]]. The one thing hitting it unlocks: [[ONE THING]].
 
-Now build my Offer & Money room with exactly these numbers: my offer's name, format, and price, this month's revenue against costs, saved, and my 90 day target with a progress bar and what it unlocks next to it. Create this month's OfferSnapshot. Show the gap between revenue and costs plainly. Put Updated today at the top, wired to the freshness badge. Replace any sample or placeholder data with only what I gave you. No forms. Ask me if anything is unclear.`,
+Now build my Money room with exactly these numbers: income, fixed costs, debt, saved, and my 90 day target with a progress bar and what it unlocks next to it. Create this month's MoneySnapshot. Show the gap between income and fixed costs plainly. Put Updated today at the top, wired to the freshness badge. Replace any sample or placeholder data with only what I gave you. No forms. Ask me if anything is unclear.`,
       },
     ],
     after: ["Rough numbers beat no numbers. Ranges are fine. Nobody sees this app but you."],
   },
   {
     number: 4,
-    title: "Content",
+    title: "Health",
     blocks: [
       {
         mode: "BUILD",
-        text: `My Content room, all answers, then build it. Did I post today: [[YES OR NO]]. The hook or topic I used: [[HOOK OR TOPIC]]. Views so far, rough is fine: [[NUMBER OR UNKNOWN]]. My posting target per week: [[NUMBER]] days. What counts as posting for me: [[WHAT COUNTS]]. The thing most likely to stop me from posting: [[THE BLOCKER]]. What I'll do instead when that happens: [[ONE SMALL MOVE]].
+        text: `My Health room, all answers, then build it. Days I actually trained in the last 7: [[NUMBER]]. Trained today: [[YES OR NO]]. My training target per week: [[DAYS]]. What counts as training for me: [[WHAT COUNTS]]. Hours of sleep I average: [[HOURS]]. When I actually go to bed most nights: [[TIME]]. The food rule I break most: [[THE RULE]]. What I will do instead this month: [[ONE SMALL SWAP]]. My energy today 1 to 10: [[NUMBER]]. The time of day my energy dies: [[TIME OF DAY]].
 
-Now build my Content room: today's post status against my weekly target, my hook or topic logged, views, and my blocker with its counter move. Then create my first ContentLog for today from these answers and light up today on the 30 day streak grid on the home dashboard. Replace any sample data with only what I gave you. No forms.`,
+Now build my Health room: training days last week against my target, average sleep against eight hours, my food rule and its replacement, my energy line. Then create my first DailyLog for today from these answers and light up today on the 30 day streak grid on the home dashboard. Replace any sample data with only what I gave you. No forms.`,
       },
     ],
     after: ["When this one lands, today is lit on your grid. Day one, on the board."],
@@ -99,7 +99,7 @@ Now build my Content room: today's post status against my weekly target, my hook
     blocks: [
       {
         mode: "BUILD",
-        text: `My Calendar room, all answers, then build it. Hours per week already committed and not mine to move, job, school, family: [[HOURS]]. Hours genuinely mine on a normal weekday: [[HOURS]]. When those free hours sit: [[MORNING, EVENING, OR LATE NIGHT]]. I am claiming a daily block for building this business, my block: [[START TO END]]. Days The Block runs: [[WHICH DAYS]]. My biggest time leak: [[THE LEAK]]. Honest hours that leak eats per week: [[HOURS]]. One weekly commitment that is non negotiable no matter what: [[MY COMMITMENT]].
+        text: `My Calendar room, all answers, then build it. Hours per week already committed and not mine to move, job, school, family: [[HOURS]]. Hours genuinely mine on a normal weekday: [[HOURS]]. When those free hours sit: [[MORNING, EVENING, OR LATE NIGHT]]. I am claiming a daily block for building my digital products business, the business where I sell digital products and use AI to build and run it faster, my block: [[START TO END]]. Days The Block runs: [[WHICH DAYS]]. My biggest time leak: [[THE LEAK]]. Honest hours that leak eats per week: [[HOURS]]. One weekly commitment that is non negotiable no matter what: [[MY COMMITMENT]].
 
 Now build my Calendar room from these answers: committed hours, free hours and where they sit, The Block with its exact time, my leak and its weekly cost right beside The Block, and my protected commitment. Create the TimeBlocks. Make The Block the loudest thing in the room. Replace any sample data with only what I gave you. No forms.`,
       },
@@ -125,9 +125,9 @@ Now build my Goals room with my three horizons and their progress bars, starting
     blocks: [
       {
         mode: "BUILD",
-        text: `My Habits room, all answers, then build it. The one habit I am building this month: [[THE HABIT, e.g. posting daily]]. Its smallest daily version, the one that survives a terrible day: [[TINY VERSION]]. Its trigger, I do it right after: [[MY ANCHOR]]. The habit I am killing this month: [[THE HABIT, e.g. comparing myself to bigger accounts]]. When the urge hits I will do this instead: [[SMALL SPECIFIC MOVE]]. My streak target for the next 30 days, the real number not 30: [[NUMBER]].
+        text: `My Habits room, all answers, then build it. The one habit I am building this month: [[THE HABIT]]. Its smallest daily version, the one that survives a terrible day: [[TINY VERSION]]. Its trigger, I do it right after: [[MY ANCHOR]]. The habit I am killing this month: [[THE HABIT]]. When the urge hits I will do this instead: [[SMALL SPECIFIC MOVE]]. My streak target for the next 30 days, the real number not 30: [[NUMBER]].
 
-Now build my Habits room: the habit I am building with its trigger, the habit I am killing with its replacement, and my 30 day streak target shown on the home streak grid as lit squares against target, like 1 of 22. Streak squares only ever light from my ContentLogs. Replace any sample data with only what I gave you. No forms.`,
+Now build my Habits room: the habit I am building with its trigger, the habit I am killing with its replacement, and my 30 day streak target shown on the home streak grid as lit squares against target, like 1 of 22. Streak squares only ever light from my DailyLogs. Replace any sample data with only what I gave you. No forms.`,
       },
     ],
   },
@@ -138,7 +138,7 @@ Now build my Habits room: the habit I am building with its trigger, the habit I 
     blocks: [
       {
         mode: "BUILD",
-        text: `My Why panel, all answers, then build it. The people this is actually for: [[THEIR NAMES]]. What changes for them when this business works, concretely: [[WHAT CHANGES]]. The text I would send them the day it works, word for word: [[THE MESSAGE]]. If I quit this like I have quit things before, the honest cost: [[THE COST]]. When I go quiet for days, the line I want thrown at me, in my own words: [[THE LINE]].
+        text: `My Why panel, all answers, then build it. The people this is actually for: [[THEIR NAMES]]. What changes for them when this works, concretely: [[WHAT CHANGES]]. The text I would send them the day it works, word for word: [[THE MESSAGE]]. If I quit this like I have quit things before, the honest cost: [[THE COST]]. When I go quiet for days, the line I want thrown at me, in my own words: [[THE LINE]].
 
 Now build my Why panel on the home dashboard: who this is for, what changes for them, and the text I will send the day it works. Keep my quiet days line stored but not displayed, it is for my agent, not the wall. Place the panel under the streak grid. Replace any sample data with only what I gave you. No forms.`,
       },
@@ -150,7 +150,7 @@ Now build my Why panel on the home dashboard: who this is for, what changes for 
     blocks: [
       {
         mode: "BUILD",
-        text: `Final assembly of my home dashboard, in this order top to bottom: streak grid with target, my 90 day goal with this week's action, freshness badges for all six rooms in one row, then my Why panel. Make it readable on a phone in ten seconds. Check every room one more time for forms or input fields and remove any you find. Then hunt down and delete every sample or placeholder record that did not come from me in this chat: fake logs, fake history months, fake streaks. My streak grid shows only days I actually logged, and my history starts today. Then confirm the app is published and private.`,
+        text: `Final assembly of my home dashboard, in this order top to bottom: Momentum Score, streak grid with current and best streak side by side, my 90 day goal with this week's action, freshness badges for all six rooms in one row, then my Why panel. Make it readable on a phone in ten seconds. Check every room one more time for forms or input fields and remove any you find. Then hunt down and delete every sample or placeholder record that did not come from me in this chat: fake logs, fake history months, fake streaks, and reset my best streak to zero until I actually earn it. My streak grid shows only days I actually logged, and my history starts today. Then confirm the app is published and private.`,
       },
     ],
     after: [
@@ -173,7 +173,7 @@ Now build my Why panel on the home dashboard: who this is for, what changes for 
 Go read it now:
 - My Goals room: my 90 day, 1 year and 3 year goals and this week's action
 - My Habits room: the habit I am building, the one I am killing, my streak target
-- My Content room: my posting target and what counts as posting
+- My Health room: my training target and sleep target
 - My Calendar room: The Block and when it runs
 - My Why panel: who this is for, and my quiet days line. That line is for you, not for the wall.
 
@@ -186,17 +186,25 @@ Confirm by reading my 90 day goal and my why back to me from the app.`,
       {
         mode: "AGENT CHAT",
         text: `Set up a workflow that messages me every morning at 7am. Ask me these five, one at a time, and wait for each answer:
-1. Did I post yesterday
-2. The hook or topic I used
-3. Money made yesterday from the business
+1. Money I spent yesterday
+2. Did I train yesterday
+3. Hours I slept
 4. One thing I shipped yesterday
 5. My first block for today
 
-When I have answered all five, create yesterday's ContentLog in my Creator OS app yourself, then tell me my current streak against my target and one straight line on whether I am on pace for my 90 day goal. If I skipped a day, say it straight and use my quiet days line from the Why room.
+When I have answered all five, create yesterday's DailyLog in my Creator OS app yourself, then tell me my current streak against my target, my best streak ever, and one straight line on whether I am on pace for my 90 day goal. If I skipped a day, say it straight and use my quiet days line from the Why room.
 
-On Sundays, after the five, run my weekly reset with me: score my week from my ContentLogs against my targets, name the one number most off and ask me why, update my Goal progress as I answer, set next week's targets with me, and end with one small change for the week. Update the app as we go.
+On Sundays, after the five, run my weekly reset with me: score my week from my DailyLogs against my targets, name the one number most off and ask me why, update my Goal progress as I answer, set next week's targets with me, and end with one small change for the week. Update the app as we go.
 
-On the first Sunday of each month, also walk me through updating my Offer & Money snapshot: revenue, costs, saved.`,
+On the first Sunday of each month, also walk me through updating my MoneySnapshot: income, fixed costs, debt, saved.`,
+      },
+      {
+        mode: "AGENT CHAT",
+        text: `Also set up two more things, so this keeps pulling me back every day, not just at 7am.
+
+First, a lighter check at 8pm the same day, but only if I have not answered that morning's five questions or logged anything today: send me one text, "Did you get anything in today? Reply with what you shipped or just say no." If I answer, log it as today's DailyLog right then, don't wait for tomorrow morning. If I don't reply by the next morning's message, mark today as missed honestly when you report my streak, don't hide it from me.
+
+Second, any time my streak passes my previous best, or hits 7, 30, 60, or 90 days, text me immediately, separate from the morning or evening messages, congratulating me and naming the number. This is the only automatic message you ever send outside the scheduled check ins.`,
       },
     ],
     after: ["7 AM is the default, not the law. If you wake at 6 or 9, say that instead."],
@@ -215,7 +223,7 @@ On the first Sunday of each month, also walk me through updating my Offer & Mone
       },
     ],
     after: [
-      "Your phone asks, you answer in texts, the app updates itself and the grid moves. That loop is the entire system. Tomorrow at 7 AM it starts without you.",
+      "Your phone asks, you answer in texts, the app updates itself and the grid moves. That loop is the entire system. Tomorrow at 7 AM it starts without you, and tonight at 8 it checks on you if you went quiet.",
     ],
   },
 ];

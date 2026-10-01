@@ -125,18 +125,30 @@ without being told to.)
   already in the free course, not linked from the main site nav or any CTA;
   the site owner shares this URL manually once someone opts in. It's a
   step-by-step, copy-paste workshop ("Creator OS, the Workshop Edition")
-  that walks the student through building their own Base44 app: a personal
-  dashboard with six rooms (Offer & Money, Content, Calendar, Goals, Habits,
-  Why) plus a Base44 Superagent that texts them every morning and logs their
-  answers back into the dashboard. Each step is a `Card` containing one or
-  more `CopyBlock`s (`src/components/ui/CopyBlock.tsx`, a client component
-  with a copy-to-clipboard button) holding the exact prompt text to paste
-  into Base44 — the prompts themselves are hardcoded in a `STEPS` array in
-  `CreatorOsSteps.tsx`, matching the project's "copy lives in arrays"
-  convention. This exists because Base44 reviews partner activation/
-  retention (see the Base44 partnership playbook discussed when this page
-  was built): a tangible, repeatedly-used build drives both far better than
-  handing someone a login and a video library.
+  that walks the student through building their own Base44 app: a genuine
+  life-operating-system dashboard with six rooms (Money, Health, Calendar,
+  Goals, Habits, Why — not narrowed to just content/business tracking),
+  plus a Base44 Superagent that texts them morning and evening and logs
+  their answers back into the dashboard. The site owner's own business
+  model (selling digital products with AI) is only plugged in where the
+  build generically referenced "this business" — the Calendar room's daily
+  work block — everything else (Money, Health, Habits, Why) stays general
+  life-tracking so the tool is useful daily regardless of where someone is
+  in building their business. Built-in retention mechanics worth knowing
+  about if you touch this file: a single 0-100 "Momentum Score" blending
+  streak/goal/habit progress into one daily number, a tracked best-streak-
+  ever record, an 8pm evening nudge text if the morning check-in was
+  missed, and streak-milestone texts (7/30/60/90 days or a new personal
+  best) — these are the two explicit exceptions to the "no automatic
+  summaries" rule baked into the foundation paste itself. Each step is a
+  `Card` containing one or more `CopyBlock`s (`src/components/ui/CopyBlock.tsx`,
+  a client component with a copy-to-clipboard button) holding the exact
+  prompt text to paste into Base44 — the prompts themselves are hardcoded
+  in a `STEPS` array in `CreatorOsSteps.tsx`, matching the project's "copy
+  lives in arrays" convention. This exists because Base44 reviews partner
+  activation/retention (see the Base44 partnership playbook discussed when
+  this page was built): a tangible, repeatedly-used build drives both far
+  better than handing someone a login and a video library.
 
 It is built to be deployed on Vercel (see `AGENTS.md` — the Next.js version
 in this repo is newer than most training data; consult
