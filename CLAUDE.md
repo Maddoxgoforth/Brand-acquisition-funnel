@@ -121,6 +121,22 @@ without being told to.)
   screenshots for this page. The $4,000 course-value figure used throughout
   this page is the real Creator Blueprint high-ticket price; don't change
   it without being asked.
+- **`/free-course/build`** — a bonus tutorial page for students who are
+  already in the free course, not linked from the main site nav or any CTA;
+  the site owner shares this URL manually once someone opts in. It's a
+  step-by-step, copy-paste workshop ("Creator OS, the Workshop Edition")
+  that walks the student through building their own Base44 app: a personal
+  dashboard with six rooms (Offer & Money, Content, Calendar, Goals, Habits,
+  Why) plus a Base44 Superagent that texts them every morning and logs their
+  answers back into the dashboard. Each step is a `Card` containing one or
+  more `CopyBlock`s (`src/components/ui/CopyBlock.tsx`, a client component
+  with a copy-to-clipboard button) holding the exact prompt text to paste
+  into Base44 — the prompts themselves are hardcoded in a `STEPS` array in
+  `CreatorOsSteps.tsx`, matching the project's "copy lives in arrays"
+  convention. This exists because Base44 reviews partner activation/
+  retention (see the Base44 partnership playbook discussed when this page
+  was built): a tangible, repeatedly-used build drives both far better than
+  handing someone a login and a video library.
 
 It is built to be deployed on Vercel (see `AGENTS.md` — the Next.js version
 in this repo is newer than most training data; consult
