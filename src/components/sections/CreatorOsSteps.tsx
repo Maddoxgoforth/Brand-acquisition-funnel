@@ -228,16 +228,6 @@ Second, any time my streak passes my previous best, or hits 7, 30, 60, or 90 day
   },
 ];
 
-const TROUBLESHOOTING = [
-  { problem: "Confusing questions back", fix: "You pasted a fragment. Recopy the whole block, send again." },
-  { problem: "Plan card appears", fix: "Good. View, then Start Building. Never Skip plan." },
-  { problem: "Wild planning questions", fix: "Pick whatever matches the spec. Simplest option. No forms, no auto summaries." },
-  { problem: "Fake numbers in a room", fix: "The room pastes and final assembly wipe them. Keep going." },
-  { problem: "It offers forms or edit buttons", fix: "Say no. You update it by chat. That is the whole system." },
-  { problem: "Agent cannot see your app", fix: 'Ask it: "How do I give you access to my apps?" Then check Cross-app data access in its settings.' },
-  { problem: "Agent web chat hangs", fix: "Test from your phone texts instead. The text channel works." },
-];
-
 export default function CreatorOsSteps() {
   return (
     <section className="pb-16">
@@ -268,21 +258,6 @@ export default function CreatorOsSteps() {
             ))}
           </Card>
         ))}
-
-        <Card className="flex flex-col gap-4 text-left">
-          <h2 className="text-lg font-extrabold">If you get stuck</h2>
-          <div className="flex flex-col gap-3">
-            {TROUBLESHOOTING.map((row) => (
-              <div
-                key={row.problem}
-                className="rounded-xl border border-border bg-background p-4"
-              >
-                <p className="text-sm font-bold text-foreground">{row.problem}</p>
-                <p className="mt-1 text-sm text-muted">{row.fix}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
 
         <Card className="text-center">
           <p className="text-sm text-muted">
