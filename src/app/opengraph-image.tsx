@@ -89,7 +89,7 @@ export default async function Image() {
             style={{ borderRadius: 999, border: "3px solid #ffffff" }}
           />
           <div style={{ display: "flex", fontSize: 32, color: "#64748b" }}>
-            brandacquisition.co/free-course
+            brandacquisition.co
           </div>
         </div>
       </div>
