@@ -69,6 +69,26 @@ export default function Results() {
           </div>
         </Card>
 
+        <Card className="w-full">
+          <p className="text-4xl font-extrabold text-accent">
+            10,000 ORDERS ×2
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            JT Vendors: two 10,000-order Shopify plaques, bought an AMG with
+            it
+          </p>
+          <div className="mt-5 overflow-hidden rounded-2xl shadow-lg">
+            <Image
+              src="/images/testimonial-jtvendors-10k-plaques.jpg"
+              alt="JT Vendors holding two Shopify 10,000-order milestone plaques"
+              width={1206}
+              height={1153}
+              className="w-full h-auto"
+              sizes="(min-width: 576px) 512px, 100vw"
+            />
+          </div>
+        </Card>
+
         <CtaButton />
       </Container>
     </section>
