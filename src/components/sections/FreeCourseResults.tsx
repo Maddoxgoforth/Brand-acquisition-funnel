@@ -53,6 +53,14 @@ const RESULTS = [
     width: 1284,
     height: 1289,
   },
+  {
+    stat: "10,000 ORDERS ×2",
+    caption: "JT Vendors: two 10,000-order Shopify plaques, bought an AMG with it",
+    src: "/images/testimonial-jtvendors-10k-plaques.jpg",
+    alt: "JT Vendors holding two Shopify 10,000-order milestone plaques",
+    width: 1206,
+    height: 1153,
+  },
 ];
 
 const DEREK_CLIPS = [
