@@ -164,17 +164,14 @@ this file for "the funnel" or "the VSL that leads to Typeform," that's now
   activation/retention (see the Base44 partnership playbook discussed when
   this page was built): a tangible, repeatedly-used build drives both far
   better than handing someone a login and a video library.
-- **`/free-course/confirmation`** — the page a visitor is meant to land on
-  immediately after submitting the `FreeCourseCta` lead form, built but
-  **not wired up yet**: nothing in the codebase currently redirects there
-  (`FreeCourseCta.tsx`'s modal still just shows its inline "you're in"
-  success message). The site owner is intentionally holding off connecting
-  it until they explicitly ask for the redirect to be added. Don't add
-  that redirect, and don't link this page from anywhere else, unless
-  explicitly asked — when that happens, the natural place to wire it in is
-  `FreeCourseCta.tsx`'s `status === "success"` branch, replacing the inline
-  message with a `redirect`/`router.push` to this route. The confirmation
-  VSL itself is now real: `FreeCourseConfirmationHero.tsx` uses `WistiaEmbed`
+- **`/free-course/confirmation`** — the page a visitor lands on immediately
+  after submitting the `FreeCourseCta` lead form. `FreeCourseCta.tsx` calls
+  `router.push("/free-course/confirmation")` (via `next/navigation`'s
+  `useRouter`) right after a successful `/api/free-course-lead` POST, in
+  the same `handleSubmit` branch that sets `status` to `"success"` — the
+  modal's inline "you're in" message still renders as a brief fallback
+  during that navigation. The confirmation VSL itself is real:
+  `FreeCourseConfirmationHero.tsx` uses `WistiaEmbed`
   with media id `f54m0unjn2` (`aspect={0.5625}`, portrait, same as the `/`
   VSL) — its own `wistia-player[media-id="f54m0unjn2"]` blur-placeholder
   rule lives in `globals.css` right after `mmgcz1a9lr`'s. Structure,
