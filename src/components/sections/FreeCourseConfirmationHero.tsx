@@ -1,6 +1,6 @@
 import Container from "@/components/ui/Container";
 import Pill from "@/components/ui/Pill";
-import EmbedPlaceholder from "@/components/ui/EmbedPlaceholder";
+import WistiaEmbed from "@/components/ui/WistiaEmbed";
 
 export default function FreeCourseConfirmationHero() {
   return (
@@ -21,10 +21,7 @@ export default function FreeCourseConfirmationHero() {
           Watch This Video To Confirm Your Spot
         </p>
 
-        <EmbedPlaceholder
-          label="Confirmation VSL (vertical): swap in a real WistiaEmbed mediaId here"
-          aspect="vertical"
-        />
+        <WistiaEmbed mediaId="f54m0unjn2" aspect={0.5625} />
       </Container>
     </section>
   );

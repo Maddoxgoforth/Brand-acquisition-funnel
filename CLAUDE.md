@@ -169,18 +169,19 @@ this file for "the funnel" or "the VSL that leads to Typeform," that's now
   **not wired up yet**: nothing in the codebase currently redirects there
   (`FreeCourseCta.tsx`'s modal still just shows its inline "you're in"
   success message). The site owner is intentionally holding off connecting
-  it until the real confirmation VSL is recorded and uploaded. Don't add
+  it until they explicitly ask for the redirect to be added. Don't add
   that redirect, and don't link this page from anywhere else, unless
   explicitly asked — when that happens, the natural place to wire it in is
   `FreeCourseCta.tsx`'s `status === "success"` branch, replacing the inline
-  message with a `redirect`/`router.push` to this route once a real
-  `mediaId` is slotted into `FreeCourseConfirmationHero.tsx`'s
-  `EmbedPlaceholder` (currently a placeholder, `aspect="vertical"`, same
-  pattern as every other not-yet-recorded video on this site). Structure,
+  message with a `redirect`/`router.push` to this route. The confirmation
+  VSL itself is now real: `FreeCourseConfirmationHero.tsx` uses `WistiaEmbed`
+  with media id `f54m0unjn2` (`aspect={0.5625}`, portrait, same as the `/`
+  VSL) — its own `wistia-player[media-id="f54m0unjn2"]` blur-placeholder
+  rule lives in `globals.css` right after `mmgcz1a9lr`'s. Structure,
   in page order: `FreeCourseConfirmationHero.tsx` (eyebrow, then the big
   "We'll Call You Within The Next 5 Minutes" headline and its supporting
   "keep your phone nearby" line, then "Watch This Video To Confirm Your
-  Spot" above the VSL placeholder — the 5-minutes callout leads the page,
+  Spot" above the real VSL — the 5-minutes callout leads the page,
   not the video) → `FreeCourseConfirmationNextSteps.tsx` (3 numbered cards: answer
   the call, get set up live, get instant access) → `FreeCoursePitch.tsx`
   (reused as-is from `/` — the "what's included" list plus the $4,000
