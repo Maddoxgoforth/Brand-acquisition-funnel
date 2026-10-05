@@ -10,7 +10,7 @@ import Footer from "@/components/sections/Footer";
 
 export const metadata: Metadata = {
   title: "You're In: Maddox",
-  description: "Watch this video now. We'll call you within the next 5 minutes.",
+  description: "We'll call you within the next 5 minutes. Watch this video to confirm your spot.",
 };
 
 export default function FreeCourseConfirmation() {

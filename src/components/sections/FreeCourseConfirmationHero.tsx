@@ -9,22 +9,22 @@ export default function FreeCourseConfirmationHero() {
         <Pill>YOU&apos;RE IN</Pill>
 
         <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">
-          Watch This Video Now
+          We&apos;ll Call You Within The Next 5 Minutes
         </h1>
-
-        <EmbedPlaceholder
-          label="Confirmation VSL (vertical): swap in a real WistiaEmbed mediaId here"
-          aspect="vertical"
-        />
-
-        <p className="text-lg font-bold text-accent">
-          We&apos;ll call you within the next 5 minutes
-        </p>
 
         <p className="max-w-md text-muted">
           Keep your phone nearby. One of our team members is calling you
           shortly to get you set up.
         </p>
+
+        <p className="text-lg font-bold text-accent">
+          Watch This Video To Confirm Your Spot
+        </p>
+
+        <EmbedPlaceholder
+          label="Confirmation VSL (vertical): swap in a real WistiaEmbed mediaId here"
+          aspect="vertical"
+        />
       </Container>
     </section>
   );
