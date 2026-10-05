@@ -176,12 +176,23 @@ this file for "the funnel" or "the VSL that leads to Typeform," that's now
   message with a `redirect`/`router.push` to this route once a real
   `mediaId` is slotted into `FreeCourseConfirmationHero.tsx`'s
   `EmbedPlaceholder` (currently a placeholder, `aspect="vertical"`, same
-  pattern as every other not-yet-recorded video on this site). Structure:
-  `FreeCourseConfirmationHero.tsx` (eyebrow, headline, "we'll call you
-  within 5 minutes" line, the VSL placeholder) then
-  `FreeCourseConfirmationResults.tsx` (three real proof cards reused from
-  the images already on site, no closing CTA since the visitor already
-  converted — this page has no `FreeCourseCta` anywhere on it).
+  pattern as every other not-yet-recorded video on this site). Structure,
+  in page order: `FreeCourseConfirmationHero.tsx` (eyebrow, headline, VSL
+  placeholder, then the "we'll call you within 5 minutes" line below the
+  video) → `FreeCourseConfirmationNextSteps.tsx` (3 numbered cards: answer
+  the call, get set up live, get instant access) → `FreeCoursePitch.tsx`
+  (reused as-is from `/` — the "what's included" list plus the $4,000
+  struck-through / FREE-in-green price block) →
+  `FreeCourseConfirmationPhases.tsx` (7 numbered phase cards: Introduction,
+  Mindset, Set Up Your AI Tools, Create Your First Videos, Learn How To
+  Create Good Content, Create Your Digital Product, Sell To Your Audience
+  And Scale) → `FreeCourseConfirmationHowFree.tsx` ("Wait, How Is This
+  Free?" — same Base44-partnership explanation as `FreeCoursePartnership.tsx`
+  on `/`, but with no `FreeCourseCta` button, since this page has none) →
+  `FreeCourseConfirmationResults.tsx` (every real proof image on the site —
+  the full set, matching `/offer`'s `OfferResults.tsx`) →
+  `FreeCourseConfirmationClosing.tsx` ("That's it. Now keep your phone
+  close. Your coach will call you to set you up while you wait.").
 
 It is built to be deployed on Vercel (see `AGENTS.md` — the Next.js version
 in this repo is newer than most training data; consult
