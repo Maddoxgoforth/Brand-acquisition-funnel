@@ -376,6 +376,12 @@ above — don't "fix" those back to token classes.
   its `alt` text intentionally still says 290.2K to accurately describe
   what's actually in that image. Don't
   "fix" that alt text to say 400K; it would misdescribe the screenshot.
+  The lifetime-earnings figure in copy is now $250K (updated from an
+  earlier $200K figure) — it appears as a headline stat in `Hero.tsx`
+  (`/apply`), `OfferHero.tsx` and `OfferClose.tsx` (`/offer`), and as a full
+  sentence ("I've made over a quarter million dollars selling this exact
+  system myself...") in `FreeCoursePartnership.tsx` (`/`) and
+  `FreeCourseConfirmationHowFree.tsx` (`/free-course/confirmation`).
 - The result-card and mentor images are cropped screenshots (status bars /
   app chrome removed, see `public/images/`), not generated graphics — if a
   new proof point comes in, crop it the same way (tight to the content,
