@@ -9,7 +9,7 @@ export default function OfferClose() {
           Your Next $50 Can Buy A{" "}
           <span className="text-accent">Netflix Subscription</span>, Or It
           Can Buy The System That Made Me{" "}
-          <span className="text-accent">$200K</span>
+          <span className="text-accent">$250K</span>
         </h2>
         <p className="max-w-md text-lg text-muted">
           You already qualified for this. The only thing left is deciding to

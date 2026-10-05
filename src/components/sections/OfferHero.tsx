@@ -17,7 +17,7 @@ export default function OfferHero() {
 
         <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">
           The <span className="text-accent">$50/Month</span>{" "}
-          System That Made Me <span className="text-accent">$200K</span>
+          System That Made Me <span className="text-accent">$250K</span>
         </h1>
 
         <p className="max-w-md text-lg text-muted">

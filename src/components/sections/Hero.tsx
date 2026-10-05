@@ -12,7 +12,7 @@ export default function Hero() {
         <Pill>No Audience. No Experience Needed.</Pill>
 
         <h1 className="text-2xl font-extrabold leading-tight sm:text-3xl">
-          How I made <span className="text-accent">$200k</span> selling
+          How I made <span className="text-accent">$250k</span> selling
           digital products using AI
         </h1>
 
