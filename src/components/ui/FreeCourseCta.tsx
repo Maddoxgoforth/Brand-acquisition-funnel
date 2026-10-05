@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 
 export default function FreeCourseCta({
   label = "Get Free Access",
 }: {
   label?: string;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<
     "idle" | "submitting" | "success" | "error"
@@ -28,6 +30,7 @@ export default function FreeCourseCta({
 
       if (!res.ok) throw new Error("Request failed");
       setStatus("success");
+      router.push("/free-course/confirmation");
     } catch {
       setStatus("error");
     }
