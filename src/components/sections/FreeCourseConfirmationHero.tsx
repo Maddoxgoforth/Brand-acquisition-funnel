@@ -12,6 +12,11 @@ export default function FreeCourseConfirmationHero() {
           Watch This Video Now
         </h1>
 
+        <EmbedPlaceholder
+          label="Confirmation VSL (vertical): swap in a real WistiaEmbed mediaId here"
+          aspect="vertical"
+        />
+
         <p className="text-lg font-bold text-accent">
           We&apos;ll call you within the next 5 minutes
         </p>
@@ -20,11 +25,6 @@ export default function FreeCourseConfirmationHero() {
           Keep your phone nearby. One of our team members is calling you
           shortly to get you set up.
         </p>
-
-        <EmbedPlaceholder
-          label="Confirmation VSL (vertical): swap in a real WistiaEmbed mediaId here"
-          aspect="vertical"
-        />
       </Container>
     </section>
   );
