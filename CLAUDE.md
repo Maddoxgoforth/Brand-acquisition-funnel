@@ -164,6 +164,24 @@ this file for "the funnel" or "the VSL that leads to Typeform," that's now
   activation/retention (see the Base44 partnership playbook discussed when
   this page was built): a tangible, repeatedly-used build drives both far
   better than handing someone a login and a video library.
+- **`/free-course/confirmation`** — the page a visitor is meant to land on
+  immediately after submitting the `FreeCourseCta` lead form, built but
+  **not wired up yet**: nothing in the codebase currently redirects there
+  (`FreeCourseCta.tsx`'s modal still just shows its inline "you're in"
+  success message). The site owner is intentionally holding off connecting
+  it until the real confirmation VSL is recorded and uploaded. Don't add
+  that redirect, and don't link this page from anywhere else, unless
+  explicitly asked — when that happens, the natural place to wire it in is
+  `FreeCourseCta.tsx`'s `status === "success"` branch, replacing the inline
+  message with a `redirect`/`router.push` to this route once a real
+  `mediaId` is slotted into `FreeCourseConfirmationHero.tsx`'s
+  `EmbedPlaceholder` (currently a placeholder, `aspect="vertical"`, same
+  pattern as every other not-yet-recorded video on this site). Structure:
+  `FreeCourseConfirmationHero.tsx` (eyebrow, headline, "we'll call you
+  within 5 minutes" line, the VSL placeholder) then
+  `FreeCourseConfirmationResults.tsx` (three real proof cards reused from
+  the images already on site, no closing CTA since the visitor already
+  converted — this page has no `FreeCourseCta` anywhere on it).
 
 It is built to be deployed on Vercel (see `AGENTS.md` — the Next.js version
 in this repo is newer than most training data; consult
