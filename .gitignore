@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# CRM local development database (src/lib/crm/db.ts)
+/.crm-dev-db

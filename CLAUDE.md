@@ -452,7 +452,8 @@ test end-to-end before treating this as fully verified.
 
 The free-course landing page's (`/`) lead form (opened by every `FreeCourseCta`
 button) POSTs to `/api/free-course-lead`, which forwards each lead straight to a Discord
-channel — no Zapier, no CRM, just a Discord "Incoming Webhook."
+channel via a Discord "Incoming Webhook" (no Zapier), and also saves it to
+the private CRM at `/crm` (see "CRM setup" below).
 
 1. In Discord, open the channel you want leads posted to → **Edit Channel**
    → **Integrations** → **Webhooks** → **New Webhook**. Name it something
@@ -466,10 +467,101 @@ channel — no Zapier, no CRM, just a Discord "Incoming Webhook."
 If this env var is unset, the API route still returns success and the
 visitor still sees the "you're in" confirmation — it just silently skips
 the Discord notification, same best-effort pattern as
-`ZAPIER_CONTENT_AUDIT_WEBHOOK_URL` above. There's currently no email/CRM
-integration for these leads (no ConvertKit, no Zapier) — just the Discord
-notification. If you want these leads to also land somewhere like
+`ZAPIER_CONTENT_AUDIT_WEBHOOK_URL` above. These leads are also saved to the private CRM
+at `/crm` (see "CRM setup" below). There's still no email integration for
+them (no ConvertKit, no Zapier). If you want these leads to also land somewhere like
 ConvertKit, that would need to be added explicitly.
+
+## CRM setup
+
+`/crm` is a private, password-protected CRM for the sales team. It is not
+linked from any public page and is `noindex`.
+
+**What it does**
+
+- **Free course applications** — every submission of the free-course lead
+  form lands here automatically. `/api/free-course-lead` writes the lead to
+  the CRM directly (`saveToCrm`), alongside the existing Discord
+  notification. Both are best-effort: a CRM/database outage never blocks the
+  visitor's confirmation page.
+- **Leads to dial** — two lists the team fills by hand or CSV import: "Past
+  free course" and "High-ticket mentorship applications".
+- Every list is a drag-and-drop board with the same six columns, defined once
+  in `src/lib/crm/constants.ts` (`STATUSES`): To dial, No answer, Callback,
+  Not interested, Closed, Do not call. Add or rename a column there and the
+  board, the lead panel and the dashboard all follow. Each status's
+  `answered` flag decides whether it counts toward the answer rate.
+- A lead is name / phone / email plus **any other fields it arrived with**.
+  `normalizeLeadInput` (`src/lib/crm/leads.ts`) picks the three core fields
+  out by common header names and keeps everything else in the lead's `extra`
+  JSON, which the lead panel shows and lets you edit. Imports skip leads
+  whose phone (or, with no phone, email) is already in that list.
+- **Dashboard** — free-course opt-ins for the past 24 hours / 7 days / 30
+  days, total leads, leads closed, conversion rate and answer rate.
+  Definitions (`getStats`): a lead is *dialed* once it leaves To dial or has
+  been called from the CRM; *answer rate* = leads in an `answered` column ÷
+  dialed; *conversion rate* = Closed ÷ dialed.
+- **Call button** — places the call from the browser through Twilio, showing
+  the Twilio number as caller ID. Leads marked Do not call can't be dialed
+  (blocked in the UI and again in `/api/crm/twilio/voice`).
+
+**Code map**
+
+- `src/app/crm/` — the page, login page and `login`/`logout` server actions.
+- `src/components/crm/` — the client UI (`CrmApp` is the shell).
+- `src/lib/crm/` — server code: `db.ts` (Postgres), `leads.ts` (queries +
+  stats), `auth.ts` (password + signed cookie), `twilio.ts` (access token +
+  webhook signature check).
+- `src/app/api/crm/` — JSON routes. Everything except `webhook` and
+  `twilio/voice` requires the login cookie (`crmRoute`). `webhook` requires
+  `CRM_WEBHOOK_SECRET`; `twilio/voice` requires a valid Twilio signature.
+
+**Database.** Postgres via `@neondatabase/serverless`. Tables (`crm_leads`,
+`crm_events`) are created automatically on first use — there's no migration
+step. Locally, with no `DATABASE_URL`, `db.ts` falls back to PGlite (an
+embedded Postgres, a devDependency) stored in the gitignored `./.crm-dev-db`,
+so `npm run dev` works with no account. That fallback is disabled in
+production.
+
+**Production setup (Vercel)**
+
+1. Vercel project → **Storage** → **Create Database** → **Neon** → connect it
+   to this project. Vercel adds `DATABASE_URL` for you.
+2. Project → **Settings** → **Environment Variables**: add `CRM_PASSWORD` (the
+   shared team password) and `CRM_SESSION_SECRET` (a long random string).
+3. Redeploy. Sign in at `/crm/login`.
+
+Auth is one shared password, not per-person accounts — anyone with it sees
+every lead. Rotate it (and `CRM_SESSION_SECRET`, which signs everyone out)
+when someone leaves the team.
+
+**Twilio setup (the Call button)**
+
+1. Twilio Console home → **Account Info**: copy the Account SID
+   (`TWILIO_ACCOUNT_SID`) and Auth Token (`TWILIO_AUTH_TOKEN`).
+2. **Account → API keys & tokens → Create API key** (type: Standard). Copy
+   the SID (`TWILIO_API_KEY_SID`, starts `SK`) and the Secret
+   (`TWILIO_API_KEY_SECRET`) — the secret is shown only once.
+3. **Voice → Manage → TwiML Apps → Create new TwiML App**. Set its Voice
+   **Request URL** to `https://www.brandacquisition.co/api/crm/twilio/voice`,
+   method **POST**. Use the exact host the site serves from (currently the
+   `www` one): Twilio signs the URL it calls, and a redirect breaks the
+   signature check. Copy the app's SID (`TWILIO_TWIML_APP_SID`, starts `AP`).
+4. `TWILIO_PHONE_NUMBER` = the Twilio number to show as caller ID, in E.164
+   form (`+15551234567`).
+5. Add all six as Vercel environment variables and redeploy. Until they're
+   all set, clicking Call lists the ones still missing.
+
+Notes: a Twilio **trial** account can only call numbers you've verified and
+plays a trial message first — upgrade it before real dialing. The first call
+from each browser asks for microphone permission. The browser never chooses
+the number to dial: it sends a lead id, and the voice route looks the number
+up in the CRM database.
+
+**Inbound webhook (optional).** `POST /api/crm/webhook?list=<list id>` with
+header `x-crm-secret: <CRM_WEBHOOK_SECRET>` and a JSON lead (or
+`{ "leads": [...] }`) adds leads from outside tools. List ids:
+`free_course_application` (default), `dial_free_course`, `dial_high_ticket`.
 
 ## What's intentionally not built yet
 

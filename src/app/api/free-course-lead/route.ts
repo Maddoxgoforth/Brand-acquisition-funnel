@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { addLeads } from "@/lib/crm/leads";
+
 type LeadBody = {
   name: string;
   email: string;
@@ -38,6 +40,21 @@ async function sendToDiscord(lead: LeadBody) {
   }
 }
 
+// Files the lead under "Free course applications" in the private CRM
+// (/crm). Best-effort like the Discord step: if the CRM database is missing
+// or down, the visitor still gets their confirmation page.
+async function saveToCrm(lead: LeadBody) {
+  try {
+    await addLeads(
+      "free_course_application",
+      [{ name: lead.name, email: lead.email, phone: lead.phone, extra: {} }],
+      "free-course form"
+    );
+  } catch (error) {
+    console.error("Saving free-course lead to CRM failed:", error);
+  }
+}
+
 export async function POST(request: Request) {
   let body: LeadBody;
   try {
@@ -54,7 +71,10 @@ export async function POST(request: Request) {
     );
   }
 
-  await sendToDiscord({ name, email, phone });
+  await Promise.all([
+    sendToDiscord({ name, email, phone }),
+    saveToCrm({ name, email, phone }),
+  ]);
 
   return NextResponse.json({ ok: true });
 }
