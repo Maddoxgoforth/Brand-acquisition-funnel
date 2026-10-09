@@ -114,15 +114,40 @@ export type Stats = {
   }[];
 };
 
+// Spreadsheet exports often prefix numbers with an apostrophe ('+1555…) to
+// force them to text. Strip that and stray quotes before storing or dialing.
+export function cleanPhone(raw: string): string {
+  return raw.trim().replace(/^['"`\s]+|['"`\s]+$/g, "");
+}
+
 // Turns whatever was typed into the +1XXXXXXXXXX form Twilio needs. Assumes
 // US/Canada for bare 10-digit numbers. Returns null when it can't be dialed.
 export function toE164(raw: string): string | null {
-  const trimmed = raw.trim();
+  const trimmed = cleanPhone(raw);
   const digits = trimmed.replace(/\D/g, "");
   if (trimmed.startsWith("+")) {
     return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : null;
   }
   if (digits.length === 10) return `+1${digits}`;
   if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return null;
+}
+
+export type ContactField = "name" | "first" | "last" | "phone" | "email";
+
+// Decides which contact field a column header or form question holds, so
+// "What Is your Number?" and "What's the best email to reach you at?" are
+// recognized as well as plain "phone" and "email". Returns null for anything
+// else, which is kept as extra info.
+export function classifyField(header: string): ContactField | null {
+  const key = header.trim().toLowerCase().replace(/[_-]+/g, " ");
+  if (/e ?mail/.test(key)) return "email";
+  if (/phone|mobile|\bcell\b|whatsapp|\btel\b/.test(key)) return "phone";
+  if (/\bnumber\b/.test(key) && !/number of|order|account|id\b/.test(key)) {
+    return "phone";
+  }
+  if (/^first( name)?$|\bfirst name\b/.test(key)) return "first";
+  if (/^last( name)?$|\b(last name|surname)\b/.test(key)) return "last";
+  if (/^(full )?name$|\bfull name\b|\byour name\b/.test(key)) return "name";
   return null;
 }

@@ -4,6 +4,8 @@ import { query } from "./db";
 import {
   ANSWERED_STATUS_IDS,
   SOURCE_IDS,
+  classifyField,
+  cleanPhone,
   isStatusId,
   toE164,
   type Lead,
@@ -53,20 +55,6 @@ function toLead(row: LeadRow): Lead {
   };
 }
 
-const NAME_KEYS = ["name", "full name", "fullname", "full_name"];
-const FIRST_KEYS = ["first name", "firstname", "first_name", "first"];
-const LAST_KEYS = ["last name", "lastname", "last_name", "last"];
-const PHONE_KEYS = [
-  "phone",
-  "phone number",
-  "phone_number",
-  "phonenumber",
-  "mobile",
-  "cell",
-  "number",
-];
-const EMAIL_KEYS = ["email", "email address", "email_address", "e-mail"];
-
 function stringify(value: unknown): string {
   if (value === null || value === undefined) return "";
   if (typeof value === "string") return value.trim();
@@ -110,14 +98,18 @@ export function normalizeLeadInput(raw: unknown): LeadInput | null {
   let email = "";
 
   for (const [key, value] of Object.entries(raw)) {
-    const k = key.trim().toLowerCase();
-    if (k === "extra" && value && typeof value === "object") {
+    if (key.trim().toLowerCase() === "extra" && value && typeof value === "object") {
       Object.assign(rest, value);
-    } else if (NAME_KEYS.includes(k)) name = stringify(value);
-    else if (FIRST_KEYS.includes(k)) first = stringify(value);
-    else if (LAST_KEYS.includes(k)) last = stringify(value);
-    else if (PHONE_KEYS.includes(k)) phone = stringify(value);
-    else if (EMAIL_KEYS.includes(k)) email = stringify(value);
+      continue;
+    }
+    // The first non-empty match wins; later matches stay as extra info.
+    const text = stringify(value);
+    const field = text ? classifyField(key) : null;
+    if (field === "name" && !name) name = text;
+    else if (field === "first" && !first) first = text;
+    else if (field === "last" && !last) last = text;
+    else if (field === "phone" && !phone) phone = cleanPhone(text);
+    else if (field === "email" && !email) email = text;
     else rest[key] = value;
   }
 
@@ -190,7 +182,11 @@ export async function addLeads(
   const batch: (LeadInput & { phone_e164: string | null })[] = [];
 
   for (const raw of inputs) {
-    const input = { ...raw, email: raw.email.trim().toLowerCase() };
+    const input = {
+      ...raw,
+      phone: cleanPhone(raw.phone),
+      email: raw.email.trim().toLowerCase(),
+    };
     const phone_e164 = toE164(input.phone);
     if (phone_e164 && seenPhones.has(phone_e164)) continue;
     if (!phone_e164 && input.email && seenEmails.has(input.email)) continue;
@@ -236,6 +232,54 @@ export async function addLeads(
   };
 }
 
+// One-off clean-up for leads imported before a column was recognized: their
+// phone / email / name ended up under `extra`. Moves those values into the
+// real fields. Safe to run repeatedly; returns how many leads it fixed.
+export async function repairContactFields(): Promise<number> {
+  const rows = await query<LeadRow>(
+    `SELECT * FROM crm_leads
+     WHERE (phone = '' OR email = '' OR name = '') AND extra <> '{}'::jsonb`
+  );
+
+  const fixes: Record<string, unknown>[] = [];
+  for (const lead of rows.map(toLead)) {
+    const found = normalizeLeadInput(lead.extra);
+    if (!found) continue;
+    const name = lead.name || found.name;
+    const phone = lead.phone || found.phone;
+    const email = lead.email || found.email;
+    if (name === lead.name && phone === lead.phone && email === lead.email) {
+      continue;
+    }
+    // Keep any extra field that wasn't the one promoted.
+    const extra = { ...lead.extra };
+    for (const key of Object.keys(extra)) {
+      const field = classifyField(key);
+      const used =
+        (field === "phone" && !lead.phone && cleanPhone(extra[key]) === phone) ||
+        (field === "email" && !lead.email && extra[key].toLowerCase() === email) ||
+        ((field === "name" || field === "first" || field === "last") &&
+          !lead.name);
+      if (used) delete extra[key];
+    }
+    fixes.push({ id: lead.id, name, phone, phone_e164: toE164(phone), email, extra });
+  }
+
+  const CHUNK = 400;
+  for (let i = 0; i < fixes.length; i += CHUNK) {
+    await query(
+      `UPDATE crm_leads l
+       SET name = x.name, phone = x.phone, phone_e164 = x.phone_e164,
+           email = x.email, extra = x.extra
+       FROM jsonb_to_recordset($1::jsonb)
+         AS x(id uuid, name text, phone text, phone_e164 text, email text, extra jsonb)
+       WHERE l.id = x.id`,
+      [JSON.stringify(fixes.slice(i, i + CHUNK))]
+    );
+  }
+  return fixes.length;
+}
+
 export type LeadPatch = {
   name?: string;
   phone?: string;
@@ -254,7 +298,7 @@ export async function updateLead(
 
   const next = {
     name: patch.name?.slice(0, 200) ?? current.name,
-    phone: patch.phone?.slice(0, 40) ?? current.phone,
+    phone: patch.phone !== undefined ? cleanPhone(patch.phone).slice(0, 40) : current.phone,
     email: patch.email?.slice(0, 200).toLowerCase() ?? current.email,
     notes: patch.notes?.slice(0, 20000) ?? current.notes,
     status:

@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { logout } from "@/app/crm/actions";
 import {
   SOURCES,
+  classifyField,
   type Lead,
   type LeadEvent,
   type SourceId,
@@ -24,6 +25,16 @@ type LeadCache = Partial<Record<SourceId, Lead[]>>;
 
 const DIAL_LISTS = SOURCES.filter((s) => s.group === "dial");
 
+// True when an earlier import left this lead's phone or email sitting in its
+// extra info instead of the real field.
+function hasMisfiledContact(lead: Lead) {
+  if (lead.phone && lead.email) return false;
+  return Object.keys(lead.extra).some((key) => {
+    const field = classifyField(key);
+    return (field === "phone" && !lead.phone) || (field === "email" && !lead.email);
+  });
+}
+
 const tab = (active: boolean) =>
   `rounded-full px-4 py-2 text-sm font-bold transition-colors ${
     active ? "bg-accent text-white" : "text-muted hover:bg-background-elevated hover:text-foreground"
@@ -38,6 +49,7 @@ export default function CrmApp() {
   const [outcomeFor, setOutcomeFor] = useState<string | null>(null);
   const [dialog, setDialog] = useState<"single" | "import" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const repaired = useRef(new Set<SourceId>());
 
   const source = view === "dashboard" ? null : view;
   const leads = source ? cache[source] : undefined;
@@ -61,8 +73,19 @@ export default function CrmApp() {
         .then((data) => !cancelled && setStats(data))
         .catch((e) => !cancelled && report(e));
     } else {
-      crmFetch<{ leads: Lead[] }>(`/api/crm/leads?source=${view}`)
-        .then((data) => !cancelled && setCache((c) => ({ ...c, [view]: data.leads })))
+      const load = () =>
+        crmFetch<{ leads: Lead[] }>(`/api/crm/leads?source=${view}`);
+      load()
+        .then(async (data) => {
+          // Fix leads whose phone/email was filed under extra info, once per
+          // list per visit, then show the corrected list.
+          if (!repaired.current.has(view) && data.leads.some(hasMisfiledContact)) {
+            repaired.current.add(view);
+            await crmFetch("/api/crm/leads/repair", { method: "POST" });
+            data = await load();
+          }
+          if (!cancelled) setCache((c) => ({ ...c, [view]: data.leads }));
+        })
         .catch((e) => !cancelled && report(e));
     }
     return () => {
