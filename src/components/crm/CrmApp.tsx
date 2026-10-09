@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { logout } from "@/app/crm/actions";
 import {
@@ -18,6 +24,7 @@ import CallBar from "./CallBar";
 import Dashboard from "./Dashboard";
 import LeadDrawer, { type LeadPatch } from "./LeadDrawer";
 import { crmFetch } from "./api";
+import { armChime, playChime, soundSetting } from "./chime";
 import { useDialer } from "./useDialer";
 
 type View = "dashboard" | SourceId;
@@ -35,6 +42,8 @@ function hasMisfiledContact(lead: Lead) {
   });
 }
 
+const POLL_MS = 10_000;
+
 const tab = (active: boolean) =>
   `rounded-full px-4 py-2 text-sm font-bold transition-colors ${
     active ? "bg-accent text-white" : "text-muted hover:bg-background-elevated hover:text-foreground"
@@ -50,6 +59,15 @@ export default function CrmApp() {
   const [dialog, setDialog] = useState<"single" | "import" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const repaired = useRef(new Set<SourceId>());
+  // New free-course opt-ins that arrived while this page was open.
+  const [arrived, setArrived] = useState<Lead[]>([]);
+  const [unseen, setUnseen] = useState(0);
+  const soundOn = useSyncExternalStore(
+    soundSetting.subscribe,
+    soundSetting.isOn,
+    soundSetting.isOnServer
+  );
+  const viewRef = useRef<View>("dashboard");
 
   const source = view === "dashboard" ? null : view;
   const leads = source ? cache[source] : undefined;
@@ -92,6 +110,74 @@ export default function CrmApp() {
       cancelled = true;
     };
   }, [view, report]);
+
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
+
+  // Unlock audio on the first click or key press (browsers block sound
+  // before that).
+  useEffect(() => {
+    window.addEventListener("pointerdown", armChime);
+    window.addEventListener("keydown", armChime);
+    return () => {
+      window.removeEventListener("pointerdown", armChime);
+      window.removeEventListener("keydown", armChime);
+    };
+  }, []);
+
+  // Check for new free-course opt-ins every few seconds: add them to the
+  // board, chime, and show a notice, with no refresh needed.
+  useEffect(() => {
+    let cursor: string | null = null;
+    let stopped = false;
+
+    async function poll() {
+      try {
+        const query = cursor ? `?since=${encodeURIComponent(cursor)}` : "";
+        const data = await crmFetch<{ cursor: string; leads: Lead[] }>(
+          `/api/crm/leads/new${query}`
+        );
+        if (stopped) return;
+        cursor = data.cursor;
+        if (data.leads.length === 0) return;
+
+        setCache((c) => {
+          const current = c.free_course_application;
+          if (!current) return c;
+          const known = new Set(current.map((l) => l.id));
+          const fresh = data.leads.filter((l) => !known.has(l.id));
+          return { ...c, free_course_application: [...fresh, ...current] };
+        });
+        setArrived((a) => [...data.leads, ...a].slice(0, 5));
+        if (viewRef.current !== "free_course_application") {
+          setUnseen((n) => n + data.leads.length);
+        }
+        if (viewRef.current === "dashboard") {
+          crmFetch<Stats>("/api/crm/stats").then(setStats).catch(() => {});
+        }
+        if (soundSetting.isOn()) playChime();
+      } catch {
+        // A missed check is fine; the next one catches up from the cursor.
+      }
+    }
+
+    poll();
+    const timer = setInterval(poll, POLL_MS);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, []);
+
+  function toggleSound() {
+    const on = !soundOn;
+    soundSetting.set(on);
+    if (on) {
+      armChime();
+      playChime();
+    }
+  }
 
   const patchLead = useCallback(
     async (lead: Lead, patch: LeadPatch): Promise<LeadEvent[] | null> => {
@@ -145,6 +231,7 @@ export default function CrmApp() {
 
   function go(next: View) {
     setView(next);
+    if (next === "free_course_application") setUnseen(0);
     setSearch("");
     setSelectedId(null);
   }
@@ -168,6 +255,11 @@ export default function CrmApp() {
             onClick={() => go("free_course_application")}
           >
             Free course applications
+            {unseen > 0 ? (
+              <span className="ml-2 rounded-full bg-danger px-2 py-0.5 text-xs text-white">
+                {unseen} new
+              </span>
+            ) : null}
           </button>
           <button
             type="button"
@@ -177,7 +269,14 @@ export default function CrmApp() {
             Leads to dial
           </button>
         </nav>
-        <form action={logout} className="ml-auto">
+        <button
+          type="button"
+          onClick={toggleSound}
+          className="ml-auto text-sm font-bold text-muted hover:text-foreground"
+        >
+          {soundOn ? "Sound on" : "Sound off"}
+        </button>
+        <form action={logout}>
           <button type="submit" className="text-sm font-bold text-muted hover:text-foreground">
             Sign out
           </button>
@@ -287,6 +386,43 @@ export default function CrmApp() {
               .catch(report);
           }}
         />
+      ) : null}
+
+      {arrived.length > 0 ? (
+        <div className="fixed right-4 top-20 z-40 w-80 space-y-2">
+          {arrived.map((lead) => (
+            <div
+              key={lead.id}
+              className="flex items-start gap-3 rounded-2xl border border-accent bg-background p-4 shadow-xl"
+            >
+              <button
+                type="button"
+                className="min-w-0 flex-1 text-left"
+                onClick={() => {
+                  go("free_course_application");
+                  setSelectedId(lead.id);
+                  setArrived((a) => a.filter((l) => l.id !== lead.id));
+                }}
+              >
+                <p className="text-xs font-bold uppercase tracking-widest text-accent">
+                  New free course opt-in
+                </p>
+                <p className="mt-1 truncate font-bold">{lead.name || "No name"}</p>
+                <p className="truncate text-sm text-muted">
+                  {lead.phone || lead.email}
+                </p>
+              </button>
+              <button
+                type="button"
+                aria-label="Dismiss"
+                onClick={() => setArrived((a) => a.filter((l) => l.id !== lead.id))}
+                className="rounded-full px-2 text-lg text-muted hover:text-foreground"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
       ) : null}
 
       <CallBar

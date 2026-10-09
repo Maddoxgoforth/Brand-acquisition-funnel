@@ -137,6 +137,26 @@ export async function listLeads(source: SourceId): Promise<Lead[]> {
   return rows.map(toLead);
 }
 
+// Free-course opt-ins that arrived after `since` (a cursor from an earlier
+// call). The cursor is the database's own clock, so the page and the server
+// never disagree about what counts as new.
+export async function listNewApplications(
+  since: string | null
+): Promise<{ cursor: string; leads: Lead[] }> {
+  const [{ now }] = await query<{ now: string | Date }>(`SELECT now() AS now`);
+  const cursor = iso(now)!;
+  if (!since) return { cursor, leads: [] };
+
+  const rows = await query<LeadRow>(
+    `SELECT * FROM crm_leads
+     WHERE source = 'free_course_application'
+       AND created_at > $1::timestamptz AND created_at <= $2::timestamptz
+     ORDER BY created_at DESC, seq DESC LIMIT 50`,
+    [since, cursor]
+  );
+  return { cursor, leads: rows.map(toLead) };
+}
+
 export async function getLead(id: string): Promise<Lead | null> {
   const rows = await query<LeadRow>(`SELECT * FROM crm_leads WHERE id = $1`, [
     id,

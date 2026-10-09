@@ -501,6 +501,14 @@ linked from any public page and is `noindex`.
   Definitions (`getStats`): a lead is *dialed* once it leaves To dial or has
   been called from the CRM; *answer rate* = leads in an `answered` column ÷
   dialed; *conversion rate* = Closed ÷ dialed.
+- **Live opt-ins** — while the CRM is open it asks `/api/crm/leads/new`
+  every 10 seconds (`POLL_MS` in `CrmApp.tsx`) for free-course opt-ins newer
+  than its cursor. New ones are added to the board without a refresh, show a
+  notice in the corner, bump a "new" badge on the tab, and play a chime
+  (`chime.ts`, generated with Web Audio; the header's Sound on/off button
+  mutes it per computer). Browsers only allow the sound after the first
+  click or key press on the page. The dial lists load in the order leads
+  were added (`seq`); applications load newest first.
 - **Call button** — places the call from the browser through Twilio, showing
   the Twilio number as caller ID. Leads marked Do not call can't be dialed
   (blocked in the UI and again in `/api/crm/twilio/voice`).
