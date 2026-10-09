@@ -33,22 +33,30 @@ export async function POST(request: Request) {
   }
 
   // Twilio signs the public URL it requested, so rebuild that (not the
-  // internal one the platform proxied to).
+  // internal one the platform proxied to). The bare domain redirects to www,
+  // so a TwiML App pointed at either one ends up here; accept a signature
+  // made for either host.
   const requestUrl = new URL(request.url);
   const proto = request.headers.get("x-forwarded-proto") ?? "https";
   const host =
     request.headers.get("x-forwarded-host") ??
     request.headers.get("host") ??
     requestUrl.host;
-  const publicUrl = `${proto}://${host}${requestUrl.pathname}${requestUrl.search}`;
-
-  if (
-    !isValidTwilioSignature(
-      publicUrl,
+  const otherHost = host.startsWith("www.") ? host.slice(4) : `www.${host}`;
+  const signature = request.headers.get("x-twilio-signature");
+  const signedByTwilio = [host, otherHost].some((candidate) =>
+    isValidTwilioSignature(
+      `${proto}://${candidate}${requestUrl.pathname}${requestUrl.search}`,
       params,
-      request.headers.get("x-twilio-signature")
+      signature
     )
-  ) {
+  );
+
+  if (!signedByTwilio) {
+    console.error(
+      `CRM voice webhook: signature check failed for host ${host}. ` +
+        "Check TWILIO_AUTH_TOKEN and the TwiML App's Voice Request URL."
+    );
     return new Response("Invalid signature", { status: 403 });
   }
 
