@@ -125,8 +125,13 @@ export function normalizeLeadInput(raw: unknown): LeadInput | null {
 }
 
 export async function listLeads(source: SourceId): Promise<Lead[]> {
+  // New applications show newest first (call them while they're warm). The
+  // hand-filled dial lists show in the order the leads were added, so the
+  // first ones you put in are the first ones to call.
+  const order =
+    source === "free_course_application" ? "created_at DESC, seq DESC" : "seq ASC";
   const rows = await query<LeadRow>(
-    `SELECT * FROM crm_leads WHERE source = $1 ORDER BY created_at DESC, id`,
+    `SELECT * FROM crm_leads WHERE source = $1 ORDER BY ${order}`,
     [source]
   );
   return rows.map(toLead);
@@ -201,8 +206,12 @@ export async function addLeads(
     const rows = await query<LeadRow>(
       `INSERT INTO crm_leads (source, name, phone, phone_e164, email, extra)
        SELECT $1, x.name, x.phone, x.phone_e164, x.email, x.extra
-       FROM jsonb_to_recordset($2::jsonb)
-         AS x(name text, phone text, phone_e164 text, email text, extra jsonb)
+       FROM (
+         SELECT el->>'name' AS name, el->>'phone' AS phone,
+                el->>'phone_e164' AS phone_e164, el->>'email' AS email,
+                el->'extra' AS extra, ord
+         FROM jsonb_array_elements($2::jsonb) WITH ORDINALITY AS a(el, ord)
+       ) AS x
        WHERE NOT EXISTS (
          SELECT 1 FROM crm_leads l
          WHERE l.source = $1 AND (
@@ -210,6 +219,7 @@ export async function addLeads(
            OR (x.phone_e164 IS NULL AND x.email <> '' AND l.email = x.email)
          )
        )
+       ORDER BY x.ord
        RETURNING *`,
       [source, JSON.stringify(batch.slice(i, i + CHUNK))]
     );

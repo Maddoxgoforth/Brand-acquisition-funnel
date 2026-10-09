@@ -280,9 +280,12 @@ export default function CrmApp() {
           source={source}
           mode={dialog}
           onClose={() => setDialog(null)}
-          onAdded={(added) =>
-            setCache((c) => ({ ...c, [source]: [...added, ...(c[source] ?? [])] }))
-          }
+          onAdded={() => {
+            // Reload so the new leads land in their proper place in the list.
+            crmFetch<{ leads: Lead[] }>(`/api/crm/leads?source=${source}`)
+              .then((data) => setCache((c) => ({ ...c, [source]: data.leads })))
+              .catch(report);
+          }}
         />
       ) : null}
 

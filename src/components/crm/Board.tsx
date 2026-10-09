@@ -56,8 +56,8 @@ export default function Board({
     for (const lead of leads) {
       if (matches(lead, needle)) grouped[lead.status].push(lead);
     }
-    // Untouched leads stay newest-first; worked leads show most recently
-    // touched first.
+    // To dial keeps the order the server sent (see listLeads); worked leads
+    // show most recently touched first.
     for (const status of STATUSES) {
       if (status.id !== "new") {
         grouped[status.id].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
