@@ -5,7 +5,10 @@ import { listNewApplications } from "@/lib/crm/leads";
 // appear (and chime) without a refresh. Pass back the `cursor` from the last
 // response as ?since=; the first call (no since) just returns a cursor.
 export async function GET(request: Request) {
-  return crmRoute(request, async () => {
+  return crmRoute(request, async (session) => {
+    if (!session.access.applications) {
+      return Response.json({ cursor: new Date().toISOString(), leads: [] });
+    }
     const since = new URL(request.url).searchParams.get("since");
     const valid = since && !Number.isNaN(Date.parse(since)) ? since : null;
     return Response.json(await listNewApplications(valid));

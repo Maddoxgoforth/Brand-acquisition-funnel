@@ -3,6 +3,7 @@ import "server-only";
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 
+import type { Access } from "./constants";
 import { query } from "./db";
 
 const scryptAsync = promisify(scrypt) as (
@@ -18,6 +19,7 @@ export type TeamMember = {
   email: string;
   name: string;
   status: UserStatus;
+  access: Access;
   createdAt: string;
   lastLoginAt: string | null;
 };
@@ -28,6 +30,8 @@ type UserRow = {
   name: string;
   password_hash: string;
   status: UserStatus;
+  can_applications: boolean;
+  can_dial: boolean;
   created_at: string | Date;
   last_login_at: string | Date | null;
 };
@@ -41,6 +45,7 @@ function toMember(row: UserRow): TeamMember {
     email: row.email,
     name: row.name,
     status: row.status,
+    access: { applications: row.can_applications, dial: row.can_dial },
     createdAt: new Date(row.created_at).toISOString(),
     lastLoginAt: row.last_login_at
       ? new Date(row.last_login_at).toISOString()
@@ -143,6 +148,18 @@ export async function setMemberStatus(
   const rows = await query<UserRow>(
     `UPDATE crm_users SET status = $2 WHERE id = $1 RETURNING *`,
     [id, status]
+  );
+  return rows[0] ? toMember(rows[0]) : null;
+}
+
+export async function setMemberAccess(
+  id: string,
+  access: Access
+): Promise<TeamMember | null> {
+  const rows = await query<UserRow>(
+    `UPDATE crm_users SET can_applications = $2, can_dial = $3
+     WHERE id = $1 RETURNING *`,
+    [id, access.applications, access.dial]
   );
   return rows[0] ? toMember(rows[0]) : null;
 }

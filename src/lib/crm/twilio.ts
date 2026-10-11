@@ -2,6 +2,8 @@ import "server-only";
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+import type { Access } from "./constants";
+
 const REQUIRED = [
   "TWILIO_ACCOUNT_SID",
   "TWILIO_AUTH_TOKEN",
@@ -13,6 +15,21 @@ const REQUIRED = [
 
 export function missingTwilioEnv() {
   return REQUIRED.filter((name) => !process.env[name]);
+}
+
+// The dialer's Twilio identity records which lists its user may call, e.g.
+// "crm_a_d". Twilio sends it back (signed) to the voice webhook as
+// `From=client:crm_a_d`, which is how that route enforces access without a
+// login cookie.
+export function dialerIdentity(access: Access) {
+  return `crm${access.applications ? "_a" : ""}${access.dial ? "_d" : ""}`;
+}
+
+// Returns null when the caller isn't one of our dialer identities at all.
+export function accessFromCaller(from: string | undefined): Access | null {
+  const flags = (from ?? "").replace(/^client:/, "").split("_");
+  if (flags[0] !== "crm") return null;
+  return { applications: flags.includes("a"), dial: flags.includes("d") };
 }
 
 function base64url(input: Buffer | string) {

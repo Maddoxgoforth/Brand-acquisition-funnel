@@ -4,10 +4,12 @@ import { query } from "./db";
 import {
   ANSWERED_STATUS_IDS,
   SOURCE_IDS,
+  canAccess,
   classifyField,
   cleanPhone,
   isStatusId,
   toE164,
+  type Access,
   type Lead,
   type LeadEvent,
   type SourceId,
@@ -376,7 +378,8 @@ export async function recordCall(id: string, callSid: string) {
   await addEvent(id, "call", { callSid });
 }
 
-export async function getStats(): Promise<Stats> {
+// Only counts the lists this person is allowed to see.
+export async function getStats(access: Access): Promise<Stats> {
   const [optIns] = await query<{ day: number; week: number; month: number }>(
     `SELECT
        count(*) FILTER (WHERE created_at > now() - interval '1 day')::int AS day,
@@ -402,7 +405,9 @@ export async function getStats(): Promise<Stats> {
     [ANSWERED_STATUS_IDS as unknown as string[]]
   );
 
-  const bySource = SOURCE_IDS.map((source) => {
+  const bySource = SOURCE_IDS.filter((source) =>
+    canAccess(access, source)
+  ).map((source) => {
     const row = rows.find((r) => r.source === source);
     return {
       source,
@@ -420,11 +425,13 @@ export async function getStats(): Promise<Stats> {
   const closed = sum("closed");
 
   return {
-    freeCourseOptIns: {
-      day: optIns?.day ?? 0,
-      week: optIns?.week ?? 0,
-      month: optIns?.month ?? 0,
-    },
+    freeCourseOptIns: access.applications
+      ? {
+          day: optIns?.day ?? 0,
+          week: optIns?.week ?? 0,
+          month: optIns?.month ?? 0,
+        }
+      : null,
     totalLeads: sum("total"),
     dialed,
     answered,

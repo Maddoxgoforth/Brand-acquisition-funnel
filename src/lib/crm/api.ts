@@ -18,6 +18,12 @@ export async function crmRoute(
   });
 }
 
+export const noAccess = () =>
+  Response.json(
+    { error: "You don't have access to that part of the CRM." },
+    { status: 403 }
+  );
+
 export async function runSafely(handler: () => Promise<Response>) {
   try {
     return await handler();

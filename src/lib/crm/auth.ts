@@ -3,6 +3,7 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 
+import { FULL_ACCESS, type Access } from "./constants";
 import { getActiveMember } from "./users";
 
 const COOKIE = "crm_session";
@@ -38,8 +39,14 @@ export function checkOwnerPassword(attempt: string) {
 }
 
 export type Session =
-  | { role: "owner"; name: string }
-  | { role: "member"; userId: string; name: string; email: string };
+  | { role: "owner"; name: string; access: Access }
+  | {
+      role: "member";
+      userId: string;
+      name: string;
+      email: string;
+      access: Access;
+    };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -69,13 +76,21 @@ export async function getSession(): Promise<Session | null> {
   if (!safeEqual(signature, sign(`${subject}.${expires}`))) return null;
   if (!(Number(expires) > Date.now())) return null;
 
-  if (subject === "owner") return { role: "owner", name: "Owner" };
+  if (subject === "owner") {
+    return { role: "owner", name: "Owner", access: FULL_ACCESS };
+  }
   if (!UUID.test(subject)) return null;
   // Checked against the database every time, so access the owner removes
   // stops working on the member's very next click.
   const member = await getActiveMember(subject);
   return member
-    ? { role: "member", userId: member.id, name: member.name, email: member.email }
+    ? {
+        role: "member",
+        userId: member.id,
+        name: member.name,
+        email: member.email,
+        access: member.access,
+      }
     : null;
 }
 

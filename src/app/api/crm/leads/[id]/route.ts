@@ -1,5 +1,6 @@
 import { crmRoute, readJson } from "@/lib/crm/api";
-import { isStatusId } from "@/lib/crm/constants";
+import type { Session } from "@/lib/crm/auth";
+import { canAccess, isStatusId } from "@/lib/crm/constants";
 import {
   deleteLead,
   getLead,
@@ -15,19 +16,25 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const notFound = () =>
   Response.json({ error: "Lead not found" }, { status: 404 });
 
+// A lead in a list this person can't see is treated as if it doesn't exist.
+async function findLead(session: Session, id: string) {
+  const lead = UUID.test(id) ? await getLead(id) : null;
+  return lead && canAccess(session.access, lead.source) ? lead : null;
+}
+
 export async function GET(request: Request, { params }: Context) {
-  return crmRoute(request, async () => {
+  return crmRoute(request, async (session) => {
     const { id } = await params;
-    const lead = UUID.test(id) ? await getLead(id) : null;
+    const lead = await findLead(session, id);
     if (!lead) return notFound();
     return Response.json({ lead, events: await listEvents(id) });
   });
 }
 
 export async function PATCH(request: Request, { params }: Context) {
-  return crmRoute(request, async () => {
+  return crmRoute(request, async (session) => {
     const { id } = await params;
-    if (!UUID.test(id)) return notFound();
+    if (!(await findLead(session, id))) return notFound();
 
     const body = (await readJson(request)) as Record<string, unknown> | null;
     if (!body) {
@@ -55,9 +62,11 @@ export async function PATCH(request: Request, { params }: Context) {
 }
 
 export async function DELETE(request: Request, { params }: Context) {
-  return crmRoute(request, async () => {
+  return crmRoute(request, async (session) => {
     const { id } = await params;
-    if (!UUID.test(id) || !(await deleteLead(id))) return notFound();
+    if (!(await findLead(session, id)) || !(await deleteLead(id))) {
+      return notFound();
+    }
     return Response.json({ ok: true });
   });
 }

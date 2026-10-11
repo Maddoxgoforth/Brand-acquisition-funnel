@@ -1,5 +1,7 @@
 import { getLead, recordCall } from "@/lib/crm/leads";
+import { canAccess } from "@/lib/crm/constants";
 import {
+  accessFromCaller,
   escapeXml,
   isValidTwilioSignature,
   missingTwilioEnv,
@@ -63,6 +65,16 @@ export async function POST(request: Request) {
   try {
     const lead = params.LeadId ? await getLead(params.LeadId) : null;
     if (!lead) return say("That lead could not be found.");
+
+    // Only dial leads from lists this caller is allowed to see. The request
+    // is already proven to come from Twilio for a signed-in dialer, so if
+    // the identity is missing we log it rather than block every call.
+    const access = accessFromCaller(params.From ?? params.Caller);
+    if (!access) {
+      console.error("CRM voice webhook: no dialer identity on the call.");
+    } else if (!canAccess(access, lead.source)) {
+      return say("That lead could not be found.");
+    }
     if (lead.status === "do_not_call") {
       return say("This lead is marked do not call.");
     }

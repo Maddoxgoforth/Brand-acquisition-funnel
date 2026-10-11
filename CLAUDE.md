@@ -554,6 +554,13 @@ production.
   status in the database on every request, so removed access stops working on
   the member's next click (the CRM's 10-second poll signs them out even if
   they do nothing). Team routes (`/api/crm/team`) are owner-only.
+- **What each person can see.** On the Team tab the owner ticks "Free course
+  opt-ins" and/or "Leads to dial" per account (`can_applications` /
+  `can_dial`, both on by default). It is enforced on the server, not just
+  hidden: `canAccess` (`constants.ts`) gates the lead routes, the live
+  opt-in poll, the dashboard numbers (`getStats(access)`) and, through the
+  dialer's Twilio identity, the Call button. A lead in a list someone can't
+  see returns 404 for them. Changes apply on their next request.
 - There is no "forgot password" flow. To reset one, delete the account and
   have the person sign up again.
 

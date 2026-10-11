@@ -26,6 +26,18 @@ export type SourceId = (typeof SOURCES)[number]["id"];
 
 export const SOURCE_IDS = SOURCES.map((s) => s.id) as readonly SourceId[];
 
+// What a team member is allowed to see. `applications` = the live free-course
+// opt-ins; `dial` = the hand-filled lists of past leads. The owner sets these
+// per person on the Team tab; the owner always has both.
+export type Access = { applications: boolean; dial: boolean };
+
+export const FULL_ACCESS: Access = { applications: true, dial: true };
+
+export function canAccess(access: Access, source: SourceId) {
+  const group = SOURCES.find((s) => s.id === source)!.group;
+  return access[group];
+}
+
 export function isSourceId(value: unknown): value is SourceId {
   return typeof value === "string" && SOURCE_IDS.includes(value as SourceId);
 }
@@ -97,7 +109,8 @@ export type LeadEvent = {
 };
 
 export type Stats = {
-  freeCourseOptIns: { day: number; week: number; month: number };
+  // null when this person can't see the free-course opt-ins.
+  freeCourseOptIns: { day: number; week: number; month: number } | null;
   totalLeads: number;
   dialed: number;
   answered: number;

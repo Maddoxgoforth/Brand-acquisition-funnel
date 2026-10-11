@@ -1,5 +1,5 @@
-import { crmRoute, readJson } from "@/lib/crm/api";
-import { isSourceId } from "@/lib/crm/constants";
+import { crmRoute, noAccess, readJson } from "@/lib/crm/api";
+import { canAccess, isSourceId } from "@/lib/crm/constants";
 import {
   addLeads,
   listLeads,
@@ -10,11 +10,12 @@ import {
 const MAX_IMPORT = 10000;
 
 export async function GET(request: Request) {
-  return crmRoute(request, async () => {
+  return crmRoute(request, async (session) => {
     const source = new URL(request.url).searchParams.get("source");
     if (!isSourceId(source)) {
       return Response.json({ error: "Unknown list" }, { status: 400 });
     }
+    if (!canAccess(session.access, source)) return noAccess();
     return Response.json({ leads: await listLeads(source) });
   });
 }
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
 // Body: { source, leads: [...] }. Each lead can be any object; see
 // normalizeLeadInput for how name/phone/email are picked out.
 export async function POST(request: Request) {
-  return crmRoute(request, async () => {
+  return crmRoute(request, async (session) => {
     const body = (await readJson(request)) as {
       source?: unknown;
       leads?: unknown;
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
     if (!body || !isSourceId(body.source) || !Array.isArray(body.leads)) {
       return Response.json({ error: "Invalid request" }, { status: 400 });
     }
+    if (!canAccess(session.access, body.source)) return noAccess();
     if (body.leads.length > MAX_IMPORT) {
       return Response.json(
         { error: `Import at most ${MAX_IMPORT} leads at a time` },

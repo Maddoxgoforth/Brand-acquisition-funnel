@@ -6,5 +6,9 @@ import { getSession } from "@/lib/crm/auth";
 export default async function CrmPage() {
   const session = await getSession();
   if (!session) redirect("/crm/login");
-  return <CrmApp user={{ role: session.role, name: session.name }} />;
+  return (
+    <CrmApp
+      user={{ role: session.role, name: session.name, access: session.access }}
+    />
+  );
 }

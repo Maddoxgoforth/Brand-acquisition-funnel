@@ -43,6 +43,9 @@ const SCHEMA = [
     created_at timestamptz NOT NULL DEFAULT now(),
     last_login_at timestamptz
   )`,
+  // Which parts of the CRM this person can see (set by the owner).
+  `ALTER TABLE crm_users ADD COLUMN IF NOT EXISTS can_applications boolean NOT NULL DEFAULT true`,
+  `ALTER TABLE crm_users ADD COLUMN IF NOT EXISTS can_dial boolean NOT NULL DEFAULT true`,
 ];
 
 export class CrmDbNotConfiguredError extends Error {

@@ -9,6 +9,7 @@ type Member = {
   email: string;
   name: string;
   status: "pending" | "active" | "disabled";
+  access: { applications: boolean; dial: boolean };
   createdAt: string;
   lastLoginAt: string | null;
 };
@@ -69,6 +70,21 @@ export default function Team({
     }
   }
 
+  async function setAccess(member: Member, access: Member["access"]) {
+    // Tick the box straight away, then confirm with the server.
+    setTeam((t) => t?.map((m) => (m.id === member.id ? { ...m, access } : m)) ?? null);
+    try {
+      const data = await crmFetch<{ member: Member }>(`/api/crm/team/${member.id}`, {
+        method: "PATCH",
+        body: { access },
+      });
+      setTeam((t) => t?.map((m) => (m.id === member.id ? data.member : m)) ?? null);
+    } catch (e) {
+      setTeam((t) => t?.map((m) => (m.id === member.id ? member : m)) ?? null);
+      onError(e);
+    }
+  }
+
   async function remove(member: Member) {
     if (!window.confirm(`Delete ${member.name}'s account for good? They would have to sign up again.`)) {
       return;
@@ -94,7 +110,8 @@ export default function Team({
           People create their own account at{" "}
           <span className="font-mono text-foreground">/crm/signup</span>. Nobody can
           sign in until you approve them here, and removing access signs them
-          out within seconds.
+          out within seconds. Tick what each person is allowed to see; changes
+          apply the next time they load a list.
         </p>
       </div>
 
@@ -116,6 +133,34 @@ export default function Team({
                     ? `, last signed in ${timeAgo(member.lastLoginAt)}`
                     : ", never signed in"}
                 </p>
+                <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+                  <span className="font-semibold">Can see:</span>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={member.access.applications}
+                      onChange={(e) =>
+                        setAccess(member, { ...member.access, applications: e.target.checked })
+                      }
+                    />
+                    Free course opt-ins
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={member.access.dial}
+                      onChange={(e) =>
+                        setAccess(member, { ...member.access, dial: e.target.checked })
+                      }
+                    />
+                    Leads to dial
+                  </label>
+                </div>
+                {!member.access.applications && !member.access.dial ? (
+                  <p className="mt-1 text-xs text-danger">
+                    With both unticked they can sign in but won&apos;t see any leads.
+                  </p>
+                ) : null}
               </div>
               <span className={`rounded-full px-3 py-1 text-xs font-bold ${STATUS_STYLE[member.status]}`}>
                 {STATUS_LABEL[member.status]}

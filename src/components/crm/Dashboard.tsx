@@ -31,28 +31,32 @@ export default function Dashboard({ stats }: { stats: Stats | null }) {
     return <p className="p-8 text-muted">Loading dashboard…</p>;
   }
 
+  const optIns = stats.freeCourseOptIns;
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8 p-6">
-      <section>
-        <h2 className="text-lg font-extrabold">Free course opt-ins</h2>
-        <div className="mt-3 grid gap-4 sm:grid-cols-3">
-          <StatCard
-            label="Past 24 hours"
-            value={String(stats.freeCourseOptIns.day)}
-            detail="New free-course applications"
-          />
-          <StatCard
-            label="Past 7 days"
-            value={String(stats.freeCourseOptIns.week)}
-            detail="New free-course applications"
-          />
-          <StatCard
-            label="Past 30 days"
-            value={String(stats.freeCourseOptIns.month)}
-            detail="New free-course applications"
-          />
-        </div>
-      </section>
+      {optIns ? (
+        <section>
+          <h2 className="text-lg font-extrabold">Free course opt-ins</h2>
+          <div className="mt-3 grid gap-4 sm:grid-cols-3">
+            <StatCard
+              label="Past 24 hours"
+              value={String(optIns.day)}
+              detail="New free-course applications"
+            />
+            <StatCard
+              label="Past 7 days"
+              value={String(optIns.week)}
+              detail="New free-course applications"
+            />
+            <StatCard
+              label="Past 30 days"
+              value={String(optIns.month)}
+              detail="New free-course applications"
+            />
+          </div>
+        </section>
+      ) : null}
 
       <section>
         <h2 className="text-lg font-extrabold">Calls and closes</h2>

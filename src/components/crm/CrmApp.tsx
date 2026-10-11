@@ -12,6 +12,7 @@ import { logout } from "@/app/crm/actions";
 import {
   SOURCES,
   classifyField,
+  type Access,
   type Lead,
   type LeadEvent,
   type SourceId,
@@ -53,7 +54,7 @@ const tab = (active: boolean) =>
 export default function CrmApp({
   user,
 }: {
-  user: { role: "owner" | "member"; name: string };
+  user: { role: "owner" | "member"; name: string; access: Access };
 }) {
   const [view, setView] = useState<View>("dashboard");
   const [cache, setCache] = useState<LeadCache>({});
@@ -137,7 +138,9 @@ export default function CrmApp({
 
   // Check for new free-course opt-ins every few seconds: add them to the
   // board, chime, and show a notice, with no refresh needed.
+  const seesApplications = user.access.applications;
   useEffect(() => {
+    if (!seesApplications) return;
     let cursor: string | null = null;
     let stopped = false;
 
@@ -177,7 +180,7 @@ export default function CrmApp({
       stopped = true;
       clearInterval(timer);
     };
-  }, []);
+  }, [seesApplications]);
 
   // Let the owner know when someone is waiting for approval.
   useEffect(() => {
@@ -278,6 +281,7 @@ export default function CrmApp({
           <button type="button" className={tab(view === "dashboard")} onClick={() => go("dashboard")}>
             Dashboard
           </button>
+          {user.access.applications ? (
           <button
             type="button"
             className={tab(view === "free_course_application")}
@@ -290,13 +294,16 @@ export default function CrmApp({
               </span>
             ) : null}
           </button>
-          <button
-            type="button"
-            className={tab(inDialGroup)}
-            onClick={() => !inDialGroup && go(DIAL_LISTS[0].id)}
-          >
-            Leads to dial
-          </button>
+          ) : null}
+          {user.access.dial ? (
+            <button
+              type="button"
+              className={tab(inDialGroup)}
+              onClick={() => !inDialGroup && go(DIAL_LISTS[0].id)}
+            >
+              Leads to dial
+            </button>
+          ) : null}
           {user.role === "owner" ? (
             <button type="button" className={tab(view === "team")} onClick={() => go("team")}>
               Team
