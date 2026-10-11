@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 
 import CrmApp from "@/components/crm/CrmApp";
-import { hasSession } from "@/lib/crm/auth";
+import { getSession } from "@/lib/crm/auth";
 
 export default async function CrmPage() {
-  if (!(await hasSession())) redirect("/crm/login");
-  return <CrmApp />;
+  const session = await getSession();
+  if (!session) redirect("/crm/login");
+  return <CrmApp user={{ role: session.role, name: session.name }} />;
 }

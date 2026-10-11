@@ -23,11 +23,12 @@ import Board from "./Board";
 import CallBar from "./CallBar";
 import Dashboard from "./Dashboard";
 import LeadDrawer, { type LeadPatch } from "./LeadDrawer";
+import Team from "./Team";
 import { crmFetch } from "./api";
 import { armChime, playChime, soundSetting } from "./chime";
 import { useDialer } from "./useDialer";
 
-type View = "dashboard" | SourceId;
+type View = "dashboard" | "team" | SourceId;
 type LeadCache = Partial<Record<SourceId, Lead[]>>;
 
 const DIAL_LISTS = SOURCES.filter((s) => s.group === "dial");
@@ -49,7 +50,11 @@ const tab = (active: boolean) =>
     active ? "bg-accent text-white" : "text-muted hover:bg-background-elevated hover:text-foreground"
   }`;
 
-export default function CrmApp() {
+export default function CrmApp({
+  user,
+}: {
+  user: { role: "owner" | "member"; name: string };
+}) {
   const [view, setView] = useState<View>("dashboard");
   const [cache, setCache] = useState<LeadCache>({});
   const [stats, setStats] = useState<Stats | null>(null);
@@ -62,6 +67,8 @@ export default function CrmApp() {
   // New free-course opt-ins that arrived while this page was open.
   const [arrived, setArrived] = useState<Lead[]>([]);
   const [unseen, setUnseen] = useState(0);
+  // Accounts waiting for the owner's approval (owner only).
+  const [pendingAccounts, setPendingAccounts] = useState(0);
   const soundOn = useSyncExternalStore(
     soundSetting.subscribe,
     soundSetting.isOn,
@@ -69,7 +76,7 @@ export default function CrmApp() {
   );
   const viewRef = useRef<View>("dashboard");
 
-  const source = view === "dashboard" ? null : view;
+  const source = view === "dashboard" || view === "team" ? null : view;
   const leads = source ? cache[source] : undefined;
   const selected = leads?.find((l) => l.id === selectedId) ?? null;
 
@@ -86,7 +93,9 @@ export default function CrmApp() {
 
   useEffect(() => {
     let cancelled = false;
-    if (view === "dashboard") {
+    if (view === "team") {
+      // The Team screen loads its own data.
+    } else if (view === "dashboard") {
       crmFetch<Stats>("/api/crm/stats")
         .then((data) => !cancelled && setStats(data))
         .catch((e) => !cancelled && report(e));
@@ -169,6 +178,26 @@ export default function CrmApp() {
       clearInterval(timer);
     };
   }, []);
+
+  // Let the owner know when someone is waiting for approval.
+  useEffect(() => {
+    if (user.role !== "owner") return;
+    let stopped = false;
+    const check = () =>
+      crmFetch<{ team: { status: string }[] }>("/api/crm/team")
+        .then((data) => {
+          if (!stopped) {
+            setPendingAccounts(data.team.filter((m) => m.status === "pending").length);
+          }
+        })
+        .catch(() => {});
+    check();
+    const timer = setInterval(check, 60_000);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, [user.role]);
 
   function toggleSound() {
     const on = !soundOn;
@@ -268,6 +297,16 @@ export default function CrmApp() {
           >
             Leads to dial
           </button>
+          {user.role === "owner" ? (
+            <button type="button" className={tab(view === "team")} onClick={() => go("team")}>
+              Team
+              {pendingAccounts > 0 ? (
+                <span className="ml-2 rounded-full bg-danger px-2 py-0.5 text-xs text-white">
+                  {pendingAccounts}
+                </span>
+              ) : null}
+            </button>
+          ) : null}
         </nav>
         <button
           type="button"
@@ -276,6 +315,7 @@ export default function CrmApp() {
         >
           {soundOn ? "Sound on" : "Sound off"}
         </button>
+        <span className="text-sm text-muted">{user.name}</span>
         <form action={logout}>
           <button type="submit" className="text-sm font-bold text-muted hover:text-foreground">
             Sign out
@@ -292,7 +332,11 @@ export default function CrmApp() {
         </div>
       ) : null}
 
-      {view === "dashboard" ? (
+      {view === "team" ? (
+        <main className="flex-1 overflow-y-auto bg-background-elevated/40">
+          <Team onPendingChange={setPendingAccounts} onError={report} />
+        </main>
+      ) : view === "dashboard" ? (
         <main className="flex-1 overflow-y-auto bg-background-elevated/40">
           <Dashboard stats={stats} />
         </main>

@@ -32,6 +32,17 @@ const SCHEMA = [
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
   `CREATE INDEX IF NOT EXISTS crm_events_lead_idx ON crm_events (lead_id, created_at DESC)`,
+  // Team accounts. status: pending (signed up, waiting for the owner),
+  // active, or disabled (access removed).
+  `CREATE TABLE IF NOT EXISTS crm_users (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    email text NOT NULL UNIQUE,
+    name text NOT NULL DEFAULT '',
+    password_hash text NOT NULL,
+    status text NOT NULL DEFAULT 'pending',
+    created_at timestamptz NOT NULL DEFAULT now(),
+    last_login_at timestamptz
+  )`,
 ];
 
 export class CrmDbNotConfiguredError extends Error {

@@ -518,7 +518,7 @@ linked from any public page and is `noindex`.
 - `src/app/crm/` — the page, login page and `login`/`logout` server actions.
 - `src/components/crm/` — the client UI (`CrmApp` is the shell).
 - `src/lib/crm/` — server code: `db.ts` (Postgres), `leads.ts` (queries +
-  stats), `auth.ts` (password + signed cookie), `twilio.ts` (access token +
+  stats), `auth.ts` (owner password + signed cookie), `users.ts` (team accounts), `twilio.ts` (access token +
   webhook signature check).
 - `src/app/api/crm/` — JSON routes. Everything except `webhook` and
   `twilio/voice` requires the login cookie (`crmRoute`). `webhook` requires
@@ -536,12 +536,26 @@ production.
 1. Vercel project → **Storage** → **Create Database** → **Neon** → connect it
    to this project. Vercel adds `DATABASE_URL` for you.
 2. Project → **Settings** → **Environment Variables**: add `CRM_PASSWORD` (the
-   shared team password) and `CRM_SESSION_SECRET` (a long random string).
-3. Redeploy. Sign in at `/crm/login`.
+   owner's password) and `CRM_SESSION_SECRET` (a long random string).
+3. Redeploy. Sign in at `/crm/login` → "Owner sign in".
 
-Auth is one shared password, not per-person accounts — anyone with it sees
-every lead. Rotate it (and `CRM_SESSION_SECRET`, which signs everyone out)
-when someone leaves the team.
+**Who can sign in**
+
+- **The owner** signs in at `/crm/login?owner=1` ("Owner sign in") with
+  `CRM_PASSWORD`. There is exactly one owner login and it has no account row.
+  Only the owner sees the **Team** tab. Don't share `CRM_PASSWORD` with the
+  team; if it was shared before accounts existed, change it in Vercel.
+- **Everyone else** creates their own account at `/crm/signup` (name, email,
+  password). New accounts are `pending` and cannot sign in until the owner
+  clicks **Approve** on the Team tab. The owner can **Remove access**
+  (`disabled`, reversible) or **Delete** an account there.
+- Accounts live in `crm_users` (`src/lib/crm/users.ts`); passwords are stored
+  as salted scrypt hashes. `getSession` (`auth.ts`) re-checks the account's
+  status in the database on every request, so removed access stops working on
+  the member's next click (the CRM's 10-second poll signs them out even if
+  they do nothing). Team routes (`/api/crm/team`) are owner-only.
+- There is no "forgot password" flow. To reset one, delete the account and
+  have the person sign up again.
 
 **Twilio setup (the Call button)**
 

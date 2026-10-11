@@ -1,17 +1,21 @@
 import "server-only";
 
-import { rejectUnlessAuthed } from "./auth";
+import { authorize, type Session } from "./auth";
 import { CrmDbNotConfiguredError } from "./db";
 
-// Wraps a signed-in CRM route handler: checks the session, then turns thrown
-// errors into JSON the UI can show.
+// Wraps a signed-in CRM route handler: checks the session (and, with
+// `ownerOnly`, that it's the owner), then turns thrown errors into JSON the
+// UI can show.
 export async function crmRoute(
   request: Request,
-  handler: () => Promise<Response>
+  handler: (session: Session) => Promise<Response>,
+  options: { ownerOnly?: boolean } = {}
 ) {
-  const rejected = await rejectUnlessAuthed(request);
-  if (rejected) return rejected;
-  return runSafely(handler);
+  return runSafely(async () => {
+    const session = await authorize(request, options);
+    if (session instanceof Response) return session;
+    return handler(session);
+  });
 }
 
 export async function runSafely(handler: () => Promise<Response>) {
