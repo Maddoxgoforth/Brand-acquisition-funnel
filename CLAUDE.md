@@ -464,6 +464,13 @@ the private CRM at `/crm` (see "CRM setup" below).
 3. That's it — no further Discord-side configuration needed. Each
    submission (name, email, phone) arrives as an embed in that channel.
 
+**Slack (optional).** The same route also posts each lead to Slack when
+`SLACK_FREE_COURSE_WEBHOOK_URL` is set (`sendToSlack`), with a link to the
+CRM. To get the URL: go to api.slack.com/apps → **Create New App** → **From
+scratch** → pick the workspace → **Incoming Webhooks** → turn it on → **Add
+New Webhook to Workspace** → choose the channel → copy the URL. Visitor-typed
+text is escaped so it can't trigger `@channel` pings or fake links.
+
 If this env var is unset, the API route still returns success and the
 visitor still sees the "you're in" confirmation — it just silently skips
 the Discord notification, same best-effort pattern as

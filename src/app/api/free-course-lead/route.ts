@@ -40,6 +40,56 @@ async function sendToDiscord(lead: LeadBody) {
   }
 }
 
+// Slack's message formatting treats <...> as links and @-mentions, so a
+// visitor typing "<!channel>" as their name could ping everyone. Escape it.
+function slackText(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// Same best-effort pattern as Discord: skipped when the env var is unset,
+// and a Slack failure never blocks the visitor.
+async function sendToSlack(lead: LeadBody, crmUrl: string) {
+  const webhookUrl = process.env.SLACK_FREE_COURSE_WEBHOOK_URL;
+  if (!webhookUrl) return;
+
+  const summary = `New free course application: ${slackText(lead.name)}`;
+  try {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: summary,
+        blocks: [
+          {
+            type: "section",
+            text: { type: "mrkdwn", text: `:tada: *${summary}*` },
+          },
+          {
+            type: "section",
+            fields: [
+              { type: "mrkdwn", text: `*Name*\n${slackText(lead.name)}` },
+              { type: "mrkdwn", text: `*Phone*\n${slackText(lead.phone)}` },
+              { type: "mrkdwn", text: `*Email*\n${slackText(lead.email)}` },
+            ],
+          },
+          {
+            type: "context",
+            elements: [
+              { type: "mrkdwn", text: `<${crmUrl}|Open the CRM> to call them.` },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      console.error(`Slack webhook failed: ${res.status}`);
+    }
+  } catch (error) {
+    console.error("Slack webhook request failed:", error);
+  }
+}
+
 // Files the lead under "Free course applications" in the private CRM
 // (/crm). Best-effort like the Discord step: if the CRM database is missing
 // or down, the visitor still gets their confirmation page.
@@ -71,8 +121,10 @@ export async function POST(request: Request) {
     );
   }
 
+  const crmUrl = new URL("/crm", request.url).toString();
   await Promise.all([
     sendToDiscord({ name, email, phone }),
+    sendToSlack({ name, email, phone }, crmUrl),
     saveToCrm({ name, email, phone }),
   ]);
 
