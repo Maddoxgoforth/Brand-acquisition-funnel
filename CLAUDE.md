@@ -468,8 +468,10 @@ the private CRM at `/crm` (see "CRM setup" below).
 `SLACK_FREE_COURSE_WEBHOOK_URL` is set (`sendToSlack`), with a link to the
 CRM. To get the URL: go to api.slack.com/apps → **Create New App** → **From
 scratch** → pick the workspace → **Incoming Webhooks** → turn it on → **Add
-New Webhook to Workspace** → choose the channel → copy the URL. Visitor-typed
-text is escaped so it can't trigger `@channel` pings or fake links.
+New Webhook to Workspace** → choose the channel → copy the URL. Each message
+starts with `<!channel>` (@channel) so everyone in the channel gets a phone
+push. Visitor-typed text is escaped so it can't add its own pings or fake
+links.
 
 If this env var is unset, the API route still returns success and the
 visitor still sees the "you're in" confirmation — it just silently skips

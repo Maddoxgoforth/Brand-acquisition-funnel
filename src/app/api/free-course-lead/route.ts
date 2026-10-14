@@ -53,16 +53,19 @@ async function sendToSlack(lead: LeadBody, crmUrl: string) {
   if (!webhookUrl) return;
 
   const summary = `New free course application: ${slackText(lead.name)}`;
+  // <!channel> is Slack's @channel: it notifies everyone in the channel,
+  // including a push to their phones, so leads get called fast. `text` is
+  // what the phone notification shows.
   try {
     const res = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        text: summary,
+        text: `<!channel> ${summary}`,
         blocks: [
           {
             type: "section",
-            text: { type: "mrkdwn", text: `:tada: *${summary}*` },
+            text: { type: "mrkdwn", text: `<!channel> :tada: *${summary}*` },
           },
           {
             type: "section",
