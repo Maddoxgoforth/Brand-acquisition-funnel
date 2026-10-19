@@ -3,6 +3,7 @@ import "server-only";
 import { query } from "./db";
 import {
   ANSWERED_STATUS_IDS,
+  APPOINTMENT_STATUS,
   SOURCE_IDS,
   canAccess,
   classifyField,
@@ -27,6 +28,8 @@ type LeadRow = {
   extra: Record<string, unknown> | string | null;
   status: StatusId;
   notes: string;
+  appointment_at: string | Date | null;
+  appointment_tz: string | null;
   call_count: number;
   last_called_at: string | Date | null;
   created_at: string | Date;
@@ -50,6 +53,8 @@ function toLead(row: LeadRow): Lead {
     extra: cleanExtra(rawExtra),
     status: row.status,
     notes: row.notes,
+    appointmentAt: iso(row.appointment_at ?? null),
+    appointmentTz: row.appointment_tz ?? null,
     callCount: Number(row.call_count),
     lastCalledAt: iso(row.last_called_at),
     createdAt: iso(row.created_at)!,
@@ -319,7 +324,12 @@ export type LeadPatch = {
   notes?: string;
   status?: StatusId;
   extra?: Record<string, string>;
+  // Required when moving a lead into "Appointment scheduled"; can also be
+  // sent alone to reschedule a lead that's already there.
+  appointment?: { at: string; timeZone: string };
 };
+
+export class AppointmentRequiredError extends Error {}
 
 export async function updateLead(
   id: string,
@@ -338,10 +348,26 @@ export async function updateLead(
     extra: patch.extra ? cleanExtra(patch.extra) : current.extra,
   };
 
+  // The appointment only exists while the lead sits in that column: moving
+  // in needs one, moving out clears it.
+  let appointmentAt = current.appointmentAt;
+  let appointmentTz = current.appointmentTz;
+  if (next.status === APPOINTMENT_STATUS) {
+    if (patch.appointment) {
+      appointmentAt = patch.appointment.at;
+      appointmentTz = patch.appointment.timeZone;
+    }
+    if (!appointmentAt) throw new AppointmentRequiredError();
+  } else {
+    appointmentAt = null;
+    appointmentTz = null;
+  }
+
   const rows = await query<LeadRow>(
     `UPDATE crm_leads
      SET name = $2, phone = $3, phone_e164 = $4, email = $5, notes = $6,
-         status = $7, extra = $8::jsonb, updated_at = now()
+         status = $7, extra = $8::jsonb, appointment_at = $9,
+         appointment_tz = $10, updated_at = now()
      WHERE id = $1 RETURNING *`,
     [
       id,
@@ -352,11 +378,16 @@ export async function updateLead(
       next.notes,
       next.status,
       JSON.stringify(next.extra),
+      appointmentAt,
+      appointmentTz,
     ]
   );
 
   if (next.status !== current.status) {
     await addEvent(id, "status", { from: current.status, to: next.status });
+  }
+  if (next.status === APPOINTMENT_STATUS && appointmentAt !== current.appointmentAt) {
+    await addEvent(id, "appointment", { at: appointmentAt!, timeZone: appointmentTz ?? "" });
   }
   return rows[0] ? toLead(rows[0]) : null;
 }

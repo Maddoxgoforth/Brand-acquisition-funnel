@@ -2,7 +2,12 @@
 
 import { useMemo, useState, type DragEvent } from "react";
 
-import { STATUSES, type Lead, type StatusId } from "@/lib/crm/constants";
+import {
+  STATUSES,
+  formatAppointment,
+  type Lead,
+  type StatusId,
+} from "@/lib/crm/constants";
 import { timeAgo } from "./api";
 
 const PAGE = 50;
@@ -11,6 +16,7 @@ const COLUMN_ACCENT: Record<StatusId, string> = {
   new: "bg-slate-400",
   no_answer: "bg-amber-400",
   callback: "bg-sky-500",
+  appointment: "bg-violet-500",
   not_interested: "bg-slate-500",
   closed: "bg-emerald-500",
   do_not_call: "bg-red-500",
@@ -58,8 +64,12 @@ export default function Board({
     }
     // To dial keeps the order the server sent (see listLeads); worked leads
     // show most recently touched first.
+    // Appointments show soonest first.
+    grouped.appointment.sort((a, b) =>
+      (a.appointmentAt ?? "").localeCompare(b.appointmentAt ?? "")
+    );
     for (const status of STATUSES) {
-      if (status.id !== "new") {
+      if (status.id !== "new" && status.id !== "appointment") {
         grouped[status.id].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
       }
     }
@@ -121,6 +131,11 @@ export default function Board({
                   </p>
                   {lead.email ? (
                     <p className="truncate text-xs text-muted">{lead.email}</p>
+                  ) : null}
+                  {lead.appointmentAt ? (
+                    <p className="mt-1 truncate rounded-md bg-violet-50 px-2 py-1 text-xs font-bold text-violet-800">
+                      {formatAppointment(lead.appointmentAt, lead.appointmentTz)}
+                    </p>
                   ) : null}
                   <div className="mt-2 flex items-center gap-2 text-xs text-muted">
                     <span>

@@ -1,7 +1,12 @@
 import { crmRoute, readJson } from "@/lib/crm/api";
 import type { Session } from "@/lib/crm/auth";
-import { canAccess, isStatusId } from "@/lib/crm/constants";
 import {
+  canAccess,
+  isStatusId,
+  zonedTimeToIso,
+} from "@/lib/crm/constants";
+import {
+  AppointmentRequiredError,
   deleteLead,
   getLead,
   listEvents,
@@ -54,8 +59,34 @@ export async function PATCH(request: Request, { params }: Context) {
     if (body.extra && typeof body.extra === "object") {
       patch.extra = body.extra as Record<string, string>;
     }
+    // { appointment: { date: "2026-10-21", time: "15:00", timeZone: "America/New_York" } }
+    if (body.appointment !== undefined) {
+      const a = body.appointment as Record<string, unknown> | null;
+      const at =
+        a && typeof a.date === "string" && typeof a.time === "string" && typeof a.timeZone === "string"
+          ? zonedTimeToIso(a.date, a.time, a.timeZone)
+          : null;
+      if (!at) {
+        return Response.json(
+          { error: "Pick a valid date, time and time zone." },
+          { status: 400 }
+        );
+      }
+      patch.appointment = { at, timeZone: (a as { timeZone: string }).timeZone };
+    }
 
-    const lead = await updateLead(id, patch);
+    let lead;
+    try {
+      lead = await updateLead(id, patch);
+    } catch (error) {
+      if (error instanceof AppointmentRequiredError) {
+        return Response.json(
+          { error: "Add the appointment date and time first." },
+          { status: 400 }
+        );
+      }
+      throw error;
+    }
     if (!lead) return notFound();
     return Response.json({ lead, events: await listEvents(id) });
   });

@@ -22,6 +22,8 @@ const SCHEMA = [
   // Running count of the order leads were added in, including their order
   // inside one import. Dial lists are worked oldest-first by this.
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS seq bigserial`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS appointment_at timestamptz`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS appointment_tz text`,
   `CREATE INDEX IF NOT EXISTS crm_leads_source_idx ON crm_leads (source, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS crm_leads_phone_idx ON crm_leads (phone_e164)`,
   `CREATE TABLE IF NOT EXISTS crm_events (

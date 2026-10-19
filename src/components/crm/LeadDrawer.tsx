@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   SOURCES,
   STATUSES,
+  formatAppointment,
   type Lead,
   type LeadEvent,
   type StatusId,
@@ -13,7 +14,7 @@ import { crmFetch, timeAgo } from "./api";
 
 export type LeadPatch = Partial<
   Pick<Lead, "name" | "phone" | "email" | "notes" | "status" | "extra">
->;
+> & { appointment?: { date: string; time: string; timeZone: string } };
 
 const field =
   "w-full rounded-lg border border-border px-3 py-2 outline-none focus:border-accent";
@@ -23,6 +24,9 @@ const statusLabel = (id: string) =>
 
 function describe(event: LeadEvent) {
   if (event.type === "call") return "Called from the CRM";
+  if (event.type === "appointment") {
+    return `Appointment set for ${formatAppointment(event.data.at, event.data.timeZone || null)}`;
+  }
   if (event.type === "status") {
     return `Moved from ${statusLabel(event.data.from)} to ${statusLabel(event.data.to)}`;
   }
@@ -38,6 +42,7 @@ export default function LeadDrawer({
   onSave,
   onDelete,
   onCall,
+  onReschedule,
 }: {
   lead: Lead;
   askOutcome: boolean;
@@ -46,6 +51,7 @@ export default function LeadDrawer({
   onSave: (patch: LeadPatch) => Promise<LeadEvent[] | null>;
   onDelete: () => void;
   onCall: () => void;
+  onReschedule: () => void;
 }) {
   const [name, setName] = useState(lead.name);
   const [phone, setPhone] = useState(lead.phone);
@@ -145,6 +151,22 @@ export default function LeadDrawer({
               ))}
             </div>
           </section>
+
+          {lead.appointmentAt ? (
+            <section className="flex items-center gap-3 rounded-xl bg-violet-50 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-violet-700">
+                  Appointment
+                </p>
+                <p className="font-bold text-violet-900">
+                  {formatAppointment(lead.appointmentAt, lead.appointmentTz)}
+                </p>
+              </div>
+              <button type="button" onClick={onReschedule} className="text-sm font-bold text-violet-700 hover:underline">
+                Change
+              </button>
+            </section>
+          ) : null}
 
           <section className="space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-widest text-muted">

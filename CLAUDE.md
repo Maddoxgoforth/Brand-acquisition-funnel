@@ -497,7 +497,7 @@ linked from any public page and is `noindex`.
   free course" and "High-ticket mentorship applications".
 - Every list is a drag-and-drop board with the same six columns, defined once
   in `src/lib/crm/constants.ts` (`STATUSES`): To dial, No answer, Callback,
-  Not interested, Closed, Do not call. Add or rename a column there and the
+  Appointment scheduled, Not interested, Closed, Do not call. Add or rename a column there and the
   board, the lead panel and the dashboard all follow. Each status's
   `answered` flag decides whether it counts toward the answer rate.
 - A lead is name / phone / email plus **any other fields it arrived with**.
@@ -510,6 +510,13 @@ linked from any public page and is `noindex`.
   Definitions (`getStats`): a lead is *dialed* once it leaves To dial or has
   been called from the CRM; *answer rate* = leads in an `answered` column ÷
   dialed; *conversion rate* = Closed ÷ dialed.
+- **Appointment scheduled** — moving a lead into this column (drag or the
+  status button) opens `AppointmentDialog` asking for the time, time zone
+  and date; cancelling leaves the lead where it was. The server stores the
+  exact moment plus the IANA zone (`appointment_at` / `appointment_tz`,
+  converted by `zonedTimeToIso`, DST-aware) and refuses the move without
+  one. Moving the lead to any other column clears both. Cards and the lead
+  panel show it in the zone it was booked in, soonest first.
 - **Live opt-ins** — while the CRM is open it asks `/api/crm/leads/new`
   every 10 seconds (`POLL_MS` in `CrmApp.tsx`) for free-course opt-ins newer
   than its cursor. New ones are added to the board without a refresh, show a

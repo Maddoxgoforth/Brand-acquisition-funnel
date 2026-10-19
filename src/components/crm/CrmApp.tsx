@@ -20,6 +20,7 @@ import {
   type StatusId,
 } from "@/lib/crm/constants";
 import AddLeadsDialog from "./AddLeadsDialog";
+import AppointmentDialog from "./AppointmentDialog";
 import Board from "./Board";
 import CallBar from "./CallBar";
 import Dashboard from "./Dashboard";
@@ -63,6 +64,8 @@ export default function CrmApp({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [outcomeFor, setOutcomeFor] = useState<string | null>(null);
   const [dialog, setDialog] = useState<"single" | "import" | null>(null);
+  // The lead waiting for an appointment time before it can move columns.
+  const [booking, setBooking] = useState<Lead | null>(null);
   const [error, setError] = useState<string | null>(null);
   const repaired = useRef(new Set<SourceId>());
   // New free-course opt-ins that arrived while this page was open.
@@ -214,7 +217,15 @@ export default function CrmApp({
   const patchLead = useCallback(
     async (lead: Lead, patch: LeadPatch): Promise<LeadEvent[] | null> => {
       // Show the change straight away, then confirm with the server.
-      putLead({ ...lead, ...patch });
+      const { appointment, ...fields } = patch;
+      const leavingAppointment = fields.status && fields.status !== "appointment";
+      if (!appointment) {
+        putLead({
+          ...lead,
+          ...fields,
+          ...(leavingAppointment ? { appointmentAt: null, appointmentTz: null } : {}),
+        });
+      }
       try {
         const data = await crmFetch<{ lead: Lead; events: LeadEvent[] }>(
           `/api/crm/leads/${lead.id}`,
@@ -243,6 +254,18 @@ export default function CrmApp({
       }
     },
     [putLead]
+  );
+
+  // Moving into "Appointment scheduled" (by drag or button) first asks when.
+  const changeStatus = useCallback(
+    (lead: Lead, status: StatusId) => {
+      if (status === "appointment" && lead.status !== "appointment") {
+        setBooking(lead);
+        return Promise.resolve(null);
+      }
+      return patchLead(lead, { status });
+    },
+    [patchLead]
   );
 
   const dialer = useDialer(handleCallEnded);
@@ -397,7 +420,7 @@ export default function CrmApp({
                 setSelectedId(lead.id);
                 setOutcomeFor(null);
               }}
-              onMove={(lead, status: StatusId) => patchLead(lead, { status })}
+              onMove={(lead, status: StatusId) => changeStatus(lead, status)}
               onCall={dialer.call}
             />
           ) : (
@@ -417,11 +440,31 @@ export default function CrmApp({
             setOutcomeFor(null);
           }}
           onSave={(patch) => {
-            if (patch.status) setOutcomeFor(null);
+            if (patch.status) {
+              setOutcomeFor(null);
+              return changeStatus(selected, patch.status);
+            }
             return patchLead(selected, patch);
           }}
+          onReschedule={() => setBooking(selected)}
           onDelete={() => deleteLead(selected)}
           onCall={() => dialer.call(selected)}
+        />
+      ) : null}
+
+      {booking ? (
+        <AppointmentDialog
+          key={booking.id}
+          lead={booking}
+          onCancel={() => setBooking(null)}
+          onConfirm={async (appointment) => {
+            const events = await patchLead(booking, {
+              status: "appointment",
+              appointment,
+            });
+            if (events) setBooking(null);
+            return events !== null;
+          }}
         />
       ) : null}
 
