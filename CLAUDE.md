@@ -512,10 +512,10 @@ linked from any public page and is `noindex`.
   dialed; *conversion rate* = Closed ÷ dialed.
 - **Appointment scheduled** — moving a lead into this column (drag or the
   status button) opens `AppointmentDialog` asking for the time, time zone
-  and date; cancelling leaves the lead where it was. The server stores the
-  exact moment plus the IANA zone (`appointment_at` / `appointment_tz`,
-  converted by `zonedTimeToIso`, DST-aware) and refuses the move without
-  one. Moving the lead to any other column clears both. Cards and the lead
+  and date (or "Save without a time"); cancelling leaves the lead where it
+  was. The server stores the exact moment plus the IANA zone
+  (`appointment_at` / `appointment_tz`, converted by `zonedTimeToIso`,
+  DST-aware); both are null when no time is set. Moving the lead to any other column clears both. Cards and the lead
   panel show it in the zone it was booked in, soonest first.
 - **Live opt-ins** — while the CRM is open it asks `/api/crm/leads/new`
   every 10 seconds (`POLL_MS` in `CrmApp.tsx`) for free-course opt-ins newer

@@ -14,7 +14,7 @@ import { crmFetch, timeAgo } from "./api";
 
 export type LeadPatch = Partial<
   Pick<Lead, "name" | "phone" | "email" | "notes" | "status" | "extra">
-> & { appointment?: { date: string; time: string; timeZone: string } };
+> & { appointment?: { date: string; time: string; timeZone: string } | null };
 
 const field =
   "w-full rounded-lg border border-border px-3 py-2 outline-none focus:border-accent";
@@ -25,7 +25,9 @@ const statusLabel = (id: string) =>
 function describe(event: LeadEvent) {
   if (event.type === "call") return "Called from the CRM";
   if (event.type === "appointment") {
-    return `Appointment set for ${formatAppointment(event.data.at, event.data.timeZone || null)}`;
+    return event.data.at
+      ? `Appointment set for ${formatAppointment(event.data.at, event.data.timeZone || null)}`
+      : "Appointment time cleared";
   }
   if (event.type === "status") {
     return `Moved from ${statusLabel(event.data.from)} to ${statusLabel(event.data.to)}`;
@@ -152,18 +154,20 @@ export default function LeadDrawer({
             </div>
           </section>
 
-          {lead.appointmentAt ? (
+          {lead.status === "appointment" ? (
             <section className="flex items-center gap-3 rounded-xl bg-violet-50 px-4 py-3">
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold uppercase tracking-widest text-violet-700">
                   Appointment
                 </p>
                 <p className="font-bold text-violet-900">
-                  {formatAppointment(lead.appointmentAt, lead.appointmentTz)}
+                  {lead.appointmentAt
+                    ? formatAppointment(lead.appointmentAt, lead.appointmentTz)
+                    : "No time set"}
                 </p>
               </div>
               <button type="button" onClick={onReschedule} className="text-sm font-bold text-violet-700 hover:underline">
-                Change
+                {lead.appointmentAt ? "Change" : "Set time"}
               </button>
             </section>
           ) : null}

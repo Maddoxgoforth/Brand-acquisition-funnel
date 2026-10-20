@@ -324,12 +324,10 @@ export type LeadPatch = {
   notes?: string;
   status?: StatusId;
   extra?: Record<string, string>;
-  // Required when moving a lead into "Appointment scheduled"; can also be
-  // sent alone to reschedule a lead that's already there.
-  appointment?: { at: string; timeZone: string };
+  // Sets (or with null, clears) the time of a lead in "Appointment
+  // scheduled". A lead can sit in that column with no time set.
+  appointment?: { at: string; timeZone: string } | null;
 };
-
-export class AppointmentRequiredError extends Error {}
 
 export async function updateLead(
   id: string,
@@ -348,16 +346,15 @@ export async function updateLead(
     extra: patch.extra ? cleanExtra(patch.extra) : current.extra,
   };
 
-  // The appointment only exists while the lead sits in that column: moving
-  // in needs one, moving out clears it.
+  // The appointment time only exists while the lead sits in that column
+  // (and is optional there); moving the lead out clears it.
   let appointmentAt = current.appointmentAt;
   let appointmentTz = current.appointmentTz;
   if (next.status === APPOINTMENT_STATUS) {
-    if (patch.appointment) {
-      appointmentAt = patch.appointment.at;
-      appointmentTz = patch.appointment.timeZone;
+    if (patch.appointment !== undefined) {
+      appointmentAt = patch.appointment?.at ?? null;
+      appointmentTz = patch.appointment?.timeZone ?? null;
     }
-    if (!appointmentAt) throw new AppointmentRequiredError();
   } else {
     appointmentAt = null;
     appointmentTz = null;
@@ -387,7 +384,10 @@ export async function updateLead(
     await addEvent(id, "status", { from: current.status, to: next.status });
   }
   if (next.status === APPOINTMENT_STATUS && appointmentAt !== current.appointmentAt) {
-    await addEvent(id, "appointment", { at: appointmentAt!, timeZone: appointmentTz ?? "" });
+    await addEvent(id, "appointment", {
+      at: appointmentAt ?? "",
+      timeZone: appointmentTz ?? "",
+    });
   }
   return rows[0] ? toLead(rows[0]) : null;
 }

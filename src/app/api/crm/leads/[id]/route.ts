@@ -6,7 +6,6 @@ import {
   zonedTimeToIso,
 } from "@/lib/crm/constants";
 import {
-  AppointmentRequiredError,
   deleteLead,
   getLead,
   listEvents,
@@ -59,8 +58,11 @@ export async function PATCH(request: Request, { params }: Context) {
     if (body.extra && typeof body.extra === "object") {
       patch.extra = body.extra as Record<string, string>;
     }
-    // { appointment: { date: "2026-10-21", time: "15:00", timeZone: "America/New_York" } }
-    if (body.appointment !== undefined) {
+    // { appointment: { date: "2026-10-21", time: "15:00", timeZone: "America/New_York" } },
+    // or { appointment: null } for "no time set".
+    if (body.appointment === null) {
+      patch.appointment = null;
+    } else if (body.appointment !== undefined) {
       const a = body.appointment as Record<string, unknown> | null;
       const at =
         a && typeof a.date === "string" && typeof a.time === "string" && typeof a.timeZone === "string"
@@ -75,18 +77,7 @@ export async function PATCH(request: Request, { params }: Context) {
       patch.appointment = { at, timeZone: (a as { timeZone: string }).timeZone };
     }
 
-    let lead;
-    try {
-      lead = await updateLead(id, patch);
-    } catch (error) {
-      if (error instanceof AppointmentRequiredError) {
-        return Response.json(
-          { error: "Add the appointment date and time first." },
-          { status: 400 }
-        );
-      }
-      throw error;
-    }
+    const lead = await updateLead(id, patch);
     if (!lead) return notFound();
     return Response.json({ lead, events: await listEvents(id) });
   });

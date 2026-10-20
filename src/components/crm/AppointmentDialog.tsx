@@ -49,8 +49,9 @@ export default function AppointmentDialog({
 }: {
   lead: Lead;
   onCancel: () => void;
-  // Resolves to null when saved, or to an error message to show.
-  onConfirm: (appointment: AppointmentInput) => Promise<string | null>;
+  // Resolves to null when saved, or to an error message to show. Called
+  // with null for "Save without a time".
+  onConfirm: (appointment: AppointmentInput | null) => Promise<string | null>;
 }) {
   const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const startZone = lead.appointmentTz ?? localZone;
@@ -154,6 +155,22 @@ export default function AppointmentDialog({
             Cancel
           </button>
         </div>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            setError(null);
+            const problem = await onConfirm(null);
+            if (problem) {
+              setError(problem);
+              setBusy(false);
+            }
+          }}
+          className="mt-4 text-sm font-bold text-accent hover:underline disabled:opacity-40"
+        >
+          {lead.appointmentAt ? "Remove the time" : "Save without a time"}
+        </button>
       </form>
     </div>
   );

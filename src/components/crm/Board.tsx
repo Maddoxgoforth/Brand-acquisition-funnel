@@ -64,10 +64,13 @@ export default function Board({
     }
     // To dial keeps the order the server sent (see listLeads); worked leads
     // show most recently touched first.
-    // Appointments show soonest first.
-    grouped.appointment.sort((a, b) =>
-      (a.appointmentAt ?? "").localeCompare(b.appointmentAt ?? "")
-    );
+    // Appointments show soonest first; ones with no time set go last.
+    grouped.appointment.sort((a, b) => {
+      if (!a.appointmentAt || !b.appointmentAt) {
+        return Number(!a.appointmentAt) - Number(!b.appointmentAt);
+      }
+      return a.appointmentAt < b.appointmentAt ? -1 : 1;
+    });
     for (const status of STATUSES) {
       if (status.id !== "new" && status.id !== "appointment") {
         grouped[status.id].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -132,9 +135,11 @@ export default function Board({
                   {lead.email ? (
                     <p className="truncate text-xs text-muted">{lead.email}</p>
                   ) : null}
-                  {lead.appointmentAt ? (
+                  {lead.status === "appointment" ? (
                     <p className="mt-1 truncate rounded-md bg-violet-50 px-2 py-1 text-xs font-bold text-violet-800">
-                      {formatAppointment(lead.appointmentAt, lead.appointmentTz)}
+                      {lead.appointmentAt
+                        ? formatAppointment(lead.appointmentAt, lead.appointmentTz)
+                        : "No time set"}
                     </p>
                   ) : null}
                   <div className="mt-2 flex items-center gap-2 text-xs text-muted">
