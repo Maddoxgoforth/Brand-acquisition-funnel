@@ -38,7 +38,7 @@ export default function Dashboard({ stats }: { stats: Stats | null }) {
       {optIns ? (
         <section>
           <h2 className="text-lg font-extrabold">Free course opt-ins</h2>
-          <div className="mt-3 grid gap-4 sm:grid-cols-3">
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               label="Past 24 hours"
               value={String(optIns.day)}
@@ -54,6 +54,13 @@ export default function Dashboard({ stats }: { stats: Stats | null }) {
               value={String(optIns.month)}
               detail="New free-course applications"
             />
+            {stats.optInConversion ? (
+              <StatCard
+                label="Opt-in conversion rate"
+                value={percent(stats.optInConversion.rate)}
+                detail={`${stats.optInConversion.closed} closed out of ${stats.optInConversion.total} opt-ins`}
+              />
+            ) : null}
           </div>
         </section>
       ) : null}

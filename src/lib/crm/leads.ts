@@ -456,6 +456,15 @@ export async function getStats(access: Access): Promise<Stats> {
   const closed = sum("closed");
 
   return {
+    optInConversion: (() => {
+      const row = bySource.find((r) => r.source === "free_course_application");
+      if (!row) return null;
+      return {
+        closed: row.closed,
+        total: row.total,
+        rate: row.total > 0 ? row.closed / row.total : null,
+      };
+    })(),
     freeCourseOptIns: access.applications
       ? {
           day: optIns?.day ?? 0,

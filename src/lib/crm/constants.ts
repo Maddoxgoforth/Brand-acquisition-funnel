@@ -122,6 +122,9 @@ export type LeadEvent = {
 export type Stats = {
   // null when this person can't see the free-course opt-ins.
   freeCourseOptIns: { day: number; week: number; month: number } | null;
+  // Free course applications only: how many ended up in Closed, out of all
+  // opt-ins. null when this person can't see the opt-ins.
+  optInConversion: { closed: number; total: number; rate: number | null } | null;
   totalLeads: number;
   dialed: number;
   answered: number;

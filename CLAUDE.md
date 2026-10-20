@@ -509,7 +509,9 @@ linked from any public page and is `noindex`.
   days, total leads, leads closed, conversion rate and answer rate.
   Definitions (`getStats`): a lead is *dialed* once it leaves To dial or has
   been called from the CRM; *answer rate* = leads in an `answered` column ÷
-  dialed; *conversion rate* = Closed ÷ dialed.
+  dialed; *conversion rate* = Closed ÷ dialed. The opt-ins section also has an
+  *opt-in conversion rate* = free course applications in Closed ÷ all free
+  course applications (dialed or not).
 - **Appointment scheduled** — moving a lead into this column (drag or the
   status button) opens `AppointmentDialog` asking for the time, time zone
   and date (or "Save without a time"); cancelling leaves the lead where it
