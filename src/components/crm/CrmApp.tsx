@@ -458,12 +458,19 @@ export default function CrmApp({
           lead={booking}
           onCancel={() => setBooking(null)}
           onConfirm={async (appointment) => {
-            const events = await patchLead(booking, {
-              status: "appointment",
-              appointment,
-            });
-            if (events) setBooking(null);
-            return events !== null;
+            // Saved here rather than through patchLead so a problem shows
+            // inside the dialog instead of behind it.
+            try {
+              const data = await crmFetch<{ lead: Lead }>(`/api/crm/leads/${booking.id}`, {
+                method: "PATCH",
+                body: { status: "appointment", appointment },
+              });
+              putLead(data.lead);
+              setBooking(null);
+              return null;
+            } catch (e) {
+              return e instanceof Error ? e.message : "Couldn't save the appointment.";
+            }
           }}
         />
       ) : null}

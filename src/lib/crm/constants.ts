@@ -179,7 +179,8 @@ export function zonedTimeToIso(
   timeZone: string
 ): string | null {
   const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
-  const t = /^(\d{2}):(\d{2})$/.exec(time);
+  // Some browsers send seconds too ("15:30:00").
+  const t = /^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/.exec(time.trim());
   if (!d || !t || !isTimeZone(timeZone)) return null;
   const [y, mo, da, h, mi] = [d[1], d[2], d[3], t[1], t[2]].map(Number);
   const wall = Date.UTC(y, mo - 1, da, h, mi);

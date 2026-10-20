@@ -36,7 +36,8 @@ export default function AppointmentDialog({
 }: {
   lead: Lead;
   onCancel: () => void;
-  onConfirm: (appointment: AppointmentInput) => Promise<boolean>;
+  // Resolves to null when saved, or to an error message to show.
+  onConfirm: (appointment: AppointmentInput) => Promise<string | null>;
 }) {
   const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const startZone = lead.appointmentTz ?? localZone;
@@ -46,6 +47,7 @@ export default function AppointmentDialog({
   const [timeZone, setTimeZone] = useState(startZone);
   const [date, setDate] = useState(existing?.date ?? "");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const zones = TIME_ZONES.some((z) => z.id === localZone)
     ? TIME_ZONES
@@ -53,9 +55,17 @@ export default function AppointmentDialog({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (!date || !time) {
+      setError("Fill in both the time and the date.");
+      return;
+    }
     setBusy(true);
-    const ok = await onConfirm({ date, time, timeZone });
-    if (!ok) setBusy(false);
+    setError(null);
+    const problem = await onConfirm({ date, time, timeZone });
+    if (problem) {
+      setError(problem);
+      setBusy(false);
+    }
   }
 
   return (
@@ -93,10 +103,14 @@ export default function AppointmentDialog({
           <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className={field} />
         </label>
 
+        {error ? (
+          <p className="mt-4 text-sm font-semibold text-danger">{error}</p>
+        ) : null}
+
         <div className="mt-6 flex gap-3">
           <button
             type="submit"
-            disabled={busy || !date || !time}
+            disabled={busy}
             className="rounded-full bg-accent px-6 py-2.5 font-bold text-white hover:bg-accent-dim disabled:opacity-40"
           >
             {busy ? "Saving…" : "Save appointment"}
