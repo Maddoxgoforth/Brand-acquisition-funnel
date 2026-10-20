@@ -27,6 +27,19 @@ function partsIn(iso: string, timeZone: string) {
   return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
 }
 
+const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1));
+const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
+
+// "15:30" -> { hour: "3", minute: "30", period: "PM" }
+function splitTime(time: string) {
+  const [h, m] = time.split(":").map(Number);
+  return {
+    hour: String(h % 12 || 12),
+    minute: String(m - (m % 5)).padStart(2, "0"),
+    period: h >= 12 ? "PM" : "AM",
+  };
+}
+
 // Asked whenever a lead moves into "Appointment scheduled" (or the booked
 // time is changed). Cancelling leaves the lead where it was.
 export default function AppointmentDialog({
@@ -43,7 +56,12 @@ export default function AppointmentDialog({
   const startZone = lead.appointmentTz ?? localZone;
   const existing = lead.appointmentAt ? partsIn(lead.appointmentAt, startZone) : null;
 
-  const [time, setTime] = useState(existing?.time ?? "");
+  // Plain dropdowns instead of the browser's time box: Safari's time box
+  // can reject a half-typed time with "Invalid value" and block saving.
+  const start = existing ? splitTime(existing.time) : null;
+  const [hour, setHour] = useState(start?.hour ?? "");
+  const [minute, setMinute] = useState(start?.minute ?? "00");
+  const [period, setPeriod] = useState(start?.period ?? "PM");
   const [timeZone, setTimeZone] = useState(startZone);
   const [date, setDate] = useState(existing?.date ?? "");
   const [busy, setBusy] = useState(false);
@@ -55,10 +73,12 @@ export default function AppointmentDialog({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!date || !time) {
-      setError("Fill in both the time and the date.");
+    if (!hour || !date) {
+      setError(!hour ? "Pick the hour." : "Pick the date.");
       return;
     }
+    const h24 = (Number(hour) % 12) + (period === "PM" ? 12 : 0);
+    const time = `${String(h24).padStart(2, "0")}:${minute}`;
     setBusy(true);
     setError(null);
     const problem = await onConfirm({ date, time, timeZone });
@@ -71,6 +91,7 @@ export default function AppointmentDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6" onClick={onCancel}>
       <form
+        noValidate
         onSubmit={submit}
         onClick={(event) => event.stopPropagation()}
         className="w-full max-w-sm rounded-2xl border border-border bg-background p-6 shadow-lg"
@@ -82,12 +103,26 @@ export default function AppointmentDialog({
           When are you talking to {lead.name || "this lead"}?
         </h2>
 
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <label className="text-sm font-semibold">
-            Time
-            <input type="time" required value={time} onChange={(e) => setTime(e.target.value)} className={field} autoFocus />
-          </label>
-          <label className="text-sm font-semibold">
+        <p className="mt-5 text-sm font-semibold">Time</p>
+        <div className="mt-1 grid grid-cols-3 gap-2">
+          <select aria-label="Hour" value={hour} onChange={(e) => setHour(e.target.value)} className={`${field} mt-0`} autoFocus>
+            <option value="">Hour</option>
+            {HOURS.map((h) => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
+          <select aria-label="Minutes" value={minute} onChange={(e) => setMinute(e.target.value)} className={`${field} mt-0`}>
+            {MINUTES.map((m) => (
+              <option key={m} value={m}>:{m}</option>
+            ))}
+          </select>
+          <select aria-label="AM or PM" value={period} onChange={(e) => setPeriod(e.target.value)} className={`${field} mt-0`}>
+            <option value="AM">AM</option>
+            <option value="PM">PM</option>
+          </select>
+        </div>
+        <div className="mt-3">
+          <label className="block text-sm font-semibold">
             Time zone
             <select value={timeZone} onChange={(e) => setTimeZone(e.target.value)} className={`${field} text-sm`}>
               {zones.map((zone) => (
