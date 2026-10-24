@@ -16,7 +16,6 @@ import {
   type Lead,
   type LeadEvent,
   type SourceId,
-  type Stats,
   type StatusId,
 } from "@/lib/crm/constants";
 import AddLeadsDialog from "./AddLeadsDialog";
@@ -59,7 +58,8 @@ export default function CrmApp({
 }) {
   const [view, setView] = useState<View>("dashboard");
   const [cache, setCache] = useState<LeadCache>({});
-  const [stats, setStats] = useState<Stats | null>(null);
+  // Bumped when a new opt-in arrives so the dashboard reloads its numbers.
+  const [statsKey, setStatsKey] = useState(0);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [outcomeFor, setOutcomeFor] = useState<string | null>(null);
@@ -97,12 +97,8 @@ export default function CrmApp({
 
   useEffect(() => {
     let cancelled = false;
-    if (view === "team") {
-      // The Team screen loads its own data.
-    } else if (view === "dashboard") {
-      crmFetch<Stats>("/api/crm/stats")
-        .then((data) => !cancelled && setStats(data))
-        .catch((e) => !cancelled && report(e));
+    if (view === "team" || view === "dashboard") {
+      // These screens load their own data.
     } else {
       const load = () =>
         crmFetch<{ leads: Lead[] }>(`/api/crm/leads?source=${view}`);
@@ -169,7 +165,7 @@ export default function CrmApp({
           setUnseen((n) => n + data.leads.length);
         }
         if (viewRef.current === "dashboard") {
-          crmFetch<Stats>("/api/crm/stats").then(setStats).catch(() => {});
+          setStatsKey((k) => k + 1);
         }
         if (soundSetting.isOn()) playChime();
       } catch {
@@ -368,7 +364,7 @@ export default function CrmApp({
         </main>
       ) : view === "dashboard" ? (
         <main className="flex-1 overflow-y-auto bg-background-elevated/40">
-          <Dashboard stats={stats} />
+          <Dashboard refreshKey={statsKey} onError={report} />
         </main>
       ) : (
         <main className="flex min-h-0 flex-1 flex-col">

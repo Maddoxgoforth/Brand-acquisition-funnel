@@ -119,26 +119,50 @@ export type LeadEvent = {
   createdAt: string;
 };
 
-export type Stats = {
-  // null when this person can't see the free-course opt-ins.
-  freeCourseOptIns: { day: number; week: number; month: number } | null;
-  // Free course applications only: how many ended up in Closed, out of all
-  // opt-ins. null when this person can't see the opt-ins.
-  optInConversion: { closed: number; total: number; rate: number | null } | null;
-  totalLeads: number;
+// Time frames the dashboard can switch between.
+export const STAT_RANGES = [
+  { id: "1d", label: "1 day", days: 1 },
+  { id: "7d", label: "7 days", days: 7 },
+  { id: "30d", label: "30 days", days: 30 },
+  { id: "90d", label: "3 months", days: 90 },
+  { id: "180d", label: "6 months", days: 180 },
+  { id: "365d", label: "1 year", days: 365 },
+  { id: "all", label: "Lifetime", days: null },
+] as const;
+
+export type StatRange = (typeof STAT_RANGES)[number]["id"];
+
+export function isStatRange(value: unknown): value is StatRange {
+  return STAT_RANGES.some((r) => r.id === value);
+}
+
+export type FunnelNumbers = {
   dialed: number;
   answered: number;
   closed: number;
-  // null until at least one lead has been dialed.
-  conversionRate: number | null;
+  // null until something has been dialed (or, for opt-ins, came in).
   answerRate: number | null;
-  bySource: {
-    source: SourceId;
-    total: number;
-    dialed: number;
-    answered: number;
-    closed: number;
-  }[];
+  conversionRate: number | null;
+};
+
+export type Stats = {
+  range: StatRange;
+  // Free course opt-ins that came in during the range, and what has happened
+  // to them since. null when this person can't see the opt-ins.
+  optIns: (FunnelNumbers & { total: number }) | null;
+  // The hand-filled dial lists: calling activity during the range.
+  // null when this person can't see the dial lists.
+  dial:
+    | (FunnelNumbers & {
+        leadsInLists: number;
+        toDial: number;
+        bySource: ({
+          source: SourceId;
+          total: number;
+          toDial: number;
+        } & FunnelNumbers)[];
+      })
+    | null;
 };
 
 export const APPOINTMENT_STATUS: StatusId = "appointment";

@@ -507,20 +507,19 @@ linked from any public page and is `noindex`.
   out by common header names and keeps everything else in the lead's `extra`
   JSON, which the lead panel shows and lets you edit. Imports skip leads
   whose phone (or, with no phone, email) is already in that list.
-- **Dashboard** — free-course opt-ins for the past 24 hours / 7 days / 30
-  days, total leads, leads closed, conversion rate and answer rate.
-  Definitions (`getStats`): a lead is *dialed* once it leaves To dial or has
-  been called from the CRM; *answer rate* = leads in an `answered` column ÷
-  dialed; *conversion rate* = Closed ÷ dialed. The opt-ins section also has an
-  *opt-in conversion rate* = free course applications in Closed ÷ all free
-  course applications (dialed or not).
-- **Appointment scheduled** — moving a lead into this column (drag or the
-  status button) opens `AppointmentDialog` asking for the time, time zone
-  and date (or "Save without a time"); cancelling leaves the lead where it
-  was. The server stores the exact moment plus the IANA zone
-  (`appointment_at` / `appointment_tz`, converted by `zonedTimeToIso`,
-  DST-aware); both are null when no time is set. Moving the lead to any other column clears both. Cards and the lead
-  panel show it in the zone it was booked in, soonest first.
+- **Dashboard** — a time-frame switcher at the top (1 day, 7 days, 30 days,
+  3 months, 6 months, 1 year, Lifetime; `STAT_RANGES`) drives two separate
+  sections, computed in `getStats(access, range)`:
+  - *Free course opt-ins* — a cohort: opt-ins that came in during the range
+    and what has happened to them since (dialed, answer rate, closed;
+    conversion = closed ÷ opt-ins).
+  - *Leads to dial* — activity on the two dial lists during the range:
+    dialed = leads called or moved columns in the range (from `crm_events`),
+    answered = of those, now in an `answered` column, closed = moved to Closed
+    in the range; conversion = closed ÷ dialed. Plus a per-list table, total
+    leads in the lists and how many haven't been called yet. "Lifetime" also
+    counts leads worked before event logging.
+  Each section only shows for people with access to it.
 - **Live opt-ins** — while the CRM is open it asks `/api/crm/leads/new`
   every 10 seconds (`POLL_MS` in `CrmApp.tsx`) for free-course opt-ins newer
   than its cursor. New ones are added to the board without a refresh, show a

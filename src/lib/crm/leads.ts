@@ -5,7 +5,7 @@ import {
   ANSWERED_STATUS_IDS,
   APPOINTMENT_STATUS,
   SOURCE_IDS,
-  canAccess,
+  STAT_RANGES,
   classifyField,
   cleanPhone,
   isStatusId,
@@ -14,6 +14,7 @@ import {
   type Lead,
   type LeadEvent,
   type SourceId,
+  type StatRange,
   type Stats,
   type StatusId,
 } from "./constants";
@@ -409,75 +410,105 @@ export async function recordCall(id: string, callSid: string) {
   await addEvent(id, "call", { callSid });
 }
 
-// Only counts the lists this person is allowed to see.
-export async function getStats(access: Access): Promise<Stats> {
-  const [optIns] = await query<{ day: number; week: number; month: number }>(
-    `SELECT
-       count(*) FILTER (WHERE created_at > now() - interval '1 day')::int AS day,
-       count(*) FILTER (WHERE created_at > now() - interval '7 days')::int AS week,
-       count(*) FILTER (WHERE created_at > now() - interval '30 days')::int AS month
-     FROM crm_leads WHERE source = 'free_course_application'`
-  );
-
-  // "Dialed" = moved out of To dial, or called at least once from the CRM.
-  const rows = await query<{
-    source: SourceId;
-    total: number;
-    dialed: number;
-    answered: number;
-    closed: number;
-  }>(
-    `SELECT source,
-       count(*)::int AS total,
-       count(*) FILTER (WHERE status <> 'new' OR call_count > 0)::int AS dialed,
-       count(*) FILTER (WHERE status = ANY($1::text[]))::int AS answered,
-       count(*) FILTER (WHERE status = 'closed')::int AS closed
-     FROM crm_leads GROUP BY source`,
-    [ANSWERED_STATUS_IDS as unknown as string[]]
-  );
-
-  const bySource = SOURCE_IDS.filter((source) =>
-    canAccess(access, source)
-  ).map((source) => {
-    const row = rows.find((r) => r.source === source);
-    return {
-      source,
-      total: row?.total ?? 0,
-      dialed: row?.dialed ?? 0,
-      answered: row?.answered ?? 0,
-      closed: row?.closed ?? 0,
-    };
-  });
-
-  const sum = (key: "total" | "dialed" | "answered" | "closed") =>
-    bySource.reduce((n, row) => n + row[key], 0);
-  const dialed = sum("dialed");
-  const answered = sum("answered");
-  const closed = sum("closed");
-
+function funnel(dialed: number, answered: number, closed: number, base: number) {
   return {
-    optInConversion: (() => {
-      const row = bySource.find((r) => r.source === "free_course_application");
-      if (!row) return null;
-      return {
-        closed: row.closed,
-        total: row.total,
-        rate: row.total > 0 ? row.closed / row.total : null,
-      };
-    })(),
-    freeCourseOptIns: access.applications
-      ? {
-          day: optIns?.day ?? 0,
-          week: optIns?.week ?? 0,
-          month: optIns?.month ?? 0,
-        }
-      : null,
-    totalLeads: sum("total"),
     dialed,
     answered,
     closed,
-    conversionRate: dialed > 0 ? closed / dialed : null,
     answerRate: dialed > 0 ? answered / dialed : null,
-    bySource,
+    conversionRate: base > 0 ? closed / base : null,
   };
+}
+
+// Dashboard numbers for one time frame, only for the lists this person can
+// see.
+//
+// Opt-ins are a cohort: the free-course leads that came in during the range,
+// and what has happened to them since. Conversion = closed / opt-ins.
+//
+// Dial lists are activity: leads dialed (called or moved columns) during the
+// range. Answered = of those, now in an answered column. Closed = moved to
+// Closed during the range. Conversion = closed / dialed.
+export async function getStats(access: Access, range: StatRange): Promise<Stats> {
+  const days = STAT_RANGES.find((r) => r.id === range)!.days;
+  const [{ since }] = await query<{ since: string | Date | null }>(
+    days === null
+      ? `SELECT NULL::timestamptz AS since`
+      : `SELECT now() - make_interval(days => $1) AS since`,
+    days === null ? [] : [days]
+  );
+  const sinceIso = since === null ? null : new Date(since).toISOString();
+  const answeredIds = ANSWERED_STATUS_IDS as unknown as string[];
+
+  let optIns: Stats["optIns"] = null;
+  if (access.applications) {
+    const [row] = await query<{ total: number; dialed: number; answered: number; closed: number }>(
+      `SELECT count(*)::int AS total,
+         count(*) FILTER (WHERE status <> 'new' OR call_count > 0)::int AS dialed,
+         count(*) FILTER (WHERE status = ANY($2::text[]))::int AS answered,
+         count(*) FILTER (WHERE status = 'closed')::int AS closed
+       FROM crm_leads
+       WHERE source = 'free_course_application'
+         AND ($1::timestamptz IS NULL OR created_at >= $1::timestamptz)`,
+      [sinceIso, answeredIds]
+    );
+    optIns = { total: row.total, ...funnel(row.dialed, row.answered, row.closed, row.total) };
+  }
+
+  let dial: Stats["dial"] = null;
+  if (access.dial) {
+    const rows = await query<{
+      source: SourceId;
+      total: number;
+      to_dial: number;
+      dialed: number;
+      answered: number;
+      closed: number;
+    }>(
+      `WITH active AS (
+         SELECT DISTINCT lead_id FROM crm_events
+         WHERE type IN ('call', 'status', 'appointment')
+           AND ($1::timestamptz IS NULL OR created_at >= $1::timestamptz)
+       ), closes AS (
+         SELECT DISTINCT lead_id FROM crm_events
+         WHERE type = 'status' AND data->>'to' = 'closed'
+           AND ($1::timestamptz IS NULL OR created_at >= $1::timestamptz)
+       ), worked AS (
+         SELECT l.*,
+           (a.lead_id IS NOT NULL OR ($1::timestamptz IS NULL
+             AND (l.status <> 'new' OR l.call_count > 0))) AS was_dialed,
+           (c.lead_id IS NOT NULL OR ($1::timestamptz IS NULL
+             AND l.status = 'closed')) AS was_closed
+         FROM crm_leads l
+         LEFT JOIN active a ON a.lead_id = l.id
+         LEFT JOIN closes c ON c.lead_id = l.id
+         WHERE l.source IN ('dial_free_course', 'dial_high_ticket')
+       )
+       SELECT source,
+         count(*)::int AS total,
+         count(*) FILTER (WHERE status = 'new' AND call_count = 0)::int AS to_dial,
+         count(*) FILTER (WHERE was_dialed)::int AS dialed,
+         count(*) FILTER (WHERE was_dialed AND status = ANY($2::text[]))::int AS answered,
+         count(*) FILTER (WHERE was_closed AND status = 'closed')::int AS closed
+       FROM worked GROUP BY source`,
+      [sinceIso, answeredIds]
+    );
+    const bySource = SOURCE_IDS.filter((s) => s !== "free_course_application").map(
+      (source) => {
+        const r = rows.find((x) => x.source === source);
+        const [d, a, c] = [r?.dialed ?? 0, r?.answered ?? 0, r?.closed ?? 0];
+        return { source, total: r?.total ?? 0, toDial: r?.to_dial ?? 0, ...funnel(d, a, c, d) };
+      }
+    );
+    const sum = (k: "total" | "toDial" | "dialed" | "answered" | "closed") =>
+      bySource.reduce((n, r) => n + r[k], 0);
+    dial = {
+      leadsInLists: sum("total"),
+      toDial: sum("toDial"),
+      ...funnel(sum("dialed"), sum("answered"), sum("closed"), sum("dialed")),
+      bySource,
+    };
+  }
+
+  return { range, optIns, dial };
 }
