@@ -14,7 +14,7 @@ export default function FreeCourseConfirmationHowFree() {
         </div>
 
         <p className="max-w-md text-muted">
-          I&apos;ve made over a quarter million dollars selling this exact
+          I&apos;ve made over $300,000 selling this exact
           system myself. So
           you might be asking, &ldquo;how are you giving this away for
           free?&rdquo;

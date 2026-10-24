@@ -365,7 +365,7 @@ above — don't "fix" those back to token classes.
   is embedded, keep that `id="apply"` (or update every `CtaButton` href to
   match). Note this is a same-page fragment on `/apply` — unrelated to the
   `/apply` route name itself, which is just where that page now lives.
-- Numbers throughout ($30k/mo, 300K+, $102,988, 224K sessions, 400K+
+- Numbers throughout ($30k/mo, $102,988, 224K sessions, 400K+
   followers, etc.) are specific claims from the real reference page — don't
   round or "clean up" them without being asked, they're presumably accurate
   to the offer. Note: the monthly-income figure in *copy* (Mentor.tsx,
@@ -376,12 +376,14 @@ above — don't "fix" those back to token classes.
   its `alt` text intentionally still says 290.2K to accurately describe
   what's actually in that image. Don't
   "fix" that alt text to say 400K; it would misdescribe the screenshot.
-  The lifetime-earnings figure in copy is now $250K (updated from an
-  earlier $200K figure) — it appears as a headline stat in `Hero.tsx`
-  (`/apply`), `OfferHero.tsx` and `OfferClose.tsx` (`/offer`), and as a full
-  sentence ("I've made over a quarter million dollars selling this exact
-  system myself...") in `FreeCoursePartnership.tsx` (`/`) and
-  `FreeCourseConfirmationHowFree.tsx` (`/free-course/confirmation`).
+  The lifetime-earnings figure in copy is now $300K (owner-confirmed
+  2026-10-24; earlier $250K and $200K figures are outdated) — it appears as
+  a headline stat in `Hero.tsx` (`/apply`), `OfferHero.tsx` and
+  `OfferClose.tsx` (`/offer`), and as a full sentence ("I've made over
+  $300,000 selling this exact system myself...") in
+  `FreeCoursePartnership.tsx` (`/`) and `FreeCourseConfirmationHowFree.tsx`
+  (`/free-course/confirmation`). Audience: 400K+ across all platforms (the
+  `SocialProof.tsx` hero line on `/apply`), 280K of that on TikTok.
 - The result-card and mentor images are cropped screenshots (status bars /
   app chrome removed, see `public/images/`), not generated graphics — if a
   new proof point comes in, crop it the same way (tight to the content,
