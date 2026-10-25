@@ -5,13 +5,7 @@ import { useState } from "react";
 import type { LeadEvent } from "@/lib/crm/constants";
 import { crmFetch, timeAgo } from "./api";
 
-function length(seconds: string | undefined) {
-  const s = Number(seconds);
-  if (!s) return "";
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-}
-
-// One call in a lead's history: who called, the recording, and notes.
+// One call in a lead's history: who called, and notes on the call.
 export default function CallEntry({
   leadId,
   event,
@@ -44,22 +38,9 @@ export default function CallEntry({
       <div className="flex justify-between gap-3">
         <span className="font-semibold">
           Call{event.actorName ? ` by ${event.actorName}` : ""}
-          {event.data.recordingSeconds ? ` · ${length(event.data.recordingSeconds)}` : ""}
         </span>
         <span className="shrink-0 text-muted">{timeAgo(event.createdAt)}</span>
       </div>
-      {event.data.recordingSid ? (
-        <audio
-          controls
-          preload="none"
-          src={`/api/crm/recordings/${event.data.recordingSid}`}
-          className="h-9 w-full"
-        />
-      ) : (
-        <p className="text-xs text-muted">
-          No recording (not answered, or still processing; give it a minute).
-        </p>
-      )}
       <textarea
         value={notes}
         onChange={(e) => {

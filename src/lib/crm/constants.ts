@@ -119,8 +119,7 @@ export type Actor = { id: string; name: string };
 export type LeadEvent = {
   id: number;
   type: "status" | "call" | "created" | "appointment";
-  // For calls: callSid, and once Twilio delivers them recordingSid,
-  // recordingSeconds and notes.
+  // For calls: callSid and, once added, notes.
   data: Record<string, string>;
   actorName: string | null;
   createdAt: string;

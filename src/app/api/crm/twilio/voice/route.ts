@@ -4,15 +4,13 @@ import {
   callerFromIdentity,
   escapeXml,
   missingTwilioEnv,
-  publicBase,
   readTwilioRequest,
 } from "@/lib/crm/twilio";
 import { getActiveMember } from "@/lib/crm/users";
 
 // Twilio calls this URL (set as the TwiML App's Voice Request URL) the moment
 // the browser dialer starts a call, asking "what should I do with it?". We
-// answer: dial this lead's number, showing our Twilio number as caller ID,
-// record the call, and play a short recording notice to the lead first.
+// answer: dial this lead's number, showing our Twilio number as caller ID.
 //
 // The browser only sends a lead id. The number to dial always comes from the
 // CRM database, so this endpoint can't be used to call arbitrary numbers.
@@ -62,15 +60,9 @@ export async function POST(request: Request) {
     }
     await recordCall(lead.id, params.CallSid ?? "", actor);
 
-    const base = publicBase(request);
     return twiml(
-      `<Dial callerId="${escapeXml(process.env.TWILIO_PHONE_NUMBER!)}" answerOnBridge="true"` +
-        ` record="record-from-answer-dual"` +
-        ` recordingStatusCallback="${escapeXml(`${base}/api/crm/twilio/recording`)}"` +
-        ` recordingStatusCallbackEvent="completed">` +
-        `<Number url="${escapeXml(`${base}/api/crm/twilio/whisper`)}">${escapeXml(
-          lead.phoneE164
-        )}</Number></Dial>`
+      `<Dial callerId="${escapeXml(process.env.TWILIO_PHONE_NUMBER!)}" answerOnBridge="true">` +
+        `<Number>${escapeXml(lead.phoneE164)}</Number></Dial>`
     );
   } catch (error) {
     console.error("CRM voice webhook failed:", error);

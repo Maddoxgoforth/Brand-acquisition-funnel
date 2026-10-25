@@ -422,31 +422,6 @@ export async function recordCall(id: string, callSid: string, actor: Actor | nul
   await addEvent(id, "call", { callSid }, actor);
 }
 
-// Twilio tells us a call's recording is ready; attach it to that call.
-export async function attachRecording(
-  callSid: string,
-  recordingSid: string,
-  seconds: string
-) {
-  const rows = await query(
-    `UPDATE crm_events
-     SET data = data || jsonb_build_object('recordingSid', $2::text, 'recordingSeconds', $3::text)
-     WHERE type = 'call' AND data->>'callSid' = $1 RETURNING id`,
-    [callSid, recordingSid, seconds]
-  );
-  return rows.length > 0;
-}
-
-// The lead a recording belongs to (for access checks before playing it).
-export async function getRecordingLead(recordingSid: string): Promise<Lead | null> {
-  const rows = await query<{ lead_id: string }>(
-    `SELECT lead_id FROM crm_events
-     WHERE type = 'call' AND data->>'recordingSid' = $1 LIMIT 1`,
-    [recordingSid]
-  );
-  return rows[0] ? getLead(rows[0].lead_id) : null;
-}
-
 export async function setCallNotes(leadId: string, eventId: number, notes: string) {
   const rows = await query(
     `UPDATE crm_events SET data = data || jsonb_build_object('notes', $3::text)

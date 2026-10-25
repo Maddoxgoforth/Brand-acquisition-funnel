@@ -74,15 +74,6 @@ export async function readTwilioRequest(
   return params;
 }
 
-// The public base URL Twilio should call back on (same host it called us on).
-export function publicBase(request: Request) {
-  const url = new URL(request.url);
-  const proto = request.headers.get("x-forwarded-proto") ?? "https";
-  const host =
-    request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? url.host;
-  return `${proto}://${host}`;
-}
-
 function base64url(input: Buffer | string) {
   return Buffer.from(input).toString("base64url");
 }
