@@ -108,6 +108,8 @@ export type Lead = {
   appointmentTz: string | null;
   // Optional link to a recording of the closing call, added on closed leads.
   recordingUrl: string | null;
+  // First call or first move out of To dial (speed to lead). null = waiting.
+  firstContactAt: string | null;
   callCount: number;
   lastCalledAt: string | null;
   createdAt: string;
@@ -170,7 +172,17 @@ export type Stats = {
   leaderboard: LeaderboardRow[];
   // Free course opt-ins that came in during the range, and what has happened
   // to them since. null when this person can't see the opt-ins.
-  optIns: (FunnelNumbers & { total: number }) | null;
+  optIns:
+    | (FunnelNumbers & {
+        total: number;
+        // Speed to lead for opt-ins in the range.
+        contacted: number;
+        within5: number; // contacted within 5 minutes of opting in
+        waiting: number; // not contacted yet
+        avgFirstContactSeconds: number | null;
+        medianFirstContactSeconds: number | null;
+      })
+    | null;
   // The hand-filled dial lists: calling activity during the range.
   // null when this person can't see the dial lists.
   dial:
@@ -185,6 +197,18 @@ export type Stats = {
       })
     | null;
 };
+
+// The confirmation page promises a call within 5 minutes.
+export const SPEED_TO_LEAD_SECONDS = 5 * 60;
+
+// "45s", "4m 12s", "2h 05m", "3d 4h"
+export function formatDuration(totalSeconds: number) {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}m`;
+  return `${Math.floor(s / 86400)}d ${Math.floor((s % 86400) / 3600)}h`;
+}
 
 export const APPOINTMENT_STATUS: StatusId = "appointment";
 

@@ -33,6 +33,7 @@ type LeadRow = {
   appointment_at: string | Date | null;
   appointment_tz: string | null;
   recording_url: string | null;
+  first_contact_at: string | Date | null;
   call_count: number;
   last_called_at: string | Date | null;
   created_at: string | Date;
@@ -59,6 +60,7 @@ function toLead(row: LeadRow): Lead {
     appointmentAt: iso(row.appointment_at ?? null),
     appointmentTz: row.appointment_tz ?? null,
     recordingUrl: row.recording_url ?? null,
+    firstContactAt: iso(row.first_contact_at ?? null),
     callCount: Number(row.call_count),
     lastCalledAt: iso(row.last_called_at),
     createdAt: iso(row.created_at)!,
@@ -400,6 +402,9 @@ export async function updateLead(
     ]
   );
 
+  if (next.status !== current.status && !current.firstContactAt) {
+    await markFirstContact(id);
+  }
   if (next.status !== current.status) {
     await addEvent(id, "status", { from: current.status, to: next.status }, actor);
   }
@@ -419,7 +424,16 @@ export async function deleteLead(id: string): Promise<boolean> {
   return rows.length > 0;
 }
 
+async function markFirstContact(id: string) {
+  await query(
+    `UPDATE crm_leads SET first_contact_at = now()
+     WHERE id = $1 AND first_contact_at IS NULL`,
+    [id]
+  );
+}
+
 export async function recordCall(id: string, callSid: string, actor: Actor | null) {
+  await markFirstContact(id);
   await query(
     `UPDATE crm_leads
      SET call_count = call_count + 1, last_called_at = now(), updated_at = now()
@@ -470,17 +484,38 @@ export async function getStats(access: Access, range: StatRange): Promise<Stats>
 
   let optIns: Stats["optIns"] = null;
   if (access.applications) {
-    const [row] = await query<{ total: number; dialed: number; answered: number; closed: number }>(
+    const [row] = await query<{
+      total: number;
+      dialed: number;
+      answered: number;
+      closed: number;
+      contacted: number;
+      within5: number;
+      avg_s: number | null;
+      median_s: number | null;
+    }>(
       `SELECT count(*)::int AS total,
          count(*) FILTER (WHERE status <> 'new' OR call_count > 0)::int AS dialed,
          count(*) FILTER (WHERE status = ANY($2::text[]))::int AS answered,
-         count(*) FILTER (WHERE status = 'closed')::int AS closed
+         count(*) FILTER (WHERE status = 'closed')::int AS closed,
+         count(first_contact_at)::int AS contacted,
+         count(*) FILTER (WHERE first_contact_at - created_at <= interval '5 minutes')::int AS within5,
+         avg(extract(epoch FROM first_contact_at - created_at))::float AS avg_s,
+         percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM first_contact_at - created_at))::float AS median_s
        FROM crm_leads
        WHERE source = 'free_course_application'
          AND ($1::timestamptz IS NULL OR created_at >= $1::timestamptz)`,
       [sinceIso, answeredIds]
     );
-    optIns = { total: row.total, ...funnel(row.dialed, row.answered, row.closed, row.total) };
+    optIns = {
+      total: row.total,
+      ...funnel(row.dialed, row.answered, row.closed, row.total),
+      contacted: row.contacted,
+      within5: row.within5,
+      waiting: row.total - row.contacted,
+      avgFirstContactSeconds: row.avg_s,
+      medianFirstContactSeconds: row.median_s,
+    };
   }
 
   let dial: Stats["dial"] = null;

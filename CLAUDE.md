@@ -536,6 +536,13 @@ linked from any public page and is `noindex`.
   Calls are credited through the dialer's Twilio identity
   (`dialerIdentity(access, actorId)` → `crm_a_d_u<id>`), since the voice
   webhook has no login cookie.
+- **Speed to lead** — `crm_leads.first_contact_at` is set the first time a
+  lead is called from the CRM or moved out of To dial (backfilled from
+  `crm_events` on startup). Free-course application cards show a live "⏱ 2m
+  10s waiting" timer (green, red after 5 minutes, `SPEED_TO_LEAD_SECONDS` —
+  the confirmation page promises a call within 5 minutes), then "Called in
+  …". The opt-ins section of the dashboard adds average and median time to
+  first call, % called within 5 minutes and how many are still waiting.
 - **Recording link** — leads in Closed have an optional "Call recording
   link" field in the lead panel (`crm_leads.recording_url`, http/https only),
   for a Loom/Drive/Fathom link to the closing call. The card shows a

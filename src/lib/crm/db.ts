@@ -26,6 +26,13 @@ const SCHEMA = [
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS appointment_tz text`,
   // Optional link to a recording of the closing call (Loom, Drive, Fathom…).
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS recording_url text`,
+  // Speed to lead: when someone first called the lead or moved it out of
+  // To dial. Backfilled from history for leads worked before this existed.
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS first_contact_at timestamptz`,
+  `UPDATE crm_leads l SET first_contact_at = e.first
+   FROM (SELECT lead_id, min(created_at) AS first FROM crm_events
+         WHERE type IN ('call', 'status') GROUP BY lead_id) e
+   WHERE l.id = e.lead_id AND l.first_contact_at IS NULL`,
   `CREATE INDEX IF NOT EXISTS crm_leads_source_idx ON crm_leads (source, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS crm_leads_phone_idx ON crm_leads (phone_e164)`,
   `CREATE TABLE IF NOT EXISTS crm_events (

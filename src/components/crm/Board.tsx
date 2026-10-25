@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useState, type DragEvent } from "react";
 
 import {
+  SPEED_TO_LEAD_SECONDS,
   STATUSES,
   formatAppointment,
+  formatDuration,
   type Lead,
   type StatusId,
 } from "@/lib/crm/constants";
@@ -36,6 +38,34 @@ function matches(lead: Lead, needle: string) {
   return haystack.includes(needle);
 }
 
+// Speed-to-lead badge for free-course opt-ins: a live timer until someone
+// calls (green, red after 5 minutes), then how long it took.
+function SpeedBadge({ lead, now }: { lead: Lead; now: number }) {
+  const start = new Date(lead.createdAt).getTime();
+  const end = lead.firstContactAt ? new Date(lead.firstContactAt).getTime() : now;
+  const seconds = (end - start) / 1000;
+  const late = seconds > SPEED_TO_LEAD_SECONDS;
+  const color = late ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700";
+  return (
+    <p className={`mt-1 inline-block rounded-md px-2 py-1 text-xs font-bold tabular-nums ${color}`}>
+      {lead.firstContactAt
+        ? `Called in ${formatDuration(seconds)}`
+        : `⏱ ${formatDuration(seconds)} waiting`}
+    </p>
+  );
+}
+
+// Current time, ticking every second while `active` (for live timers).
+function useNow(active: boolean) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [active]);
+  return now;
+}
+
 export default function Board({
   leads,
   search,
@@ -53,6 +83,10 @@ export default function Board({
 }) {
   const [dragOver, setDragOver] = useState<StatusId | null>(null);
   const [limits, setLimits] = useState<Partial<Record<StatusId, number>>>({});
+  const timing = leads.some(
+    (l) => l.source === "free_course_application" && !l.firstContactAt
+  );
+  const now = useNow(timing);
 
   const columns = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -134,6 +168,9 @@ export default function Board({
                   </p>
                   {lead.email ? (
                     <p className="truncate text-xs text-muted">{lead.email}</p>
+                  ) : null}
+                  {lead.source === "free_course_application" ? (
+                    <SpeedBadge lead={lead} now={now} />
                   ) : null}
                   {lead.status === "closed" && lead.recordingUrl ? (
                     <a

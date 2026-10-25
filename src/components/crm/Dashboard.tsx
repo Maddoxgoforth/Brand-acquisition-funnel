@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   SOURCES,
   STAT_RANGES,
+  formatDuration,
   type FunnelNumbers,
   type StatRange,
   type Stats,
@@ -98,7 +99,34 @@ export default function Dashboard({
           <p className="text-sm text-muted">
             Opt-ins that came in during {inRange}, and what has happened to them since.
           </p>
-          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              label="Avg time to first call"
+              value={
+                current.optIns.avgFirstContactSeconds === null
+                  ? "–"
+                  : formatDuration(current.optIns.avgFirstContactSeconds)
+              }
+              detail={
+                current.optIns.medianFirstContactSeconds === null
+                  ? "No opt-ins called yet"
+                  : `Median ${formatDuration(current.optIns.medianFirstContactSeconds)}`
+              }
+            />
+            <StatCard
+              label="Called within 5 min"
+              value={percent(
+                current.optIns.total > 0 ? current.optIns.within5 / current.optIns.total : null
+              )}
+              detail={`${current.optIns.within5} of ${current.optIns.total} opt-ins`}
+            />
+            <StatCard
+              label="Still waiting"
+              value={String(current.optIns.waiting)}
+              detail="Opt-ins nobody has called yet"
+            />
+          </div>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <StatCard label="Opt-ins" value={String(current.optIns.total)} detail={`New in ${inRange}`} />
             <FunnelCards
               n={current.optIns}
