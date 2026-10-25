@@ -32,6 +32,7 @@ type LeadRow = {
   notes: string;
   appointment_at: string | Date | null;
   appointment_tz: string | null;
+  recording_url: string | null;
   call_count: number;
   last_called_at: string | Date | null;
   created_at: string | Date;
@@ -57,6 +58,7 @@ function toLead(row: LeadRow): Lead {
     notes: row.notes,
     appointmentAt: iso(row.appointment_at ?? null),
     appointmentTz: row.appointment_tz ?? null,
+    recordingUrl: row.recording_url ?? null,
     callCount: Number(row.call_count),
     lastCalledAt: iso(row.last_called_at),
     createdAt: iso(row.created_at)!,
@@ -336,6 +338,8 @@ export type LeadPatch = {
   notes?: string;
   status?: StatusId;
   extra?: Record<string, string>;
+  // "" clears it.
+  recordingUrl?: string;
   // Sets (or with null, clears) the time of a lead in "Appointment
   // scheduled". A lead can sit in that column with no time set.
   appointment?: { at: string; timeZone: string } | null;
@@ -377,7 +381,7 @@ export async function updateLead(
     `UPDATE crm_leads
      SET name = $2, phone = $3, phone_e164 = $4, email = $5, notes = $6,
          status = $7, extra = $8::jsonb, appointment_at = $9,
-         appointment_tz = $10, updated_at = now()
+         appointment_tz = $10, recording_url = $11, updated_at = now()
      WHERE id = $1 RETURNING *`,
     [
       id,
@@ -390,6 +394,9 @@ export async function updateLead(
       JSON.stringify(next.extra),
       appointmentAt,
       appointmentTz,
+      patch.recordingUrl !== undefined
+        ? patch.recordingUrl.trim() || null
+        : current.recordingUrl,
     ]
   );
 

@@ -49,6 +49,16 @@ export async function PATCH(request: Request, { params }: Context) {
     for (const key of ["name", "phone", "email", "notes"] as const) {
       if (typeof body[key] === "string") patch[key] = body[key];
     }
+    if (typeof body.recordingUrl === "string") {
+      const url = body.recordingUrl.trim();
+      if (url && (!/^https?:\/\/\S+$/i.test(url) || url.length > 2000)) {
+        return Response.json(
+          { error: "Recording link must be a full web address starting with https://" },
+          { status: 400 }
+        );
+      }
+      patch.recordingUrl = url;
+    }
     if (body.status !== undefined) {
       if (!isStatusId(body.status)) {
         return Response.json({ error: "Unknown status" }, { status: 400 });

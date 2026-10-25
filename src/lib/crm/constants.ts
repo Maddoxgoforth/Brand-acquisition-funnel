@@ -106,6 +106,8 @@ export type Lead = {
   // "America/New_York"), so it can be shown the way it was agreed.
   appointmentAt: string | null;
   appointmentTz: string | null;
+  // Optional link to a recording of the closing call, added on closed leads.
+  recordingUrl: string | null;
   callCount: number;
   lastCalledAt: string | null;
   createdAt: string;

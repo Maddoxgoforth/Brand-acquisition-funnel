@@ -536,6 +536,10 @@ linked from any public page and is `noindex`.
   Calls are credited through the dialer's Twilio identity
   (`dialerIdentity(access, actorId)` → `crm_a_d_u<id>`), since the voice
   webhook has no login cookie.
+- **Recording link** — leads in Closed have an optional "Call recording
+  link" field in the lead panel (`crm_leads.recording_url`, http/https only),
+  for a Loom/Drive/Fathom link to the closing call. The card shows a
+  "▶ Call recording" link when one is set.
 - **Call notes** — each call in the lead panel's history has its own notes
   box (`PATCH /api/crm/leads/[id]/calls/[eventId]`). Calls are not recorded.
 - **Call button** — places the call from the browser through Twilio, showing

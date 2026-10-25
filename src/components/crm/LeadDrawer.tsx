@@ -15,7 +15,10 @@ import { crmFetch, timeAgo } from "./api";
 
 export type LeadPatch = Partial<
   Pick<Lead, "name" | "phone" | "email" | "notes" | "status" | "extra">
-> & { appointment?: { date: string; time: string; timeZone: string } | null };
+> & {
+  appointment?: { date: string; time: string; timeZone: string } | null;
+  recordingUrl?: string;
+};
 
 const field =
   "w-full rounded-lg border border-border px-3 py-2 outline-none focus:border-accent";
@@ -59,6 +62,7 @@ export default function LeadDrawer({
   const [phone, setPhone] = useState(lead.phone);
   const [email, setEmail] = useState(lead.email);
   const [notes, setNotes] = useState(lead.notes);
+  const [recordingUrl, setRecordingUrl] = useState(lead.recordingUrl ?? "");
   const [events, setEvents] = useState<LeadEvent[] | null>(null);
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
@@ -153,6 +157,39 @@ export default function LeadDrawer({
               ))}
             </div>
           </section>
+
+          {lead.status === "closed" ? (
+            <section className="rounded-xl bg-emerald-50 px-4 py-3">
+              <label className="text-xs font-bold uppercase tracking-widest text-emerald-700" htmlFor="recording-url">
+                Call recording link (optional)
+              </label>
+              <div className="mt-2 flex gap-2">
+                <input
+                  id="recording-url"
+                  type="url"
+                  className={`${field} bg-background text-sm`}
+                  placeholder="https://… (Loom, Google Drive, Fathom)"
+                  value={recordingUrl}
+                  onChange={(e) => setRecordingUrl(e.target.value)}
+                  onBlur={() => {
+                    if (recordingUrl.trim() !== (lead.recordingUrl ?? "")) {
+                      save({ recordingUrl: recordingUrl.trim() });
+                    }
+                  }}
+                />
+                {lead.recordingUrl ? (
+                  <a
+                    href={lead.recordingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700"
+                  >
+                    Open
+                  </a>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
 
           {lead.status === "appointment" ? (
             <section className="flex items-center gap-3 rounded-xl bg-violet-50 px-4 py-3">

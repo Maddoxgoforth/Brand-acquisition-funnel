@@ -24,6 +24,8 @@ const SCHEMA = [
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS seq bigserial`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS appointment_at timestamptz`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS appointment_tz text`,
+  // Optional link to a recording of the closing call (Loom, Drive, Fathom…).
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS recording_url text`,
   `CREATE INDEX IF NOT EXISTS crm_leads_source_idx ON crm_leads (source, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS crm_leads_phone_idx ON crm_leads (phone_e164)`,
   `CREATE TABLE IF NOT EXISTS crm_events (

@@ -135,6 +135,17 @@ export default function Board({
                   {lead.email ? (
                     <p className="truncate text-xs text-muted">{lead.email}</p>
                   ) : null}
+                  {lead.status === "closed" && lead.recordingUrl ? (
+                    <a
+                      href={lead.recordingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(event) => event.stopPropagation()}
+                      className="mt-1 inline-block rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-800 hover:underline"
+                    >
+                      ▶ Call recording
+                    </a>
+                  ) : null}
                   {lead.status === "appointment" ? (
                     <p className="mt-1 truncate rounded-md bg-violet-50 px-2 py-1 text-xs font-bold text-violet-800">
                       {lead.appointmentAt
