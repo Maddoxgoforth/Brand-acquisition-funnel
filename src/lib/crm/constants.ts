@@ -110,6 +110,10 @@ export type Lead = {
   recordingUrl: string | null;
   // First call or first move out of To dial (speed to lead). null = waiting.
   firstContactAt: string | null;
+  // Free course applications: how many times they've opted in, and when the
+  // latest one was (= createdAt for a first opt-in).
+  optInCount: number;
+  lastOptInAt: string;
   callCount: number;
   lastCalledAt: string | null;
   createdAt: string;
@@ -122,7 +126,7 @@ export type Actor = { id: string; name: string };
 
 export type LeadEvent = {
   id: number;
-  type: "status" | "call" | "created" | "appointment";
+  type: "status" | "call" | "created" | "appointment" | "reoptin";
   // For calls: callSid and, once added, notes.
   data: Record<string, string>;
   actorName: string | null;

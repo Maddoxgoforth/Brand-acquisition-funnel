@@ -536,6 +536,16 @@ linked from any public page and is `noindex`.
   Calls are credited through the dialer's Twilio identity
   (`dialerIdentity(access, actorId)` → `crm_a_d_u<id>`), since the voice
   webhook has no login cookie.
+- **Repeat opt-ins** — when someone already in Free course applications
+  opts in again (same phone, or same email if no phone), `addLeads` calls
+  `reOptIn` instead of skipping them: `opt_in_count` goes up,
+  `last_opt_in_at` is set, and the lead moves back to To dial with its
+  appointment and first-contact time cleared (so the speed timer restarts).
+  Leads in Closed or Do not call stay put but still get the count and a
+  `reoptin` history event. Cards show "Opted in 2×", the live notice says
+  "Opted in again", and the applications list / live poll / opt-in stats use
+  `coalesce(last_opt_in_at, created_at)`. Dial-list imports still skip
+  duplicates.
 - **Speed to lead** — `crm_leads.first_contact_at` is set the first time a
   lead is called from the CRM or moved out of To dial (backfilled from
   `crm_events` on startup). Free-course application cards show a live "⏱ 2m

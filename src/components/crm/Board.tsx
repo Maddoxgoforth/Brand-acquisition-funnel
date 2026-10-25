@@ -41,7 +41,7 @@ function matches(lead: Lead, needle: string) {
 // Speed-to-lead badge for free-course opt-ins: a live timer until someone
 // calls (green, red after 5 minutes), then how long it took.
 function SpeedBadge({ lead, now }: { lead: Lead; now: number }) {
-  const start = new Date(lead.createdAt).getTime();
+  const start = new Date(lead.lastOptInAt).getTime();
   const end = lead.firstContactAt ? new Date(lead.firstContactAt).getTime() : now;
   const seconds = (end - start) / 1000;
   const late = seconds > SPEED_TO_LEAD_SECONDS;
@@ -168,6 +168,11 @@ export default function Board({
                   </p>
                   {lead.email ? (
                     <p className="truncate text-xs text-muted">{lead.email}</p>
+                  ) : null}
+                  {lead.optInCount > 1 ? (
+                    <p className="mt-1 mr-1 inline-block rounded-md bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800">
+                      Opted in {lead.optInCount}×
+                    </p>
                   ) : null}
                   {lead.source === "free_course_application" ? (
                     <SpeedBadge lead={lead} now={now} />

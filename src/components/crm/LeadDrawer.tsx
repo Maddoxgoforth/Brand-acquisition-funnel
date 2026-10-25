@@ -27,6 +27,14 @@ const statusLabel = (id: string) =>
   STATUSES.find((s) => s.id === id)?.label ?? id;
 
 function describe(event: LeadEvent) {
+  if (event.type === "reoptin") {
+    const back = event.data.from && event.data.from !== "new"
+      ? event.data.from === "closed" || event.data.from === "do_not_call"
+        ? ` (kept in ${statusLabel(event.data.from)})`
+        : ` (moved back from ${statusLabel(event.data.from)} to To dial)`
+      : "";
+    return `Opted in again${back}`;
+  }
   if (event.type === "appointment") {
     return event.data.at
       ? `Appointment set for ${formatAppointment(event.data.at, event.data.timeZone || null)}`
@@ -115,7 +123,12 @@ export default function LeadDrawer({
             <h2 className="mt-1 truncate text-xl font-extrabold">
               {lead.name || "No name"}
             </h2>
-            <p className="text-xs text-muted">Added {timeAgo(lead.createdAt)}</p>
+            <p className="text-xs text-muted">
+              Added {timeAgo(lead.createdAt)}
+              {lead.optInCount > 1
+                ? ` · opted in ${lead.optInCount}×, latest ${timeAgo(lead.lastOptInAt)}`
+                : ""}
+            </p>
           </div>
           <button
             type="button"

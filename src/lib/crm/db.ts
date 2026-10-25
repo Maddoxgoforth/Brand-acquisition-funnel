@@ -29,6 +29,10 @@ const SCHEMA = [
   // Speed to lead: when someone first called the lead or moved it out of
   // To dial. Backfilled from history for leads worked before this existed.
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS first_contact_at timestamptz`,
+  // Free-course leads who opt in again: how many times in total, and when the
+  // latest one was. The speed-to-lead timer restarts from the latest opt-in.
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS opt_in_count integer NOT NULL DEFAULT 1`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS last_opt_in_at timestamptz`,
   `UPDATE crm_leads l SET first_contact_at = e.first
    FROM (SELECT lead_id, min(created_at) AS first FROM crm_events
          WHERE type IN ('call', 'status') GROUP BY lead_id) e

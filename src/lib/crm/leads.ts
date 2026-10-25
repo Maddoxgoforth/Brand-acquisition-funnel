@@ -34,6 +34,8 @@ type LeadRow = {
   appointment_tz: string | null;
   recording_url: string | null;
   first_contact_at: string | Date | null;
+  opt_in_count: number;
+  last_opt_in_at: string | Date | null;
   call_count: number;
   last_called_at: string | Date | null;
   created_at: string | Date;
@@ -61,6 +63,8 @@ function toLead(row: LeadRow): Lead {
     appointmentTz: row.appointment_tz ?? null,
     recordingUrl: row.recording_url ?? null,
     firstContactAt: iso(row.first_contact_at ?? null),
+    optInCount: Number(row.opt_in_count ?? 1),
+    lastOptInAt: iso(row.last_opt_in_at ?? null) ?? iso(row.created_at)!,
     callCount: Number(row.call_count),
     lastCalledAt: iso(row.last_called_at),
     createdAt: iso(row.created_at)!,
@@ -142,7 +146,9 @@ export async function listLeads(source: SourceId): Promise<Lead[]> {
   // hand-filled dial lists show in the order the leads were added, so the
   // first ones you put in are the first ones to call.
   const order =
-    source === "free_course_application" ? "created_at DESC, seq DESC" : "seq ASC";
+    source === "free_course_application"
+      ? "coalesce(last_opt_in_at, created_at) DESC, seq DESC"
+      : "seq ASC";
   const rows = await query<LeadRow>(
     `SELECT * FROM crm_leads WHERE source = $1 ORDER BY ${order}`,
     [source]
@@ -163,8 +169,9 @@ export async function listNewApplications(
   const rows = await query<LeadRow>(
     `SELECT * FROM crm_leads
      WHERE source = 'free_course_application'
-       AND created_at > $1::timestamptz AND created_at <= $2::timestamptz
-     ORDER BY created_at DESC, seq DESC LIMIT 50`,
+       AND coalesce(last_opt_in_at, created_at) > $1::timestamptz
+       AND coalesce(last_opt_in_at, created_at) <= $2::timestamptz
+     ORDER BY coalesce(last_opt_in_at, created_at) DESC, seq DESC LIMIT 50`,
     [since, cursor]
   );
   return { cursor, leads: rows.map(toLead) };
@@ -278,11 +285,76 @@ export async function addLeads(
     );
   }
 
+  // Someone already in Free course applications opted in again: put them
+  // back in To dial (a fresh lead to call) and note it. Leads in Closed or
+  // Do not call stay where they are but still get the note and count.
+  const reOptedIn: Lead[] = [];
+  if (source === "free_course_application") {
+    const insertedKeys = new Set(
+      inserted.flatMap((l) => [l.phoneE164, l.email].filter(Boolean))
+    );
+    for (const input of batch) {
+      if (
+        (input.phone_e164 && insertedKeys.has(input.phone_e164)) ||
+        (!input.phone_e164 && input.email && insertedKeys.has(input.email))
+      ) {
+        continue;
+      }
+      const lead = await reOptIn(input, via, actor);
+      if (lead) reOptedIn.push(lead);
+    }
+  }
+
   return {
     added: inserted.length,
-    skipped: inputs.length - inserted.length,
-    leads: inserted,
+    skipped: inputs.length - inserted.length - reOptedIn.length,
+    leads: [...inserted, ...reOptedIn],
   };
+}
+
+async function reOptIn(
+  input: LeadInput & { phone_e164: string | null },
+  via: string,
+  actor: Actor | null
+): Promise<Lead | null> {
+  const [existing] = await query<LeadRow>(
+    `SELECT * FROM crm_leads
+     WHERE source = 'free_course_application' AND (
+       ($1::text IS NOT NULL AND phone_e164 = $1)
+       OR ($1::text IS NULL AND $2 <> '' AND email = $2)
+     )
+     ORDER BY created_at LIMIT 1`,
+    [input.phone_e164, input.email]
+  );
+  if (!existing) return null;
+  const keep = existing.status === "closed" || existing.status === "do_not_call";
+  const [row] = await query<LeadRow>(
+    `UPDATE crm_leads SET
+       opt_in_count = opt_in_count + 1,
+       last_opt_in_at = now(),
+       status = CASE WHEN $2 THEN status ELSE 'new' END,
+       appointment_at = CASE WHEN $2 THEN appointment_at ELSE NULL END,
+       appointment_tz = CASE WHEN $2 THEN appointment_tz ELSE NULL END,
+       first_contact_at = CASE WHEN $2 THEN first_contact_at ELSE NULL END,
+       email = CASE WHEN email = '' THEN $3 ELSE email END,
+       updated_at = now()
+     WHERE id = $1 RETURNING *`,
+    [existing.id, keep, input.email]
+  );
+  await addEvent(
+    existing.id,
+    "reoptin",
+    {
+      via,
+      from: existing.status,
+      name: input.name,
+      email: input.email,
+      phone: input.phone,
+      count: String(row.opt_in_count),
+    },
+    actor
+  );
+  return toLead(row);
 }
 
 // One-off clean-up for leads imported before a column was recognized: their
@@ -499,12 +571,12 @@ export async function getStats(access: Access, range: StatRange): Promise<Stats>
          count(*) FILTER (WHERE status = ANY($2::text[]))::int AS answered,
          count(*) FILTER (WHERE status = 'closed')::int AS closed,
          count(first_contact_at)::int AS contacted,
-         count(*) FILTER (WHERE first_contact_at - created_at <= interval '5 minutes')::int AS within5,
-         avg(extract(epoch FROM first_contact_at - created_at))::float AS avg_s,
-         percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM first_contact_at - created_at))::float AS median_s
-       FROM crm_leads
+         count(*) FILTER (WHERE first_contact_at - opt_at <= interval '5 minutes')::int AS within5,
+         avg(extract(epoch FROM first_contact_at - opt_at))::float AS avg_s,
+         percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM first_contact_at - opt_at))::float AS median_s
+       FROM (SELECT *, coalesce(last_opt_in_at, created_at) AS opt_at FROM crm_leads) l
        WHERE source = 'free_course_application'
-         AND ($1::timestamptz IS NULL OR created_at >= $1::timestamptz)`,
+         AND ($1::timestamptz IS NULL OR opt_at >= $1::timestamptz)`,
       [sinceIso, answeredIds]
     );
     optIns = {

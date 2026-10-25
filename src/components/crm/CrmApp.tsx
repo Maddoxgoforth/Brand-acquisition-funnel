@@ -156,9 +156,16 @@ export default function CrmApp({
         setCache((c) => {
           const current = c.free_course_application;
           if (!current) return c;
-          const known = new Set(current.map((l) => l.id));
-          const fresh = data.leads.filter((l) => !known.has(l.id));
-          return { ...c, free_course_application: [...fresh, ...current] };
+          // Re-opt-ins are leads we already have; move them to the top with
+          // their new status.
+          const updated = new Set(data.leads.map((l) => l.id));
+          return {
+            ...c,
+            free_course_application: [
+              ...data.leads,
+              ...current.filter((l) => !updated.has(l.id)),
+            ],
+          };
         });
         setArrived((a) => [...data.leads, ...a].slice(0, 5));
         if (viewRef.current !== "free_course_application") {
@@ -502,7 +509,9 @@ export default function CrmApp({
                 }}
               >
                 <p className="text-xs font-bold uppercase tracking-widest text-accent">
-                  New free course opt-in
+                  {lead.optInCount > 1
+                    ? `Opted in again (${lead.optInCount}×)`
+                    : "New free course opt-in"}
                 </p>
                 <p className="mt-1 truncate font-bold">{lead.name || "No name"}</p>
                 <p className="truncate text-sm text-muted">
