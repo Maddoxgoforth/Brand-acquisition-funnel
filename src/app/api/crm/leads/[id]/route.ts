@@ -1,5 +1,5 @@
 import { crmRoute, readJson } from "@/lib/crm/api";
-import type { Session } from "@/lib/crm/auth";
+import { sessionActor, type Session } from "@/lib/crm/auth";
 import {
   canAccess,
   isStatusId,
@@ -77,7 +77,7 @@ export async function PATCH(request: Request, { params }: Context) {
       patch.appointment = { at, timeZone: (a as { timeZone: string }).timeZone };
     }
 
-    const lead = await updateLead(id, patch);
+    const lead = await updateLead(id, patch, sessionActor(session));
     if (!lead) return notFound();
     return Response.json({ lead, events: await listEvents(id) });
   });

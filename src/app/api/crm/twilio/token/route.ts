@@ -1,4 +1,5 @@
 import { crmRoute } from "@/lib/crm/api";
+import { sessionActor } from "@/lib/crm/auth";
 import {
   createVoiceToken,
   dialerIdentity,
@@ -15,7 +16,9 @@ export async function POST(request: Request) {
     }
     return Response.json({
       configured: true,
-      token: createVoiceToken(dialerIdentity(session.access)),
+      token: createVoiceToken(
+        dialerIdentity(session.access, sessionActor(session).id)
+      ),
     });
   });
 }

@@ -112,11 +112,28 @@ export type Lead = {
   updatedAt: string;
 };
 
+// Who made a change: "owner", a team member's account id, or "website" /
+// "webhook" for leads that arrived on their own.
+export type Actor = { id: string; name: string };
+
 export type LeadEvent = {
   id: number;
   type: "status" | "call" | "created" | "appointment";
+  // For calls: callSid, and once Twilio delivers them recordingSid,
+  // recordingSeconds and notes.
   data: Record<string, string>;
+  actorName: string | null;
   createdAt: string;
+};
+
+export type LeaderboardRow = {
+  actorId: string;
+  name: string;
+  dials: number;
+  leadsCalled: number;
+  answered: number;
+  closes: number;
+  answerRate: number | null;
 };
 
 // Time frames the dashboard can switch between.
@@ -147,6 +164,9 @@ export type FunnelNumbers = {
 
 export type Stats = {
   range: StatRange;
+  // Calls and closes per team member during the range (lists this viewer
+  // can see only).
+  leaderboard: LeaderboardRow[];
   // Free course opt-ins that came in during the range, and what has happened
   // to them since. null when this person can't see the opt-ins.
   optIns: (FunnelNumbers & { total: number }) | null;

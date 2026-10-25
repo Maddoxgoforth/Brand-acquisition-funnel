@@ -50,6 +50,13 @@ export type Session =
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// Who to credit for changes made in this session.
+export function sessionActor(session: Session) {
+  return session.role === "owner"
+    ? { id: "owner", name: "Owner" }
+    : { id: session.userId, name: session.name };
+}
+
 // `subject` is "owner" or a team member's id.
 export async function createSession(subject: string) {
   const expires = String(Date.now() + MAX_AGE_SECONDS * 1000);

@@ -10,6 +10,7 @@ import {
   type LeadEvent,
   type StatusId,
 } from "@/lib/crm/constants";
+import CallEntry from "./CallEntry";
 import { crmFetch, timeAgo } from "./api";
 
 export type LeadPatch = Partial<
@@ -23,7 +24,6 @@ const statusLabel = (id: string) =>
   STATUSES.find((s) => s.id === id)?.label ?? id;
 
 function describe(event: LeadEvent) {
-  if (event.type === "call") return "Called from the CRM";
   if (event.type === "appointment") {
     return event.data.at
       ? `Appointment set for ${formatAppointment(event.data.at, event.data.timeZone || null)}`
@@ -271,12 +271,21 @@ export default function LeadDrawer({
             </h3>
             <ul className="mt-2 space-y-1.5 text-sm">
               {events === null ? <li className="text-muted">Loading…</li> : null}
-              {events?.map((event) => (
-                <li key={event.id} className="flex justify-between gap-3">
-                  <span>{describe(event)}</span>
-                  <span className="shrink-0 text-muted">{timeAgo(event.createdAt)}</span>
-                </li>
-              ))}
+              {events?.map((event) =>
+                event.type === "call" ? (
+                  <CallEntry key={event.id} leadId={lead.id} event={event} onSaved={setEvents} />
+                ) : (
+                  <li key={event.id} className="flex justify-between gap-3">
+                    <span>
+                      {describe(event)}
+                      {event.actorName ? (
+                        <span className="text-muted"> · {event.actorName}</span>
+                      ) : null}
+                    </span>
+                    <span className="shrink-0 text-muted">{timeAgo(event.createdAt)}</span>
+                  </li>
+                )
+              )}
             </ul>
           </section>
 

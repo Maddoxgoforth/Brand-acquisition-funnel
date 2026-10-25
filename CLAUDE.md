@@ -528,6 +528,26 @@ linked from any public page and is `noindex`.
   mutes it per computer). Browsers only allow the sound after the first
   click or key press on the page. The dial lists load in the order leads
   were added (`seq`); applications load newest first.
+- **Who did what** — every status change, appointment, import and call is
+  stored with the person who made it (`crm_events.actor_id` / `actor_name`;
+  "owner", a `crm_users` id, or "website"/"webhook"). The lead panel's history
+  shows the name, and the dashboard has a **Team leaderboard** (dials, leads
+  called, answered, answer rate, closes per person for the chosen time frame).
+  Calls are credited through the dialer's Twilio identity
+  (`dialerIdentity(access, actorId)` → `crm_a_d_u<id>`), since the voice
+  webhook has no login cookie.
+- **Call recording + notes** — every call is recorded by Twilio
+  (`record="record-from-answer-dual"` on the `<Dial>`). When the lead answers
+  they first hear "This call may be recorded" (`/api/crm/twilio/whisper`,
+  played via `<Number url>`) — many US states require all parties to know, so
+  don't remove it. Twilio posts the finished recording to
+  `/api/crm/twilio/recording`, which stores its id on the call event.
+  Recordings stay in Twilio; `/api/crm/recordings/[sid]` streams them to
+  signed-in users who can see that lead (with Range support for Safari). Each
+  call in the lead panel has a player and its own notes box
+  (`PATCH /api/crm/leads/[id]/calls/[eventId]`). No Twilio console setup is
+  needed beyond the existing TwiML App; Twilio bills recording minutes and
+  storage.
 - **Call button** — places the call from the browser through Twilio, showing
   the Twilio number as caller ID. Leads marked Do not call can't be dialed
   (blocked in the UI and again in `/api/crm/twilio/voice`).

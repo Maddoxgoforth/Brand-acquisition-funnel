@@ -34,6 +34,11 @@ const SCHEMA = [
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
   `CREATE INDEX IF NOT EXISTS crm_events_lead_idx ON crm_events (lead_id, created_at DESC)`,
+  // Who did it: "owner", a crm_users id, or "website"/"webhook" for leads
+  // that came in on their own. Name is copied so history survives deletes.
+  `ALTER TABLE crm_events ADD COLUMN IF NOT EXISTS actor_id text`,
+  `ALTER TABLE crm_events ADD COLUMN IF NOT EXISTS actor_name text`,
+  `CREATE INDEX IF NOT EXISTS crm_events_type_idx ON crm_events (type, created_at DESC)`,
   // Team accounts. status: pending (signed up, waiting for the owner),
   // active, or disabled (access removed).
   `CREATE TABLE IF NOT EXISTS crm_users (

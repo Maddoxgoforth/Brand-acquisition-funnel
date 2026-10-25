@@ -109,6 +109,49 @@ export default function Dashboard({
         </section>
       ) : null}
 
+      {current ? (
+        <section>
+          <h2 className="text-lg font-extrabold">Team leaderboard</h2>
+          <p className="text-sm text-muted">
+            Calls placed and closes made by each person during {inRange}.
+          </p>
+          {current.leaderboard.length === 0 ? (
+            <p className="mt-3 rounded-2xl border border-border bg-background p-5 text-sm text-muted">
+              No calls or closes logged yet for this time frame.
+            </p>
+          ) : (
+            <div className="mt-3 overflow-x-auto rounded-2xl border border-border bg-background">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-border text-xs uppercase tracking-widest text-muted">
+                  <tr>
+                    <th className="px-5 py-3 font-bold">#</th>
+                    <th className="px-5 py-3 font-bold">Name</th>
+                    <th className="px-5 py-3 text-right font-bold">Dials</th>
+                    <th className="px-5 py-3 text-right font-bold">Leads called</th>
+                    <th className="px-5 py-3 text-right font-bold">Answered</th>
+                    <th className="px-5 py-3 text-right font-bold">Answer rate</th>
+                    <th className="px-5 py-3 text-right font-bold">Closes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {current.leaderboard.map((row, i) => (
+                    <tr key={row.actorId} className="border-b border-border last:border-0">
+                      <td className="px-5 py-3 font-bold tabular-nums">{i + 1}</td>
+                      <td className="px-5 py-3 font-semibold">{row.name}</td>
+                      <td className="px-5 py-3 text-right tabular-nums">{row.dials}</td>
+                      <td className="px-5 py-3 text-right tabular-nums">{row.leadsCalled}</td>
+                      <td className="px-5 py-3 text-right tabular-nums">{row.answered}</td>
+                      <td className="px-5 py-3 text-right tabular-nums">{percent(row.answerRate)}</td>
+                      <td className="px-5 py-3 text-right font-bold tabular-nums">{row.closes}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      ) : null}
+
       {current?.dial ? (
         <section>
           <h2 className="text-lg font-extrabold">Leads to dial</h2>

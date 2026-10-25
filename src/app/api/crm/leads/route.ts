@@ -1,4 +1,5 @@
 import { crmRoute, noAccess, readJson } from "@/lib/crm/api";
+import { sessionActor } from "@/lib/crm/auth";
 import { canAccess, isSourceId } from "@/lib/crm/constants";
 import {
   addLeads,
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
       .map(normalizeLeadInput)
       .filter((lead): lead is LeadInput => lead !== null);
     const unreadable = body.leads.length - inputs.length;
-    const result = await addLeads(body.source, inputs, "manual");
+    const result = await addLeads(body.source, inputs, "manual", sessionActor(session));
 
     return Response.json({
       added: result.added,

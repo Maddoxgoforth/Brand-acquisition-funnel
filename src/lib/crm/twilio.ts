@@ -17,19 +17,70 @@ export function missingTwilioEnv() {
   return REQUIRED.filter((name) => !process.env[name]);
 }
 
-// The dialer's Twilio identity records which lists its user may call, e.g.
-// "crm_a_d". Twilio sends it back (signed) to the voice webhook as
-// `From=client:crm_a_d`, which is how that route enforces access without a
-// login cookie.
-export function dialerIdentity(access: Access) {
-  return `crm${access.applications ? "_a" : ""}${access.dial ? "_d" : ""}`;
+// The dialer's Twilio identity records which lists its user may call and
+// who they are, e.g. "crm_a_d_uowner" or "crm_d_u<account id without
+// dashes>". Twilio sends it back (signed) to the voice webhook as
+// `From=client:...`, which is how that route enforces access and credits the
+// call without a login cookie.
+export function dialerIdentity(access: Access, actorId: string) {
+  const flags = `${access.applications ? "_a" : ""}${access.dial ? "_d" : ""}`;
+  return `crm${flags}_u${actorId.replace(/-/g, "")}`;
 }
 
 // Returns null when the caller isn't one of our dialer identities at all.
-export function accessFromCaller(from: string | undefined): Access | null {
-  const flags = (from ?? "").replace(/^client:/, "").split("_");
-  if (flags[0] !== "crm") return null;
-  return { applications: flags.includes("a"), dial: flags.includes("d") };
+export function callerFromIdentity(
+  from: string | undefined
+): { access: Access; actorId: string | null } | null {
+  const parts = (from ?? "").replace(/^client:/, "").split("_");
+  if (parts[0] !== "crm") return null;
+  const user = parts.find((p) => p.startsWith("u"))?.slice(1) ?? null;
+  const actorId =
+    user && /^[0-9a-f]{32}$/i.test(user)
+      ? user.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, "$1-$2-$3-$4-$5")
+      : user;
+  return {
+    access: { applications: parts.includes("a"), dial: parts.includes("d") },
+    actorId,
+  };
+}
+
+// Reads a Twilio webhook's form fields and checks its signature. Twilio signs
+// the public URL it requested; the bare domain redirects to www, so accept a
+// signature made for either host. Returns null if it isn't from Twilio.
+export async function readTwilioRequest(
+  request: Request
+): Promise<Record<string, string> | null> {
+  const form = await request.formData();
+  const params: Record<string, string> = {};
+  for (const [key, value] of form.entries()) {
+    if (typeof value === "string") params[key] = value;
+  }
+  const url = new URL(request.url);
+  const proto = request.headers.get("x-forwarded-proto") ?? "https";
+  const host =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? url.host;
+  const otherHost = host.startsWith("www.") ? host.slice(4) : `www.${host}`;
+  const signature = request.headers.get("x-twilio-signature");
+  const ok = [host, otherHost].some((h) =>
+    isValidTwilioSignature(`${proto}://${h}${url.pathname}${url.search}`, params, signature)
+  );
+  if (!ok) {
+    console.error(
+      `Twilio webhook ${url.pathname}: signature check failed for host ${host}. ` +
+        "Check TWILIO_AUTH_TOKEN and the TwiML App's Voice Request URL."
+    );
+    return null;
+  }
+  return params;
+}
+
+// The public base URL Twilio should call back on (same host it called us on).
+export function publicBase(request: Request) {
+  const url = new URL(request.url);
+  const proto = request.headers.get("x-forwarded-proto") ?? "https";
+  const host =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? url.host;
+  return `${proto}://${host}`;
 }
 
 function base64url(input: Buffer | string) {

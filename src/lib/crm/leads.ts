@@ -11,6 +11,7 @@ import {
   isStatusId,
   toE164,
   type Access,
+  type Actor,
   type Lead,
   type LeadEvent,
   type SourceId,
@@ -177,9 +178,10 @@ export async function listEvents(leadId: string): Promise<LeadEvent[]> {
     id: number | string;
     type: LeadEvent["type"];
     data: Record<string, string> | string;
+    actor_name: string | null;
     created_at: string | Date;
   }>(
-    `SELECT id, type, data, created_at FROM crm_events
+    `SELECT id, type, data, actor_name, created_at FROM crm_events
      WHERE lead_id = $1 ORDER BY created_at DESC, id DESC LIMIT 50`,
     [leadId]
   );
@@ -187,6 +189,7 @@ export async function listEvents(leadId: string): Promise<LeadEvent[]> {
     id: Number(row.id),
     type: row.type,
     data: typeof row.data === "string" ? JSON.parse(row.data) : row.data,
+    actorName: row.actor_name,
     createdAt: iso(row.created_at)!,
   }));
 }
@@ -194,11 +197,13 @@ export async function listEvents(leadId: string): Promise<LeadEvent[]> {
 async function addEvent(
   leadId: string,
   type: LeadEvent["type"],
-  data: Record<string, string> = {}
+  data: Record<string, string> = {},
+  actor: Actor | null = null
 ) {
   await query(
-    `INSERT INTO crm_events (lead_id, type, data) VALUES ($1, $2, $3::jsonb)`,
-    [leadId, type, JSON.stringify(data)]
+    `INSERT INTO crm_events (lead_id, type, data, actor_id, actor_name)
+     VALUES ($1, $2, $3::jsonb, $4, $5)`,
+    [leadId, type, JSON.stringify(data), actor?.id ?? null, actor?.name ?? null]
   );
 }
 
@@ -208,7 +213,8 @@ async function addEvent(
 export async function addLeads(
   source: SourceId,
   inputs: LeadInput[],
-  via: string
+  via: string,
+  actor: Actor | null = null
 ): Promise<{ added: number; skipped: number; leads: Lead[] }> {
   const seenPhones = new Set<string>();
   const seenEmails = new Set<string>();
@@ -256,10 +262,15 @@ export async function addLeads(
 
   if (inserted.length > 0) {
     await query(
-      `INSERT INTO crm_events (lead_id, type, data)
-       SELECT id::uuid, 'created', $2::jsonb
+      `INSERT INTO crm_events (lead_id, type, data, actor_id, actor_name)
+       SELECT id::uuid, 'created', $2::jsonb, $3, $4
        FROM jsonb_array_elements_text($1::jsonb) AS id`,
-      [JSON.stringify(inserted.map((l) => l.id)), JSON.stringify({ via })]
+      [
+        JSON.stringify(inserted.map((l) => l.id)),
+        JSON.stringify({ via }),
+        actor?.id ?? via,
+        actor?.name ?? null,
+      ]
     );
   }
 
@@ -332,7 +343,8 @@ export type LeadPatch = {
 
 export async function updateLead(
   id: string,
-  patch: LeadPatch
+  patch: LeadPatch,
+  actor: Actor | null = null
 ): Promise<Lead | null> {
   const current = await getLead(id);
   if (!current) return null;
@@ -382,13 +394,13 @@ export async function updateLead(
   );
 
   if (next.status !== current.status) {
-    await addEvent(id, "status", { from: current.status, to: next.status });
+    await addEvent(id, "status", { from: current.status, to: next.status }, actor);
   }
   if (next.status === APPOINTMENT_STATUS && appointmentAt !== current.appointmentAt) {
     await addEvent(id, "appointment", {
       at: appointmentAt ?? "",
       timeZone: appointmentTz ?? "",
-    });
+    }, actor);
   }
   return rows[0] ? toLead(rows[0]) : null;
 }
@@ -400,14 +412,48 @@ export async function deleteLead(id: string): Promise<boolean> {
   return rows.length > 0;
 }
 
-export async function recordCall(id: string, callSid: string) {
+export async function recordCall(id: string, callSid: string, actor: Actor | null) {
   await query(
     `UPDATE crm_leads
      SET call_count = call_count + 1, last_called_at = now(), updated_at = now()
      WHERE id = $1`,
     [id]
   );
-  await addEvent(id, "call", { callSid });
+  await addEvent(id, "call", { callSid }, actor);
+}
+
+// Twilio tells us a call's recording is ready; attach it to that call.
+export async function attachRecording(
+  callSid: string,
+  recordingSid: string,
+  seconds: string
+) {
+  const rows = await query(
+    `UPDATE crm_events
+     SET data = data || jsonb_build_object('recordingSid', $2::text, 'recordingSeconds', $3::text)
+     WHERE type = 'call' AND data->>'callSid' = $1 RETURNING id`,
+    [callSid, recordingSid, seconds]
+  );
+  return rows.length > 0;
+}
+
+// The lead a recording belongs to (for access checks before playing it).
+export async function getRecordingLead(recordingSid: string): Promise<Lead | null> {
+  const rows = await query<{ lead_id: string }>(
+    `SELECT lead_id FROM crm_events
+     WHERE type = 'call' AND data->>'recordingSid' = $1 LIMIT 1`,
+    [recordingSid]
+  );
+  return rows[0] ? getLead(rows[0].lead_id) : null;
+}
+
+export async function setCallNotes(leadId: string, eventId: number, notes: string) {
+  const rows = await query(
+    `UPDATE crm_events SET data = data || jsonb_build_object('notes', $3::text)
+     WHERE id = $2 AND lead_id = $1 AND type = 'call' RETURNING id`,
+    [leadId, eventId, notes.slice(0, 5000)]
+  );
+  return rows.length > 0;
 }
 
 function funnel(dialed: number, answered: number, closed: number, base: number) {
@@ -510,5 +556,42 @@ export async function getStats(access: Access, range: StatRange): Promise<Stats>
     };
   }
 
-  return { range, optIns, dial };
+  const visible = SOURCE_IDS.filter((s) =>
+    s === "free_course_application" ? access.applications : access.dial
+  ) as string[];
+  const board = await query<{
+    actor_id: string;
+    name: string;
+    dials: number;
+    leads_called: number;
+    answered: number;
+    closes: number;
+  }>(
+    `WITH ev AS (
+       SELECT e.*, l.status AS lead_status FROM crm_events e
+       JOIN crm_leads l ON l.id = e.lead_id
+       WHERE e.actor_id IS NOT NULL AND e.actor_id NOT IN ('website', 'webhook', 'manual')
+         AND l.source = ANY($2::text[])
+         AND ($1::timestamptz IS NULL OR e.created_at >= $1::timestamptz)
+     )
+     SELECT actor_id, max(actor_name) AS name,
+       count(*) FILTER (WHERE type = 'call')::int AS dials,
+       count(DISTINCT lead_id) FILTER (WHERE type = 'call')::int AS leads_called,
+       count(DISTINCT lead_id) FILTER (WHERE type = 'call' AND lead_status = ANY($3::text[]))::int AS answered,
+       count(DISTINCT lead_id) FILTER (WHERE type = 'status' AND data->>'to' = 'closed')::int AS closes
+     FROM ev GROUP BY actor_id
+     ORDER BY closes DESC, dials DESC`,
+    [sinceIso, visible, answeredIds]
+  );
+  const leaderboard = board.map((r) => ({
+    actorId: r.actor_id,
+    name: r.name || "Unknown",
+    dials: r.dials,
+    leadsCalled: r.leads_called,
+    answered: r.answered,
+    closes: r.closes,
+    answerRate: r.leads_called > 0 ? r.answered / r.leads_called : null,
+  }));
+
+  return { range, leaderboard, optIns, dial };
 }
