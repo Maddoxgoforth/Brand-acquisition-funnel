@@ -328,29 +328,23 @@ function Plan({ answers, onUnlock }: { answers: Answers; onUnlock: () => void })
         </div>
       </div>
 
-      <div className="mt-6 space-y-3 text-left">
+      <ul className="mt-5 space-y-2 text-left text-sm">
         {plan.phases.map((p, i) => (
-          <div key={p.when} className="flex gap-4 rounded-2xl border border-border p-4">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent font-extrabold text-white">
+          <li key={p.when} className="flex items-center gap-3">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-extrabold text-white">
               {i + 1}
             </span>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-accent">{p.when}</p>
-              <p className="font-extrabold">{p.title}</p>
-              <p className="mt-1 text-sm text-muted">{p.body}</p>
-            </div>
-          </div>
+            <span>
+              <span className="font-bold text-accent">{p.when}:</span> <span className="font-semibold">{p.title}</span>
+            </span>
+          </li>
         ))}
-        <p className="rounded-2xl bg-background-elevated p-4 text-sm">
-          <span className="font-bold">Your pace: </span>
-          {plan.pace}
-        </p>
-      </div>
+      </ul>
 
       <button
         type="button"
         onClick={onUnlock}
-        className="mt-8 rounded-full bg-accent px-8 py-5 text-xl font-extrabold text-white shadow-lg shadow-accent/30 transition-colors hover:bg-accent-dim"
+        className="mt-6 whitespace-nowrap rounded-full bg-accent px-6 py-5 text-lg font-extrabold text-white shadow-lg shadow-accent/30 transition-colors hover:bg-accent-dim"
       >
         UNLOCK MY FREE COURSE →
       </button>
