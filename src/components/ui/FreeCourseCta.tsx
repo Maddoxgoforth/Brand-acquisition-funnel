@@ -3,10 +3,32 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
+import type { FunnelId } from "@/lib/crm/constants";
+import {
+  attribution,
+  newEventId,
+  pixelEvent,
+  trackStep,
+  visitorId,
+} from "@/lib/tracking";
+
+// `funnel` decides which CRM tab the lead lands in: "organic" (the main free
+// course page) or "ads" (the /free-training quiz funnel). `answers` (the quiz)
+// are saved on the lead. `locked` greys the button out until the VSL unlocks it.
 export default function FreeCourseCta({
   label = "Get Free Access",
+  funnel = "organic",
+  answers,
+  getAnswers,
+  locked = false,
+  lockedLabel,
 }: {
   label?: string;
+  funnel?: FunnelId;
+  answers?: Record<string, string>;
+  getAnswers?: () => Record<string, string>;
+  locked?: boolean;
+  lockedLabel?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -20,15 +42,27 @@ export default function FreeCourseCta({
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setStatus("submitting");
+    const eventId = newEventId();
 
     try {
       const res = await fetch("/api/free-course-lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone }),
+        body: JSON.stringify({
+          name,
+          email,
+          phone,
+          funnel,
+          answers: getAnswers ? getAnswers() : answers,
+          attribution: attribution(),
+          eventId,
+          visitor: visitorId(),
+        }),
       });
 
       if (!res.ok) throw new Error("Request failed");
+      // Same event id as the server's Conversions API event: Meta keeps one.
+      pixelEvent("Lead", { content_name: funnel === "ads" ? "free_course_ad_funnel" : "free_course" }, eventId);
       setStatus("success");
       router.push("/free-course/confirmation");
     } catch {
@@ -40,10 +74,14 @@ export default function FreeCourseCta({
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
-        className="w-full rounded-full bg-accent px-10 py-7 text-center text-2xl font-extrabold text-white shadow-lg shadow-accent/30 transition-colors hover:bg-accent-dim"
+        disabled={locked}
+        onClick={() => {
+          setOpen(true);
+          trackStep(funnel, "form_open");
+        }}
+        className="w-full rounded-full bg-accent px-10 py-7 text-center text-2xl font-extrabold text-white shadow-lg shadow-accent/30 transition-colors hover:bg-accent-dim disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
       >
-        {label}
+        {locked ? lockedLabel ?? `🔒 ${label}` : label}
       </button>
 
       {open ? (

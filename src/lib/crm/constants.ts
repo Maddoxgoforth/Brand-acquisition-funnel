@@ -4,9 +4,17 @@
 export const SOURCES = [
   {
     id: "free_course_application",
-    label: "Free course applications",
+    label: "Organic opt-ins",
     group: "applications",
-    description: "Comes in automatically from the free-course lead form.",
+    description:
+      "Free course opt-ins from the main page (link in bio, posts): organic traffic.",
+  },
+  {
+    id: "ad_free_course_application",
+    label: "Ad opt-ins",
+    group: "applications",
+    description:
+      "Free course opt-ins from the ad funnel (/free-training quiz + video): cold traffic.",
   },
   {
     id: "dial_free_course",
@@ -36,6 +44,14 @@ export const FULL_ACCESS: Access = { applications: true, dial: true };
 export function canAccess(access: Access, source: SourceId) {
   const group = SOURCES.find((s) => s.id === source)!.group;
   return access[group];
+}
+
+// The live opt-in lists (organic and ads). They fill themselves from the
+// website, show newest first, and re-opt-ins go back to To dial.
+export const OPT_IN_SOURCES = ["free_course_application", "ad_free_course_application"] as const;
+
+export function isOptInSource(source: SourceId) {
+  return (OPT_IN_SOURCES as readonly string[]).includes(source);
 }
 
 export function isSourceId(value: unknown): value is SourceId {
@@ -114,6 +130,9 @@ export type Lead = {
   // latest one was (= createdAt for a first opt-in).
   optInCount: number;
   lastOptInAt: string;
+  // Where an opt-in came from: utm_source / utm_campaign / utm_content (the
+  // ad) etc. and the landing page. Browser ids and IP stay on the server.
+  attribution: Record<string, string>;
   callCount: number;
   lastCalledAt: string | null;
   createdAt: string;
@@ -169,24 +188,50 @@ export type FunnelNumbers = {
   conversionRate: number | null;
 };
 
+export type OptInChannel = FunnelNumbers & {
+  source: SourceId;
+  label: string;
+  // Opt-ins that came in during the range.
+  total: number;
+  // Unique visitors to that funnel's landing page during the range, and
+  // opt-ins ÷ visitors. null before page tracking has any visits.
+  visitors: number | null;
+  optInRate: number | null;
+  // Of these opt-ins: booked a call (Appointment scheduled, or already
+  // Closed) and booked ÷ opt-ins.
+  booked: number;
+  bookRate: number | null;
+  // Speed to lead for opt-ins in the range.
+  contacted: number;
+  within5: number; // contacted within 5 minutes of opting in
+  waiting: number; // not contacted yet
+  avgFirstContactSeconds: number | null;
+  medianFirstContactSeconds: number | null;
+};
+
+export type FunnelStep = { step: string; label: string; visitors: number };
+
+export type CampaignRow = {
+  campaign: string;
+  ad: string;
+  optIns: number;
+  booked: number;
+  closed: number;
+};
+
 export type Stats = {
   range: StatRange;
   // Calls and closes per team member during the range (lists this viewer
   // can see only).
   leaderboard: LeaderboardRow[];
-  // Free course opt-ins that came in during the range, and what has happened
-  // to them since. null when this person can't see the opt-ins.
-  optIns:
-    | (FunnelNumbers & {
-        total: number;
-        // Speed to lead for opt-ins in the range.
-        contacted: number;
-        within5: number; // contacted within 5 minutes of opting in
-        waiting: number; // not contacted yet
-        avgFirstContactSeconds: number | null;
-        medianFirstContactSeconds: number | null;
-      })
-    | null;
+  // Free course opt-ins, organic and ads side by side: the opt-ins that came
+  // in during the range and what has happened to them since. null when this
+  // person can't see the opt-ins.
+  optIns: { channels: OptInChannel[]; total: OptInChannel } | null;
+  // Ad funnel drop-off: unique visitors reaching each step during the range.
+  adFunnel: FunnelStep[] | null;
+  // Ad opt-ins by campaign / ad (utm_campaign / utm_content).
+  campaigns: CampaignRow[] | null;
   // The hand-filled dial lists: calling activity during the range.
   // null when this person can't see the dial lists.
   dial:
@@ -201,6 +246,33 @@ export type Stats = {
       })
     | null;
 };
+
+// Page-tracking steps of each funnel, in order (see /api/track).
+export const FUNNEL_STEPS = {
+  ads: [
+    { step: "view", label: "Landed on the quiz page" },
+    { step: "quiz_start", label: "Started the quiz" },
+    { step: "quiz_done", label: "Finished the quiz" },
+    { step: "vsl_view", label: "Opened the video page" },
+    { step: "vsl_unlocked", label: "Watched until the button unlocked" },
+    { step: "form_open", label: "Opened the opt-in form" },
+    { step: "optin", label: "Opted in" },
+  ],
+  organic: [
+    { step: "view", label: "Landed on the free course page" },
+    { step: "form_open", label: "Opened the opt-in form" },
+    { step: "optin", label: "Opted in" },
+  ],
+} as const;
+
+export type FunnelId = keyof typeof FUNNEL_STEPS;
+
+export function isTrackedStep(funnel: unknown, step: unknown): funnel is FunnelId {
+  return (
+    (funnel === "ads" || funnel === "organic") &&
+    FUNNEL_STEPS[funnel].some((s) => s.step === step)
+  );
+}
 
 // The confirmation page promises a call within 5 minutes.
 export const SPEED_TO_LEAD_SECONDS = 5 * 60;

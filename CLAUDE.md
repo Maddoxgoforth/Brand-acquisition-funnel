@@ -642,12 +642,65 @@ header `x-crm-secret: <CRM_WEBHOOK_SECRET>` and a JSON lead (or
 `{ "leads": [...] }`) adds leads from outside tools. List ids:
 `free_course_application` (default), `dial_free_course`, `dial_high_ticket`.
 
+## Ad funnel and ad tracking
+
+Built for running Meta ads to the free course (owner's request, Oct 2026).
+
+- **`/free-training`** — the cold-traffic funnel, modeled on a reference quiz
+  funnel (ai-advertiser.com/free-course-c): hook page (Porsche photo,
+  `public/images/maddox-porsche.jpg`) → 8-question quiz → "analyzing" screen
+  → a personalized plan (level from their experience, milestone from their
+  90-day goal, default "your first $10K month", with a 10-minute "spot held"
+  countdown) → **`/free-training/watch`**: a vertical VSL with the opt-in
+  button locked until they've *watched* (not skipped to) the point 30 seconds
+  before the end. Quiz copy and plan logic: `src/components/ad-funnel/quiz.ts`.
+  The video id is `AD_VSL_MEDIA_ID` in `VslGate.tsx`; while it's empty the
+  page shows a placeholder and the button is unlocked, so the funnel works
+  before the VSL exists. Small print (income + Base44 disclosure) is
+  `Disclaimer.tsx`. Both pages are `noindex`.
+- **CRM split.** Opt-ins from `/free-training` go to the **Ad opt-ins** list
+  (`ad_free_course_application`); the main page's go to **Organic opt-ins**
+  (`free_course_application`). `FreeCourseCta` takes `funnel="ads"|"organic"`.
+  Both lists behave the same (live poll + chime, re-opt-ins, speed to lead;
+  `OPT_IN_SOURCES` / `isOptInSource` in `constants.ts`), and both are covered
+  by the one "Free course opt-ins" access switch. Ad leads carry their quiz
+  answers as extra info, and every opt-in stores `crm_leads.attribution`
+  (utm_*, fbclid, Meta's fbc/fbp, landing page, IP, user agent). The lead
+  panel's "Came from" shows only the utm/landing fields; IP, user agent and
+  browser ids never leave the server.
+- **Dashboard.** Organic vs ads side by side (visitors, opt-ins, opt-in rate,
+  answer rate, booked, closed, speed to lead), the ad funnel's drop-off per
+  step, and ad opt-ins by `utm_campaign` / `utm_content`. Visitors come from
+  first-party tracking: `src/lib/tracking.ts` `trackStep()` →
+  `POST /api/track` → `site_events` (anonymous visitor id, funnel, step; one
+  row per visitor per step per hour). Steps are listed in `FUNNEL_STEPS`.
+  Opt-in rate = tracked opt-ins ÷ tracked visitors, so leads from before
+  tracking existed don't skew it.
+- **Meta Pixel** (`src/components/tracking/MetaPixel.tsx`, in the root
+  layout): loads only when `NEXT_PUBLIC_META_PIXEL_ID` is set, never on
+  `/crm`. PageView on every page, ViewContent on the VSL page, custom
+  QuizComplete / VslUnlocked, and Lead on opt-in. It also remembers utm/fbclid
+  from the ad click for the opt-in form.
+- **Conversions API** (`src/lib/meta.ts`): needs `META_CAPI_TOKEN`. Lead is
+  sent by `/api/free-course-lead` with the same event id as the browser Lead
+  (Meta de-duplicates). When an opt-in moves to Appointment scheduled or
+  Closed in the CRM, `updateLead` sends Schedule / Purchase
+  (`META_PURCHASE_VALUE`, default 1000 USD), event id `<lead id>-<status>` so
+  repeats don't double count. Email/phone/name are SHA-256 hashed. Use
+  `META_TEST_EVENT_CODE` to check events in Events Manager → Test events.
+- **Domain verification**: `NEXT_PUBLIC_META_DOMAIN_VERIFICATION` adds the
+  `facebook-domain-verification` meta tag.
+- **Ad links** should carry utm tags so the dashboard can split by ad, e.g.
+  `https://www.brandacquisition.co/free-training?utm_source=meta&utm_medium=paid&utm_campaign={{campaign.name}}&utm_term={{adset.name}}&utm_content={{ad.name}}`
+  (Meta fills the `{{...}}` values in the ad's URL parameters field).
+- **`/privacy` and `/terms`** exist now (`src/components/legal/LegalPage.tsx`,
+  contact email `CONTACT_EMAIL` there). Plain-English drafts, not lawyer
+  reviewed.
+
 ## What's intentionally not built yet
 
-- `/privacy` and `/terms` — footer links currently point to `#`.
-- No analytics/pixel wiring (Meta/TikTok pixels etc.) — ask before adding
-  third-party tracking scripts, since that's a product/legal decision, not a
-  styling one.
+- TikTok/Google pixels — only Meta is wired (see above). Ask before adding
+  other third-party tracking scripts.
 - The Typeform → Cal.com and Cal.com → `/thank-you`/`/thank-you-mid`
   redirects live in the site owner's Typeform/Cal.com dashboards, not in
   this codebase (see "Conversion flow" above) — there's nothing to "fix"

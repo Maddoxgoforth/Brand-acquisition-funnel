@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { addLeads } from "@/lib/crm/leads";
+import { addLeads, recordSiteEvent } from "@/lib/crm/leads";
+import { requestContext, sendMetaEvent } from "@/lib/meta";
 
 type LeadBody = {
   name: string;
@@ -8,7 +9,34 @@ type LeadBody = {
   phone: string;
 };
 
-async function sendToDiscord(lead: LeadBody) {
+// Which page the opt-in came from: "organic" = the main free course page,
+// "ads" = the /free-training quiz funnel for cold traffic.
+type Funnel = "organic" | "ads";
+
+const ATTRIBUTION_KEYS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "fbclid",
+  "fbc",
+  "fbp",
+  "landing_page",
+  "landing_url",
+];
+
+function pickStrings(input: unknown, keys?: string[], max = 500) {
+  const out: Record<string, string> = {};
+  if (!input || typeof input !== "object" || Array.isArray(input)) return out;
+  for (const [key, value] of Object.entries(input)) {
+    if (keys && !keys.includes(key)) continue;
+    if (typeof value === "string" && value.trim()) out[key.slice(0, 80)] = value.trim().slice(0, max);
+  }
+  return out;
+}
+
+async function sendToDiscord(lead: LeadBody, funnel: Funnel) {
   const webhookUrl = process.env.DISCORD_FREE_COURSE_WEBHOOK_URL;
   if (!webhookUrl) return;
 
@@ -19,7 +47,7 @@ async function sendToDiscord(lead: LeadBody) {
       body: JSON.stringify({
         embeds: [
           {
-            title: "🎉 New Free Course Lead",
+            title: funnel === "ads" ? "🎯 New Free Course Lead (Ad)" : "🎉 New Free Course Lead",
             color: 0x2563eb,
             fields: [
               { name: "Name", value: lead.name, inline: true },
@@ -48,11 +76,11 @@ function slackText(value: string) {
 
 // Same best-effort pattern as Discord: skipped when the env var is unset,
 // and a Slack failure never blocks the visitor.
-async function sendToSlack(lead: LeadBody, crmUrl: string) {
+async function sendToSlack(lead: LeadBody, crmUrl: string, funnel: Funnel) {
   const webhookUrl = process.env.SLACK_FREE_COURSE_WEBHOOK_URL;
   if (!webhookUrl) return;
 
-  const summary = `New free course application: ${slackText(lead.name)}`;
+  const summary = `New free course ${funnel === "ads" ? "ad opt-in" : "application"}: ${slackText(lead.name)}`;
   // <!channel> is Slack's @channel: it notifies everyone in the channel,
   // including a push to their phones, so leads get called fast. `text` is
   // what the phone notification shows.
@@ -93,15 +121,21 @@ async function sendToSlack(lead: LeadBody, crmUrl: string) {
   }
 }
 
-// Files the lead under "Free course applications" in the private CRM
-// (/crm). Best-effort like the Discord step: if the CRM database is missing
-// or down, the visitor still gets their confirmation page.
-async function saveToCrm(lead: LeadBody) {
+// Files the lead in the private CRM (/crm): "Organic opt-ins" or "Ad
+// opt-ins", with the quiz answers as extra info and the ad source. Best-effort
+// like the Discord step: if the CRM database is missing or down, the visitor
+// still gets their confirmation page.
+async function saveToCrm(
+  lead: LeadBody,
+  funnel: Funnel,
+  answers: Record<string, string>,
+  attribution: Record<string, string>
+) {
   try {
     await addLeads(
-      "free_course_application",
-      [{ name: lead.name, email: lead.email, phone: lead.phone, extra: {} }],
-      "free-course form"
+      funnel === "ads" ? "ad_free_course_application" : "free_course_application",
+      [{ name: lead.name, email: lead.email, phone: lead.phone, extra: answers, attribution }],
+      funnel === "ads" ? "ad funnel form" : "free-course form"
     );
   } catch (error) {
     console.error("Saving free-course lead to CRM failed:", error);
@@ -109,7 +143,13 @@ async function saveToCrm(lead: LeadBody) {
 }
 
 export async function POST(request: Request) {
-  let body: LeadBody;
+  let body: LeadBody & {
+    funnel?: unknown;
+    answers?: unknown;
+    attribution?: unknown;
+    eventId?: unknown;
+    visitor?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
@@ -124,11 +164,41 @@ export async function POST(request: Request) {
     );
   }
 
+  const funnel: Funnel = body.funnel === "ads" ? "ads" : "organic";
+  const answers = pickStrings(body.answers, undefined, 300);
+  const { ip, userAgent } = requestContext(request);
+  const attribution: Record<string, string> = {
+    ...pickStrings(body.attribution, ATTRIBUTION_KEYS),
+    ...(ip ? { ip } : {}),
+    ...(userAgent ? { user_agent: userAgent.slice(0, 400) } : {}),
+  };
+  const eventId =
+    typeof body.eventId === "string" && body.eventId ? body.eventId.slice(0, 100) : crypto.randomUUID();
+
   const crmUrl = new URL("/crm", request.url).toString();
   await Promise.all([
-    sendToDiscord({ name, email, phone }),
-    sendToSlack({ name, email, phone }, crmUrl),
-    saveToCrm({ name, email, phone }),
+    sendToDiscord({ name, email, phone }, funnel),
+    sendToSlack({ name, email, phone }, crmUrl, funnel),
+    saveToCrm({ name, email, phone }, funnel, answers, attribution),
+    // Same event id as the browser Pixel's Lead event, so Meta counts it once.
+    sendMetaEvent({
+      name: "Lead",
+      eventId,
+      url: attribution.landing_url || request.headers.get("referer") || undefined,
+      user: {
+        email,
+        phone,
+        firstName: name,
+        ip,
+        userAgent,
+        fbc: attribution.fbc,
+        fbp: attribution.fbp,
+      },
+      customData: { lead_source: funnel === "ads" ? "ad_funnel" : "organic" },
+    }),
+    typeof body.visitor === "string" && body.visitor
+      ? recordSiteEvent(body.visitor, funnel, "optin", attribution.utm_campaign ?? "").catch(() => {})
+      : Promise.resolve(),
   ]);
 
   return NextResponse.json({ ok: true });

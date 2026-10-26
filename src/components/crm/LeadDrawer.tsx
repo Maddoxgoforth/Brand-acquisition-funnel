@@ -141,6 +141,29 @@ export default function LeadDrawer({
         </header>
 
         <div className="space-y-6 px-6 py-5">
+          {Object.keys(lead.attribution).length > 0 ? (
+            <section className="rounded-xl border border-border px-4 py-3 text-sm">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted">Came from</h3>
+              <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                {[
+                  ["Source", lead.attribution.utm_source],
+                  ["Campaign", lead.attribution.utm_campaign],
+                  ["Ad set", lead.attribution.utm_term],
+                  ["Ad", lead.attribution.utm_content],
+                  ["Medium", lead.attribution.utm_medium],
+                  ["Landing page", lead.attribution.landing_page],
+                ]
+                  .filter(([, v]) => v)
+                  .map(([k, v]) => (
+                    <div key={k} className="contents">
+                      <dt className="font-semibold text-muted">{k}</dt>
+                      <dd className="truncate">{v}</dd>
+                    </div>
+                  ))}
+              </dl>
+            </section>
+          ) : null}
+
           {askOutcome ? (
             <p className="rounded-xl bg-background-elevated px-4 py-3 text-sm font-semibold">
               Call ended. How did it go? Pick where this lead belongs below.

@@ -7,6 +7,7 @@ import {
   STAT_RANGES,
   formatDuration,
   type FunnelNumbers,
+  type OptInChannel,
   type StatRange,
   type Stats,
 } from "@/lib/crm/constants";
@@ -95,44 +96,169 @@ export default function Dashboard({
 
       {current?.optIns ? (
         <section>
-          <h2 className="text-lg font-extrabold">Free course opt-ins</h2>
+          <h2 className="text-lg font-extrabold">Free course opt-ins: ads vs organic</h2>
           <p className="text-sm text-muted">
-            Opt-ins that came in during {inRange}, and what has happened to them since.
+            Opt-ins that came in during {inRange}, and what has happened to them since. Visitors are unique
+            people who landed on each funnel&apos;s first page (counted since page tracking went live).
           </p>
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
+              label="Opt-ins"
+              value={String(current.optIns.total.total)}
+              detail={current.optIns.channels.map((c) => `${c.label}: ${c.total}`).join(" · ")}
+            />
+            <StatCard
+              label="Opt-in rate"
+              value={percent(current.optIns.total.optInRate)}
+              detail={
+                current.optIns.total.visitors === null
+                  ? "No page visits tracked yet"
+                  : `Of ${current.optIns.total.visitors} tracked visitors`
+              }
+            />
+            <StatCard
+              label="Booked a call"
+              value={percent(current.optIns.total.bookRate)}
+              detail={`${current.optIns.total.booked} of ${current.optIns.total.total} opt-ins`}
+            />
+            <StatCard
+              label="Closed"
+              value={percent(current.optIns.total.conversionRate)}
+              detail={`${current.optIns.total.closed} of ${current.optIns.total.total} opt-ins`}
+            />
+          </div>
+
+          <div className="mt-4 overflow-x-auto rounded-2xl border border-border bg-background">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border text-xs uppercase tracking-widest text-muted">
+                <tr>
+                  <th className="px-5 py-3 font-bold">Traffic</th>
+                  <th className="px-5 py-3 text-right font-bold">Visitors</th>
+                  <th className="px-5 py-3 text-right font-bold">Opt-ins</th>
+                  <th className="px-5 py-3 text-right font-bold">Opt-in rate</th>
+                  <th className="px-5 py-3 text-right font-bold">Answer rate</th>
+                  <th className="px-5 py-3 text-right font-bold">Booked</th>
+                  <th className="px-5 py-3 text-right font-bold">Book rate</th>
+                  <th className="px-5 py-3 text-right font-bold">Closed</th>
+                  <th className="px-5 py-3 text-right font-bold">Close rate</th>
+                  <th className="px-5 py-3 text-right font-bold">Avg first call</th>
+                  <th className="px-5 py-3 text-right font-bold">≤ 5 min</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...current.optIns.channels, current.optIns.total].map((c: OptInChannel, i, all) => (
+                  <tr
+                    key={c.label}
+                    className={`border-b border-border last:border-0 ${i === all.length - 1 ? "font-bold" : ""}`}
+                  >
+                    <td className="px-5 py-3 font-semibold">{c.label}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">{c.visitors ?? "–"}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">{c.total}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">{percent(c.optInRate)}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">{percent(c.answerRate)}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">{c.booked}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">{percent(c.bookRate)}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">{c.closed}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">{percent(c.conversionRate)}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">
+                      {c.avgFirstContactSeconds === null ? "–" : formatDuration(c.avgFirstContactSeconds)}
+                    </td>
+                    <td className="px-5 py-3 text-right tabular-nums">
+                      {percent(c.total > 0 ? c.within5 / c.total : null)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <StatCard
               label="Avg time to first call"
               value={
-                current.optIns.avgFirstContactSeconds === null
+                current.optIns.total.avgFirstContactSeconds === null
                   ? "–"
-                  : formatDuration(current.optIns.avgFirstContactSeconds)
+                  : formatDuration(current.optIns.total.avgFirstContactSeconds)
               }
-              detail={
-                current.optIns.medianFirstContactSeconds === null
-                  ? "No opt-ins called yet"
-                  : `Median ${formatDuration(current.optIns.medianFirstContactSeconds)}`
-              }
+              detail="All opt-ins, organic and ads"
             />
             <StatCard
               label="Called within 5 min"
               value={percent(
-                current.optIns.total > 0 ? current.optIns.within5 / current.optIns.total : null
+                current.optIns.total.total > 0
+                  ? current.optIns.total.within5 / current.optIns.total.total
+                  : null
               )}
-              detail={`${current.optIns.within5} of ${current.optIns.total} opt-ins`}
+              detail={`${current.optIns.total.within5} of ${current.optIns.total.total} opt-ins`}
             />
             <StatCard
               label="Still waiting"
-              value={String(current.optIns.waiting)}
+              value={String(current.optIns.total.waiting)}
               detail="Opt-ins nobody has called yet"
             />
           </div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <StatCard label="Opt-ins" value={String(current.optIns.total)} detail={`New in ${inRange}`} />
-            <FunnelCards
-              n={current.optIns}
-              closedDetail="Of these opt-ins, now in Closed"
-              conversionDetail={`${current.optIns.closed} closed out of ${current.optIns.total} opt-ins`}
-            />
+        </section>
+      ) : null}
+
+      {current?.adFunnel ? (
+        <section>
+          <h2 className="text-lg font-extrabold">Ad funnel drop-off</h2>
+          <p className="text-sm text-muted">
+            Unique visitors who reached each step of /free-training during {inRange}.
+          </p>
+          <div className="mt-3 space-y-2 rounded-2xl border border-border bg-background p-5">
+            {current.adFunnel.map((s) => {
+              const top = current.adFunnel![0].visitors;
+              const share = top > 0 ? s.visitors / top : 0;
+              return (
+                <div key={s.step} className="grid grid-cols-[minmax(0,14rem)_1fr_auto] items-center gap-3 text-sm">
+                  <span className="truncate font-semibold">{s.label}</span>
+                  <div className="h-3 overflow-hidden rounded-full bg-background-elevated">
+                    <div className="h-full rounded-full bg-accent" style={{ width: `${Math.max(share * 100, s.visitors ? 2 : 0)}%` }} />
+                  </div>
+                  <span className="w-28 text-right tabular-nums">
+                    {s.visitors} <span className="text-muted">({top > 0 ? `${Math.round(share * 100)}%` : "–"})</span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      {current?.campaigns && current.campaigns.length > 0 ? (
+        <section>
+          <h2 className="text-lg font-extrabold">Ad opt-ins by campaign</h2>
+          <p className="text-sm text-muted">
+            From the ad links&apos; utm_campaign and utm_content tags, for opt-ins during {inRange}.
+          </p>
+          <div className="mt-3 overflow-x-auto rounded-2xl border border-border bg-background">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border text-xs uppercase tracking-widest text-muted">
+                <tr>
+                  <th className="px-5 py-3 font-bold">Campaign</th>
+                  <th className="px-5 py-3 font-bold">Ad</th>
+                  <th className="px-5 py-3 text-right font-bold">Opt-ins</th>
+                  <th className="px-5 py-3 text-right font-bold">Booked</th>
+                  <th className="px-5 py-3 text-right font-bold">Closed</th>
+                  <th className="px-5 py-3 text-right font-bold">Book rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {current.campaigns.map((r) => (
+                  <tr key={`${r.campaign}|${r.ad}`} className="border-b border-border last:border-0">
+                    <td className="px-5 py-3 font-semibold">{r.campaign}</td>
+                    <td className="px-5 py-3">{r.ad}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">{r.optIns}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">{r.booked}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">{r.closed}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">
+                      {percent(r.optIns > 0 ? r.booked / r.optIns : null)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       ) : null}

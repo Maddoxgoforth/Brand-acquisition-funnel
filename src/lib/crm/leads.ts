@@ -1,19 +1,26 @@
 import "server-only";
 
+import { sendMetaEvent } from "@/lib/meta";
+
 import { query } from "./db";
 import {
   ANSWERED_STATUS_IDS,
   APPOINTMENT_STATUS,
+  FUNNEL_STEPS,
+  OPT_IN_SOURCES,
+  SOURCES,
   SOURCE_IDS,
   STAT_RANGES,
   classifyField,
   cleanPhone,
+  isOptInSource,
   isStatusId,
   toE164,
   type Access,
   type Actor,
   type Lead,
   type LeadEvent,
+  type OptInChannel,
   type SourceId,
   type StatRange,
   type Stats,
@@ -36,6 +43,7 @@ type LeadRow = {
   first_contact_at: string | Date | null;
   opt_in_count: number;
   last_opt_in_at: string | Date | null;
+  attribution: Record<string, unknown> | string | null;
   call_count: number;
   last_called_at: string | Date | null;
   created_at: string | Date;
@@ -44,6 +52,25 @@ type LeadRow = {
 
 function iso(value: string | Date | null) {
   return value === null ? null : new Date(value).toISOString();
+}
+
+// Attribution keys the CRM screens may show. Browser ids (fbc/fbp), IP and
+// user agent stay on the server for the Conversions API.
+const PUBLIC_ATTRIBUTION = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "landing_page",
+];
+
+function parseJson(value: Record<string, unknown> | string | null | undefined) {
+  return (typeof value === "string" ? JSON.parse(value) : value ?? {}) as Record<string, unknown>;
+}
+
+export function rawAttribution(row: { attribution?: Record<string, unknown> | string | null }) {
+  return cleanExtra(parseJson(row.attribution));
 }
 
 function toLead(row: LeadRow): Lead {
@@ -65,6 +92,9 @@ function toLead(row: LeadRow): Lead {
     firstContactAt: iso(row.first_contact_at ?? null),
     optInCount: Number(row.opt_in_count ?? 1),
     lastOptInAt: iso(row.last_opt_in_at ?? null) ?? iso(row.created_at)!,
+    attribution: Object.fromEntries(
+      Object.entries(rawAttribution(row)).filter(([k]) => PUBLIC_ATTRIBUTION.includes(k))
+    ),
     callCount: Number(row.call_count),
     lastCalledAt: iso(row.last_called_at),
     createdAt: iso(row.created_at)!,
@@ -99,6 +129,7 @@ export type LeadInput = {
   phone: string;
   email: string;
   extra: Record<string, string>;
+  attribution?: Record<string, string>;
 };
 
 // Accepts any object (a form post, a CSV row, a webhook payload). Pulls out
@@ -146,7 +177,7 @@ export async function listLeads(source: SourceId): Promise<Lead[]> {
   // hand-filled dial lists show in the order the leads were added, so the
   // first ones you put in are the first ones to call.
   const order =
-    source === "free_course_application"
+    isOptInSource(source)
       ? "coalesce(last_opt_in_at, created_at) DESC, seq DESC"
       : "seq ASC";
   const rows = await query<LeadRow>(
@@ -168,13 +199,19 @@ export async function listNewApplications(
 
   const rows = await query<LeadRow>(
     `SELECT * FROM crm_leads
-     WHERE source = 'free_course_application'
+     WHERE source = ANY($3::text[])
        AND coalesce(last_opt_in_at, created_at) > $1::timestamptz
        AND coalesce(last_opt_in_at, created_at) <= $2::timestamptz
      ORDER BY coalesce(last_opt_in_at, created_at) DESC, seq DESC LIMIT 50`,
-    [since, cursor]
+    [since, cursor, OPT_IN_SOURCES]
   );
   return { cursor, leads: rows.map(toLead) };
+}
+
+// The full row (with browser ids / IP) for sending conversions to Meta.
+export async function getLeadForTracking(id: string) {
+  const rows = await query<LeadRow>(`SELECT * FROM crm_leads WHERE id = $1`, [id]);
+  return rows[0] ? { lead: toLead(rows[0]), attribution: rawAttribution(rows[0]) } : null;
 }
 
 export async function getLead(id: string): Promise<Lead | null> {
@@ -229,7 +266,7 @@ export async function addLeads(
 ): Promise<{ added: number; skipped: number; leads: Lead[] }> {
   const seenPhones = new Set<string>();
   const seenEmails = new Set<string>();
-  const batch: (LeadInput & { phone_e164: string | null })[] = [];
+  const batch: (LeadInput & { phone_e164: string | null; attribution: Record<string, string> })[] = [];
 
   for (const raw of inputs) {
     const input = {
@@ -242,19 +279,19 @@ export async function addLeads(
     if (!phone_e164 && input.email && seenEmails.has(input.email)) continue;
     if (phone_e164) seenPhones.add(phone_e164);
     if (input.email) seenEmails.add(input.email);
-    batch.push({ ...input, phone_e164 });
+    batch.push({ ...input, phone_e164, attribution: cleanExtra(input.attribution ?? {}) });
   }
 
   const inserted: Lead[] = [];
   const CHUNK = 400;
   for (let i = 0; i < batch.length; i += CHUNK) {
     const rows = await query<LeadRow>(
-      `INSERT INTO crm_leads (source, name, phone, phone_e164, email, extra)
-       SELECT $1, x.name, x.phone, x.phone_e164, x.email, x.extra
+      `INSERT INTO crm_leads (source, name, phone, phone_e164, email, extra, attribution)
+       SELECT $1, x.name, x.phone, x.phone_e164, x.email, x.extra, x.attribution
        FROM (
          SELECT el->>'name' AS name, el->>'phone' AS phone,
                 el->>'phone_e164' AS phone_e164, el->>'email' AS email,
-                el->'extra' AS extra, ord
+                el->'extra' AS extra, coalesce(el->'attribution', '{}'::jsonb) AS attribution, ord
          FROM jsonb_array_elements($2::jsonb) WITH ORDINALITY AS a(el, ord)
        ) AS x
        WHERE NOT EXISTS (
@@ -289,7 +326,7 @@ export async function addLeads(
   // back in To dial (a fresh lead to call) and note it. Leads in Closed or
   // Do not call stay where they are but still get the note and count.
   const reOptedIn: Lead[] = [];
-  if (source === "free_course_application") {
+  if (isOptInSource(source)) {
     const insertedKeys = new Set(
       inserted.flatMap((l) => [l.phoneE164, l.email].filter(Boolean))
     );
@@ -300,7 +337,7 @@ export async function addLeads(
       ) {
         continue;
       }
-      const lead = await reOptIn(input, via, actor);
+      const lead = await reOptIn(source, input, via, actor);
       if (lead) reOptedIn.push(lead);
     }
   }
@@ -313,18 +350,19 @@ export async function addLeads(
 }
 
 async function reOptIn(
-  input: LeadInput & { phone_e164: string | null },
+  source: SourceId,
+  input: LeadInput & { phone_e164: string | null; attribution: Record<string, string> },
   via: string,
   actor: Actor | null
 ): Promise<Lead | null> {
   const [existing] = await query<LeadRow>(
     `SELECT * FROM crm_leads
-     WHERE source = 'free_course_application' AND (
+     WHERE source = $3 AND (
        ($1::text IS NOT NULL AND phone_e164 = $1)
        OR ($1::text IS NULL AND $2 <> '' AND email = $2)
      )
      ORDER BY created_at LIMIT 1`,
-    [input.phone_e164, input.email]
+    [input.phone_e164, input.email, source]
   );
   if (!existing) return null;
   const keep = existing.status === "closed" || existing.status === "do_not_call";
@@ -337,9 +375,11 @@ async function reOptIn(
        appointment_tz = CASE WHEN $2 THEN appointment_tz ELSE NULL END,
        first_contact_at = CASE WHEN $2 THEN first_contact_at ELSE NULL END,
        email = CASE WHEN email = '' THEN $3 ELSE email END,
+       attribution = CASE WHEN $4::jsonb = '{}'::jsonb THEN attribution ELSE $4::jsonb END,
+       extra = extra || $5::jsonb,
        updated_at = now()
      WHERE id = $1 RETURNING *`,
-    [existing.id, keep, input.email]
+    [existing.id, keep, input.email, JSON.stringify(input.attribution), JSON.stringify(input.extra)]
   );
   await addEvent(
     existing.id,
@@ -480,6 +520,9 @@ export async function updateLead(
   if (next.status !== current.status) {
     await addEvent(id, "status", { from: current.status, to: next.status }, actor);
   }
+  if (next.status !== current.status) {
+    await reportStageToMeta(id, next.status);
+  }
   if (next.status === APPOINTMENT_STATUS && appointmentAt !== current.appointmentAt) {
     await addEvent(id, "appointment", {
       at: appointmentAt ?? "",
@@ -487,6 +530,44 @@ export async function updateLead(
     }, actor);
   }
   return rows[0] ? toLead(rows[0]) : null;
+}
+
+// Tells Meta when an opt-in books a call or buys, so ads can optimize for
+// buyers instead of just opt-ins. The event id is fixed per lead and stage,
+// so moving a card back and forth never counts twice.
+const META_STAGES: Partial<Record<StatusId, string>> = {
+  appointment: "Schedule",
+  closed: "Purchase",
+};
+
+async function reportStageToMeta(id: string, status: StatusId) {
+  const name = META_STAGES[status];
+  if (!name) return;
+  try {
+    const found = await getLeadForTracking(id);
+    if (!found || !isOptInSource(found.lead.source)) return;
+    const { lead, attribution } = found;
+    const value = Number(process.env.META_PURCHASE_VALUE || 1000);
+    await sendMetaEvent({
+      name,
+      eventId: `${lead.id}-${status}`,
+      url: attribution.landing_url || undefined,
+      user: {
+        email: lead.email,
+        phone: lead.phoneE164 ?? lead.phone,
+        firstName: lead.name,
+        ip: attribution.ip,
+        userAgent: attribution.user_agent,
+        fbc: attribution.fbc,
+        fbp: attribution.fbp,
+        externalId: lead.id,
+      },
+      customData:
+        name === "Purchase" ? { currency: "USD", value } : { lead_source: lead.source },
+    });
+  } catch (error) {
+    console.error("Reporting stage to Meta failed:", error);
+  }
 }
 
 export async function deleteLead(id: string): Promise<boolean> {
@@ -543,6 +624,26 @@ function funnel(dialed: number, answered: number, closed: number, base: number) 
 // Dial lists are activity: leads dialed (called or moved columns) during the
 // range. Answered = of those, now in an answered column. Closed = moved to
 // Closed during the range. Conversion = closed / dialed.
+// Page tracking: one row per visitor per step, at most once per hour so
+// refreshes don't pile up rows.
+export async function recordSiteEvent(
+  visitorId: string,
+  funnelId: string,
+  step: string,
+  campaign: string
+) {
+  await query(
+    `INSERT INTO site_events (visitor_id, funnel, step, campaign)
+     SELECT $1, $2, $3, $4
+     WHERE NOT EXISTS (
+       SELECT 1 FROM site_events
+       WHERE visitor_id = $1 AND funnel = $2 AND step = $3
+         AND created_at > now() - interval '1 hour'
+     )`,
+    [visitorId.slice(0, 64), funnelId, step, campaign.slice(0, 200)]
+  );
+}
+
 export async function getStats(access: Access, range: StatRange): Promise<Stats> {
   const days = STAT_RANGES.find((r) => r.id === range)!.days;
   const [{ since }] = await query<{ since: string | Date | null }>(
@@ -555,39 +656,143 @@ export async function getStats(access: Access, range: StatRange): Promise<Stats>
   const answeredIds = ANSWERED_STATUS_IDS as unknown as string[];
 
   let optIns: Stats["optIns"] = null;
+  let adFunnel: Stats["adFunnel"] = null;
+  let campaigns: Stats["campaigns"] = null;
   if (access.applications) {
-    const [row] = await query<{
+    const rows = await query<{
+      source: SourceId;
       total: number;
       dialed: number;
       answered: number;
+      booked: number;
       closed: number;
       contacted: number;
       within5: number;
       avg_s: number | null;
       median_s: number | null;
     }>(
-      `SELECT count(*)::int AS total,
+      `SELECT source, count(*)::int AS total,
          count(*) FILTER (WHERE status <> 'new' OR call_count > 0)::int AS dialed,
          count(*) FILTER (WHERE status = ANY($2::text[]))::int AS answered,
+         count(*) FILTER (WHERE status IN ('appointment', 'closed')
+           OR EXISTS (SELECT 1 FROM crm_events e WHERE e.lead_id = l.id AND e.type = 'appointment'))::int AS booked,
          count(*) FILTER (WHERE status = 'closed')::int AS closed,
          count(first_contact_at)::int AS contacted,
          count(*) FILTER (WHERE first_contact_at - opt_at <= interval '5 minutes')::int AS within5,
          avg(extract(epoch FROM first_contact_at - opt_at))::float AS avg_s,
          percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM first_contact_at - opt_at))::float AS median_s
        FROM (SELECT *, coalesce(last_opt_in_at, created_at) AS opt_at FROM crm_leads) l
-       WHERE source = 'free_course_application'
-         AND ($1::timestamptz IS NULL OR opt_at >= $1::timestamptz)`,
-      [sinceIso, answeredIds]
+       WHERE source = ANY($3::text[])
+         AND ($1::timestamptz IS NULL OR opt_at >= $1::timestamptz)
+       GROUP BY source`,
+      [sinceIso, answeredIds, OPT_IN_SOURCES]
     );
-    optIns = {
-      total: row.total,
-      ...funnel(row.dialed, row.answered, row.closed, row.total),
-      contacted: row.contacted,
-      within5: row.within5,
-      waiting: row.total - row.contacted,
-      avgFirstContactSeconds: row.avg_s,
-      medianFirstContactSeconds: row.median_s,
+
+    // Unique visitors per funnel step from the page tracking.
+    const steps = await query<{ funnel: string; step: string; visitors: number }>(
+      `SELECT funnel, step, count(DISTINCT visitor_id)::int AS visitors
+       FROM site_events
+       WHERE ($1::timestamptz IS NULL OR created_at >= $1::timestamptz)
+       GROUP BY funnel, step`,
+      [sinceIso]
+    );
+    const visitorsAt = (funnel: string, step: string) =>
+      steps.find((r) => r.funnel === funnel && r.step === step)?.visitors ?? 0;
+    const tracked = steps.length > 0;
+
+    // Opt-in rate uses tracked opt-ins over tracked visitors, so leads from
+    // before page tracking existed don't inflate it.
+    const rate = (f: "ads" | "organic") => {
+      const views = visitorsAt(f, "view");
+      return tracked && views > 0 ? visitorsAt(f, "optin") / views : null;
     };
+    const channel = (source: SourceId, visitors: number | null, optInRate: number | null): OptInChannel => {
+      const r = rows.find((x) => x.source === source);
+      const total = r?.total ?? 0;
+      const booked = r?.booked ?? 0;
+      return {
+        source,
+        label: SOURCES.find((x) => x.id === source)!.label,
+        total,
+        visitors,
+        optInRate,
+        booked,
+        bookRate: total > 0 ? booked / total : null,
+        ...funnel(r?.dialed ?? 0, r?.answered ?? 0, r?.closed ?? 0, total),
+        contacted: r?.contacted ?? 0,
+        within5: r?.within5 ?? 0,
+        waiting: total - (r?.contacted ?? 0),
+        avgFirstContactSeconds: r?.avg_s ?? null,
+        medianFirstContactSeconds: r?.median_s ?? null,
+      };
+    };
+    const channels = [
+      channel("ad_free_course_application", tracked ? visitorsAt("ads", "view") : null, rate("ads")),
+      channel("free_course_application", tracked ? visitorsAt("organic", "view") : null, rate("organic")),
+    ];
+    // Both channels combined; averages weighted by how many were called.
+    const sum = (k: keyof OptInChannel) =>
+      channels.reduce((n, c) => n + ((c[k] as number | null) ?? 0), 0);
+    const contacted = sum("contacted");
+    const weighted = (k: "avgFirstContactSeconds" | "medianFirstContactSeconds") =>
+      contacted > 0
+        ? channels.reduce((n, c) => n + (c[k] ?? 0) * c.contacted, 0) / contacted
+        : null;
+    const total = sum("total");
+    const visitors = tracked ? sum("visitors") : null;
+    optIns = {
+      channels,
+      total: {
+        source: "free_course_application",
+        label: "All opt-ins",
+        total,
+        visitors,
+        optInRate: visitors
+          ? (visitorsAt("ads", "optin") + visitorsAt("organic", "optin")) / visitors
+          : null,
+        booked: sum("booked"),
+        bookRate: total > 0 ? sum("booked") / total : null,
+        ...funnel(sum("dialed"), sum("answered"), sum("closed"), total),
+        contacted,
+        within5: sum("within5"),
+        waiting: total - contacted,
+        avgFirstContactSeconds: weighted("avgFirstContactSeconds"),
+        medianFirstContactSeconds: weighted("medianFirstContactSeconds"),
+      },
+    };
+
+    adFunnel = FUNNEL_STEPS.ads.map((s) => ({
+      step: s.step,
+      label: s.label,
+      visitors: visitorsAt("ads", s.step),
+    }));
+
+    const byAd = await query<{
+      campaign: string;
+      ad: string;
+      opt_ins: number;
+      booked: number;
+      closed: number;
+    }>(
+      `SELECT coalesce(nullif(attribution->>'utm_campaign', ''), '(no campaign tag)') AS campaign,
+         coalesce(nullif(attribution->>'utm_content', ''), '–') AS ad,
+         count(*)::int AS opt_ins,
+         count(*) FILTER (WHERE status IN ('appointment', 'closed')
+           OR EXISTS (SELECT 1 FROM crm_events e WHERE e.lead_id = l.id AND e.type = 'appointment'))::int AS booked,
+         count(*) FILTER (WHERE status = 'closed')::int AS closed
+       FROM crm_leads l
+       WHERE source = 'ad_free_course_application'
+         AND ($1::timestamptz IS NULL OR coalesce(last_opt_in_at, created_at) >= $1::timestamptz)
+       GROUP BY 1, 2 ORDER BY opt_ins DESC LIMIT 50`,
+      [sinceIso]
+    );
+    campaigns = byAd.map((r) => ({
+      campaign: r.campaign,
+      ad: r.ad,
+      optIns: r.opt_ins,
+      booked: r.booked,
+      closed: r.closed,
+    }));
   }
 
   let dial: Stats["dial"] = null;
@@ -628,7 +833,7 @@ export async function getStats(access: Access, range: StatRange): Promise<Stats>
        FROM worked GROUP BY source`,
       [sinceIso, answeredIds]
     );
-    const bySource = SOURCE_IDS.filter((s) => s !== "free_course_application").map(
+    const bySource = SOURCE_IDS.filter((s) => !isOptInSource(s)).map(
       (source) => {
         const r = rows.find((x) => x.source === source);
         const [d, a, c] = [r?.dialed ?? 0, r?.answered ?? 0, r?.closed ?? 0];
@@ -646,7 +851,7 @@ export async function getStats(access: Access, range: StatRange): Promise<Stats>
   }
 
   const visible = SOURCE_IDS.filter((s) =>
-    s === "free_course_application" ? access.applications : access.dial
+    isOptInSource(s) ? access.applications : access.dial
   ) as string[];
   const board = await query<{
     actor_id: string;
@@ -682,5 +887,5 @@ export async function getStats(access: Access, range: StatRange): Promise<Stats>
     answerRate: r.leads_called > 0 ? r.answered / r.leads_called : null,
   }));
 
-  return { range, leaderboard, optIns, dial };
+  return { range, leaderboard, optIns, adFunnel, campaigns, dial };
 }

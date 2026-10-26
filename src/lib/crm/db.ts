@@ -33,6 +33,10 @@ const SCHEMA = [
   // latest one was. The speed-to-lead timer restarts from the latest opt-in.
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS opt_in_count integer NOT NULL DEFAULT 1`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS last_opt_in_at timestamptz`,
+  // Ad tracking for opt-ins: utm_* params, fbclid, Meta's _fbc/_fbp browser
+  // ids, IP and user agent (the last four are only used server-side, to send
+  // conversions to Meta's Conversions API).
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS attribution jsonb NOT NULL DEFAULT '{}'::jsonb`,
   `UPDATE crm_leads l SET first_contact_at = e.first
    FROM (SELECT lead_id, min(created_at) AS first FROM crm_events
          WHERE type IN ('call', 'status') GROUP BY lead_id) e
@@ -52,6 +56,17 @@ const SCHEMA = [
   `ALTER TABLE crm_events ADD COLUMN IF NOT EXISTS actor_id text`,
   `ALTER TABLE crm_events ADD COLUMN IF NOT EXISTS actor_name text`,
   `CREATE INDEX IF NOT EXISTS crm_events_type_idx ON crm_events (type, created_at DESC)`,
+  // First-party page tracking for the dashboard's funnel numbers: one row per
+  // visitor per funnel step (see /api/track). No personal data.
+  `CREATE TABLE IF NOT EXISTS site_events (
+    id bigserial PRIMARY KEY,
+    visitor_id text NOT NULL,
+    funnel text NOT NULL,
+    step text NOT NULL,
+    campaign text NOT NULL DEFAULT '',
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS site_events_funnel_idx ON site_events (funnel, step, created_at DESC)`,
   // Team accounts. status: pending (signed up, waiting for the owner),
   // active, or disabled (access removed).
   `CREATE TABLE IF NOT EXISTS crm_users (

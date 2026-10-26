@@ -9,6 +9,7 @@ import {
   formatDuration,
   type Lead,
   type StatusId,
+  isOptInSource,
 } from "@/lib/crm/constants";
 import { timeAgo } from "./api";
 
@@ -84,7 +85,7 @@ export default function Board({
   const [dragOver, setDragOver] = useState<StatusId | null>(null);
   const [limits, setLimits] = useState<Partial<Record<StatusId, number>>>({});
   const timing = leads.some(
-    (l) => l.source === "free_course_application" && !l.firstContactAt
+    (l) => isOptInSource(l.source) && !l.firstContactAt
   );
   const now = useNow(timing);
 
@@ -174,7 +175,7 @@ export default function Board({
                       Opted in {lead.optInCount}×
                     </p>
                   ) : null}
-                  {lead.source === "free_course_application" ? (
+                  {isOptInSource(lead.source) ? (
                     <SpeedBadge lead={lead} now={now} />
                   ) : null}
                   {lead.status === "closed" && lead.recordingUrl ? (

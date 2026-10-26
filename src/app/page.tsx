@@ -11,6 +11,7 @@ import FreeCourseResults from "@/components/sections/FreeCourseResults";
 import FreeCourseFaq from "@/components/sections/FreeCourseFaq";
 import FreeCourseClose from "@/components/sections/FreeCourseClose";
 import Footer from "@/components/sections/Footer";
+import TrackStep from "@/components/tracking/TrackStep";
 
 export const metadata: Metadata = {
   title: "Free Course: Maddox",
@@ -28,6 +29,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <main>
+      <TrackStep funnel="organic" step="view" />
       <FreeCourseHero />
       <FreeCoursePitch />
       <FreeCoursePartnership />

@@ -10,6 +10,7 @@ import {
 
 import { logout } from "@/app/crm/actions";
 import {
+  OPT_IN_SOURCES,
   SOURCES,
   classifyField,
   type Access,
@@ -68,9 +69,10 @@ export default function CrmApp({
   const [booking, setBooking] = useState<Lead | null>(null);
   const [error, setError] = useState<string | null>(null);
   const repaired = useRef(new Set<SourceId>());
-  // New free-course opt-ins that arrived while this page was open.
+  // New free-course opt-ins that arrived while this page was open, and how
+  // many each opt-in tab hasn't seen yet.
   const [arrived, setArrived] = useState<Lead[]>([]);
-  const [unseen, setUnseen] = useState(0);
+  const [unseen, setUnseen] = useState<Partial<Record<SourceId, number>>>({});
   // Accounts waiting for the owner's approval (owner only).
   const [pendingAccounts, setPendingAccounts] = useState(0);
   const soundOn = useSyncExternalStore(
@@ -154,23 +156,26 @@ export default function CrmApp({
         if (data.leads.length === 0) return;
 
         setCache((c) => {
-          const current = c.free_course_application;
-          if (!current) return c;
           // Re-opt-ins are leads we already have; move them to the top with
-          // their new status.
-          const updated = new Set(data.leads.map((l) => l.id));
-          return {
-            ...c,
-            free_course_application: [
-              ...data.leads,
-              ...current.filter((l) => !updated.has(l.id)),
-            ],
-          };
+          // their new status. Each lead goes to its own tab (organic / ads).
+          const next = { ...c };
+          for (const src of OPT_IN_SOURCES) {
+            const current = c[src];
+            const incoming = data.leads.filter((l) => l.source === src);
+            if (!current || incoming.length === 0) continue;
+            const updated = new Set(incoming.map((l) => l.id));
+            next[src] = [...incoming, ...current.filter((l) => !updated.has(l.id))];
+          }
+          return next;
         });
         setArrived((a) => [...data.leads, ...a].slice(0, 5));
-        if (viewRef.current !== "free_course_application") {
-          setUnseen((n) => n + data.leads.length);
-        }
+        setUnseen((u) => {
+          const next = { ...u };
+          for (const l of data.leads) {
+            if (viewRef.current !== l.source) next[l.source] = (next[l.source] ?? 0) + 1;
+          }
+          return next;
+        });
         if (viewRef.current === "dashboard") {
           setStatsKey((k) => k + 1);
         }
@@ -289,7 +294,9 @@ export default function CrmApp({
 
   function go(next: View) {
     setView(next);
-    if (next === "free_course_application") setUnseen(0);
+    if ((OPT_IN_SOURCES as readonly string[]).includes(next)) {
+      setUnseen((u) => ({ ...u, [next]: 0 }));
+    }
     setSearch("");
     setSelectedId(null);
   }
@@ -307,20 +314,18 @@ export default function CrmApp({
           <button type="button" className={tab(view === "dashboard")} onClick={() => go("dashboard")}>
             Dashboard
           </button>
-          {user.access.applications ? (
-          <button
-            type="button"
-            className={tab(view === "free_course_application")}
-            onClick={() => go("free_course_application")}
-          >
-            Free course applications
-            {unseen > 0 ? (
-              <span className="ml-2 rounded-full bg-danger px-2 py-0.5 text-xs text-white">
-                {unseen} new
-              </span>
-            ) : null}
-          </button>
-          ) : null}
+          {user.access.applications
+            ? OPT_IN_SOURCES.map((src) => (
+                <button key={src} type="button" className={tab(view === src)} onClick={() => go(src)}>
+                  {SOURCES.find((s) => s.id === src)!.label}
+                  {(unseen[src] ?? 0) > 0 ? (
+                    <span className="ml-2 rounded-full bg-danger px-2 py-0.5 text-xs text-white">
+                      {unseen[src]} new
+                    </span>
+                  ) : null}
+                </button>
+              ))
+            : null}
           {user.access.dial ? (
             <button
               type="button"
@@ -503,12 +508,13 @@ export default function CrmApp({
                 type="button"
                 className="min-w-0 flex-1 text-left"
                 onClick={() => {
-                  go("free_course_application");
+                  go(lead.source);
                   setSelectedId(lead.id);
                   setArrived((a) => a.filter((l) => l.id !== lead.id));
                 }}
               >
                 <p className="text-xs font-bold uppercase tracking-widest text-accent">
+                  {lead.source === "ad_free_course_application" ? "Ad · " : "Organic · "}
                   {lead.optInCount > 1
                     ? `Opted in again (${lead.optInCount}×)`
                     : "New free course opt-in"}
