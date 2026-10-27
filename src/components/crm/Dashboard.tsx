@@ -228,14 +228,15 @@ export default function Dashboard({
 
       {current?.campaigns && current.campaigns.length > 0 ? (
         <section>
-          <h2 className="text-lg font-extrabold">Ad opt-ins by campaign</h2>
+          <h2 className="text-lg font-extrabold">Ad opt-ins by platform and campaign</h2>
           <p className="text-sm text-muted">
-            From the ad links&apos; utm_campaign and utm_content tags, for opt-ins during {inRange}.
+            From the ad links&apos; utm_source, utm_campaign and utm_content tags, for opt-ins during {inRange}.
           </p>
           <div className="mt-3 overflow-x-auto rounded-2xl border border-border bg-background">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-border text-xs uppercase tracking-widest text-muted">
                 <tr>
+                  <th className="px-5 py-3 font-bold">Platform</th>
                   <th className="px-5 py-3 font-bold">Campaign</th>
                   <th className="px-5 py-3 font-bold">Ad</th>
                   <th className="px-5 py-3 text-right font-bold">Opt-ins</th>
@@ -246,7 +247,8 @@ export default function Dashboard({
               </thead>
               <tbody>
                 {current.campaigns.map((r) => (
-                  <tr key={`${r.campaign}|${r.ad}`} className="border-b border-border last:border-0">
+                  <tr key={`${r.source}|${r.campaign}|${r.ad}`} className="border-b border-border last:border-0">
+                    <td className="px-5 py-3 capitalize">{r.source}</td>
                     <td className="px-5 py-3 font-semibold">{r.campaign}</td>
                     <td className="px-5 py-3">{r.ad}</td>
                     <td className="px-5 py-3 text-right tabular-nums">{r.optIns}</td>

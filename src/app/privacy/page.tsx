@@ -46,18 +46,19 @@ export default function Privacy() {
           ),
         },
         {
-          heading: "Advertising and the Meta Pixel",
+          heading: "Advertising pixels (Meta and TikTok)",
           body: (
             <>
               <p>
-                We use the Meta Pixel and Meta&apos;s Conversions API. They tell Meta (Facebook and Instagram)
-                when you visit a page or sign up, so we can measure our ads and show them to people who are likely
-                to be interested. Before anything is sent, your email and phone number are converted into an
-                unreadable code (hashed). Meta may use this information as described in its own Data Policy.
+                We use the Meta Pixel and Conversions API and the TikTok Pixel and Events API. They tell Meta
+                (Facebook and Instagram) and TikTok when you visit a page or sign up, so we can measure our ads and
+                show them to people who are likely to be interested. Before anything is sent, your email and phone number are converted into an
+                unreadable code (hashed). Meta and TikTok may use this information as described in their own privacy
+                policies.
               </p>
               <p>
-                You can change how Meta uses your activity for ads in your Facebook or Instagram ad settings, and you
-                can block cookies in your browser.
+                You can change how your activity is used for ads in your Facebook, Instagram and TikTok ad settings,
+                and you can block cookies in your browser.
               </p>
             </>
           ),
@@ -79,7 +80,7 @@ export default function Privacy() {
               <p>
                 We don&apos;t sell your personal information. We share it only with the services that help us run
                 the business: hosting and database (Vercel, Neon), calling (Twilio), team messaging (Discord, Slack),
-                email (Kit), video (Wistia), payments (Whop), and advertising (Meta), each only for what they do for
+                email (Kit), video (Wistia), payments (Whop), and advertising (Meta, TikTok), each only for what they do for
                 us. We may also share information if the law requires it.
               </p>
             </>

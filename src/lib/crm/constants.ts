@@ -212,6 +212,7 @@ export type OptInChannel = FunnelNumbers & {
 export type FunnelStep = { step: string; label: string; visitors: number };
 
 export type CampaignRow = {
+  source: string; // utm_source: meta, tiktok, youtube…
   campaign: string;
   ad: string;
   optIns: number;
@@ -230,7 +231,7 @@ export type Stats = {
   optIns: { channels: OptInChannel[]; total: OptInChannel } | null;
   // Ad funnel drop-off: unique visitors reaching each step during the range.
   adFunnel: FunnelStep[] | null;
-  // Ad opt-ins by campaign / ad (utm_campaign / utm_content).
+  // Ad opt-ins by platform / campaign / ad (utm_source / utm_campaign / utm_content).
   campaigns: CampaignRow[] | null;
   // The hand-filled dial lists: calling activity during the range.
   // null when this person can't see the dial lists.

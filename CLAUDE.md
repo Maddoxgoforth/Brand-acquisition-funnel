@@ -688,6 +688,14 @@ Built for running Meta ads to the free course (owner's request, Oct 2026).
   (`META_PURCHASE_VALUE`, default 1000 USD), event id `<lead id>-<status>` so
   repeats don't double count. Email/phone/name are SHA-256 hashed. Use
   `META_TEST_EVENT_CODE` to check events in Events Manager → Test events.
+- **TikTok** works the same way: `TikTokPixel.tsx` (loads only with
+  `NEXT_PUBLIC_TIKTOK_PIXEL_ID`, never on `/crm`) and `src/lib/tiktok.ts`
+  (Events API v1.3, needs `TIKTOK_EVENTS_TOKEN`). TikTok standard event names:
+  opt-in = SubmitForm (browser + server, same event id), booked =
+  Schedule, closed = Purchase, VSL page = ViewContent. `pixelEvent()` in
+  `tracking.ts` fires both pixels. Attribution also keeps `ttclid` and the
+  `_ttp` cookie. Ad links: `utm_source=tiktok&utm_medium=paid&utm_campaign=__CAMPAIGN_NAME__&utm_content=__CID_NAME__`.
+  The dashboard's campaign table splits by `utm_source` (platform).
 - **Domain verification**: `NEXT_PUBLIC_META_DOMAIN_VERIFICATION` adds the
   `facebook-domain-verification` meta tag.
 - **Ad links** should carry utm tags so the dashboard can split by ad, e.g.
@@ -699,8 +707,8 @@ Built for running Meta ads to the free course (owner's request, Oct 2026).
 
 ## What's intentionally not built yet
 
-- TikTok/Google pixels — only Meta is wired (see above). Ask before adding
-  other third-party tracking scripts.
+- Google Ads / YouTube conversion tracking — only Meta and TikTok are wired
+  (see above). Ask before adding other third-party tracking scripts.
 - The Typeform → Cal.com and Cal.com → `/thank-you`/`/thank-you-mid`
   redirects live in the site owner's Typeform/Cal.com dashboards, not in
   this codebase (see "Conversion flow" above) — there's nothing to "fix"

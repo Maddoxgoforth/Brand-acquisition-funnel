@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { addLeads, recordSiteEvent } from "@/lib/crm/leads";
 import { requestContext, sendMetaEvent } from "@/lib/meta";
+import { sendTikTokEvent } from "@/lib/tiktok";
 
 type LeadBody = {
   name: string;
@@ -22,6 +23,8 @@ const ATTRIBUTION_KEYS = [
   "fbclid",
   "fbc",
   "fbp",
+  "ttclid",
+  "ttp",
   "landing_page",
   "landing_url",
 ];
@@ -195,6 +198,21 @@ export async function POST(request: Request) {
         fbp: attribution.fbp,
       },
       customData: { lead_source: funnel === "ads" ? "ad_funnel" : "organic" },
+    }),
+    // TikTok's version of the same opt-in, same event id as the browser pixel.
+    sendTikTokEvent({
+      name: "SubmitForm",
+      eventId,
+      url: attribution.landing_url || request.headers.get("referer") || undefined,
+      user: {
+        email,
+        phone,
+        ip,
+        userAgent,
+        ttp: attribution.ttp,
+        ttclid: attribution.ttclid,
+      },
+      properties: { content_name: funnel === "ads" ? "free_course_ad_funnel" : "free_course" },
     }),
     typeof body.visitor === "string" && body.visitor
       ? recordSiteEvent(body.visitor, funnel, "optin", attribution.utm_campaign ?? "").catch(() => {})

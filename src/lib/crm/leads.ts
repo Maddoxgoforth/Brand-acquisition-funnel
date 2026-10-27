@@ -1,6 +1,7 @@
 import "server-only";
 
 import { sendMetaEvent } from "@/lib/meta";
+import { sendTikTokEvent } from "@/lib/tiktok";
 
 import { query } from "./db";
 import {
@@ -521,7 +522,7 @@ export async function updateLead(
     await addEvent(id, "status", { from: current.status, to: next.status }, actor);
   }
   if (next.status !== current.status) {
-    await reportStageToMeta(id, next.status);
+    await reportStageToAdPlatforms(id, next.status);
   }
   if (next.status === APPOINTMENT_STATUS && appointmentAt !== current.appointmentAt) {
     await addEvent(id, "appointment", {
@@ -532,15 +533,16 @@ export async function updateLead(
   return rows[0] ? toLead(rows[0]) : null;
 }
 
-// Tells Meta when an opt-in books a call or buys, so ads can optimize for
-// buyers instead of just opt-ins. The event id is fixed per lead and stage,
+// Tells Meta and TikTok when an opt-in books a call or buys, so ads can
+// optimize for buyers instead of just opt-ins. (TikTok uses the same names:
+// Schedule and Purchase are TikTok standard events too.) The event id is fixed per lead and stage,
 // so moving a card back and forth never counts twice.
 const META_STAGES: Partial<Record<StatusId, string>> = {
   appointment: "Schedule",
   closed: "Purchase",
 };
 
-async function reportStageToMeta(id: string, status: StatusId) {
+async function reportStageToAdPlatforms(id: string, status: StatusId) {
   const name = META_STAGES[status];
   if (!name) return;
   try {
@@ -564,6 +566,24 @@ async function reportStageToMeta(id: string, status: StatusId) {
       },
       customData:
         name === "Purchase" ? { currency: "USD", value } : { lead_source: lead.source },
+    });
+    await sendTikTokEvent({
+      name,
+      eventId: `${lead.id}-${status}`,
+      url: attribution.landing_url || undefined,
+      user: {
+        email: lead.email,
+        phone: lead.phoneE164 ?? lead.phone,
+        ip: attribution.ip,
+        userAgent: attribution.user_agent,
+        ttp: attribution.ttp,
+        ttclid: attribution.ttclid,
+        externalId: lead.id,
+      },
+      properties:
+        name === "Purchase"
+          ? { currency: "USD", value, content_name: "mentorship" }
+          : { content_name: "call_booked" },
     });
   } catch (error) {
     console.error("Reporting stage to Meta failed:", error);
@@ -768,13 +788,15 @@ export async function getStats(access: Access, range: StatRange): Promise<Stats>
     }));
 
     const byAd = await query<{
+      source: string;
       campaign: string;
       ad: string;
       opt_ins: number;
       booked: number;
       closed: number;
     }>(
-      `SELECT coalesce(nullif(attribution->>'utm_campaign', ''), '(no campaign tag)') AS campaign,
+      `SELECT coalesce(nullif(attribution->>'utm_source', ''), '–') AS source,
+         coalesce(nullif(attribution->>'utm_campaign', ''), '(no campaign tag)') AS campaign,
          coalesce(nullif(attribution->>'utm_content', ''), '–') AS ad,
          count(*)::int AS opt_ins,
          count(*) FILTER (WHERE status IN ('appointment', 'closed')
@@ -783,10 +805,11 @@ export async function getStats(access: Access, range: StatRange): Promise<Stats>
        FROM crm_leads l
        WHERE source = 'ad_free_course_application'
          AND ($1::timestamptz IS NULL OR coalesce(last_opt_in_at, created_at) >= $1::timestamptz)
-       GROUP BY 1, 2 ORDER BY opt_ins DESC LIMIT 50`,
+       GROUP BY 1, 2, 3 ORDER BY opt_ins DESC LIMIT 50`,
       [sinceIso]
     );
     campaigns = byAd.map((r) => ({
+      source: r.source,
       campaign: r.campaign,
       ad: r.ad,
       optIns: r.opt_ins,

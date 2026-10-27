@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import MetaPixel from "@/components/tracking/MetaPixel";
+import TikTokPixel from "@/components/tracking/TikTokPixel";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,6 +32,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-background font-sans text-foreground">
         {children}
         <MetaPixel />
+        <TikTokPixel />
         <Analytics />
       </body>
     </html>

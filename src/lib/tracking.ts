@@ -9,12 +9,16 @@ import type { FunnelId } from "@/lib/crm/constants";
 declare global {
   interface Window {
     fbq?: (...args: unknown[]) => void;
+    ttq?: {
+      page: () => void;
+      track: (event: string, params?: Record<string, unknown>, options?: Record<string, unknown>) => void;
+    };
   }
 }
 
 const ATTR_KEY = "ba_attr";
 const VISITOR_KEY = "ba_vid";
-const UTM = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"];
+const UTM = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid", "ttclid"];
 
 function storage(): Storage | null {
   try {
@@ -77,6 +81,8 @@ export function attribution(): Record<string, string> {
     cookie("_fbc") ||
     (stored.fbclid ? `fb.1.${stored.captured_at || Date.now()}.${stored.fbclid}` : "");
   const fbp = cookie("_fbp");
+  const ttp = cookie("_ttp");
+  if (ttp) stored = { ...stored, ttp };
   const out: Record<string, string> = { ...stored };
   delete out.captured_at;
   if (fbc) out.fbc = fbc;
@@ -105,15 +111,27 @@ export function trackStep(funnel: FunnelId, step: string) {
   fetch("/api/track", { method: "POST", body, keepalive: true }).catch(() => {});
 }
 
-// Meta Pixel events. No-op until the Pixel is installed (NEXT_PUBLIC_META_PIXEL_ID).
+// Meta's event name → TikTok's standard event (case-sensitive).
+const TIKTOK_EVENTS: Record<string, string> = {
+  Lead: "SubmitForm",
+  ViewContent: "ViewContent",
+};
+
+// Browser pixel events for Meta and TikTok. Each pixel is a no-op until it's
+// installed (NEXT_PUBLIC_META_PIXEL_ID / NEXT_PUBLIC_TIKTOK_PIXEL_ID). The
+// same event id goes to both pixels and to the server events, so each
+// platform counts the conversion once.
 export function pixelEvent(name: string, params: Record<string, unknown> = {}, eventId?: string) {
-  if (typeof window === "undefined" || !window.fbq) return;
-  window.fbq("track", name, params, eventId ? { eventID: eventId } : undefined);
+  if (typeof window === "undefined") return;
+  window.fbq?.("track", name, params, eventId ? { eventID: eventId } : undefined);
+  const tt = TIKTOK_EVENTS[name];
+  if (tt) window.ttq?.track(tt, params, eventId ? { event_id: eventId } : undefined);
 }
 
 export function pixelCustom(name: string, params: Record<string, unknown> = {}) {
-  if (typeof window === "undefined" || !window.fbq) return;
-  window.fbq("trackCustom", name, params);
+  if (typeof window === "undefined") return;
+  window.fbq?.("trackCustom", name, params);
+  window.ttq?.track(name, params);
 }
 
 export { newId as newEventId };
