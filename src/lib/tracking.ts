@@ -118,6 +118,16 @@ const TIKTOK_EVENTS: Record<string, string> = {
   ViewContent: "ViewContent",
 };
 
+// TikTok wants a "contents" list with a content_id on its events (Events
+// Manager flags them otherwise). Everything here is the free course.
+export function tiktokParams(params: Record<string, unknown> = {}) {
+  const name = typeof params.content_name === "string" ? params.content_name : "free_course";
+  return {
+    ...params,
+    contents: [{ content_id: "free_course", content_type: "product", content_name: name }],
+  };
+}
+
 // Browser pixel events for Meta and TikTok. Each pixel is a no-op until it's
 // installed (NEXT_PUBLIC_META_PIXEL_ID / NEXT_PUBLIC_TIKTOK_PIXEL_ID). The
 // same event id goes to both pixels and to the server events, so each
@@ -126,7 +136,7 @@ export function pixelEvent(name: string, params: Record<string, unknown> = {}, e
   if (typeof window === "undefined") return;
   window.fbq?.("track", name, params, eventId ? { eventID: eventId } : undefined);
   const tt = TIKTOK_EVENTS[name];
-  if (tt) window.ttq?.track(tt, params, eventId ? { event_id: eventId } : undefined);
+  if (tt) window.ttq?.track(tt, tiktokParams(params), eventId ? { event_id: eventId } : undefined);
 }
 
 async function sha256Hex(value: string) {
@@ -154,7 +164,7 @@ export async function identifyForAds(email: string, phone: string) {
 export function pixelCustom(name: string, params: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
   window.fbq?.("trackCustom", name, params);
-  window.ttq?.track(name, params);
+  window.ttq?.track(name, tiktokParams(params));
 }
 
 export { newId as newEventId };

@@ -70,7 +70,17 @@ export async function sendTikTokEvent(event: {
         event_id: event.eventId,
         user,
         ...(event.url ? { page: { url: event.url } } : {}),
-        ...(event.properties ? { properties: event.properties } : {}),
+        properties: {
+          ...(event.properties ?? {}),
+          // TikTok flags events without a content_id; everything here is the free course or the mentorship.
+          contents: [
+            {
+              content_id: event.name === "Purchase" ? "mentorship" : "free_course",
+              content_type: "product",
+              content_name: String(event.properties?.content_name ?? "free_course"),
+            },
+          ],
+        },
       },
     ],
   };
