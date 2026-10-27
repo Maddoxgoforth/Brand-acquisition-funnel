@@ -6,6 +6,7 @@ import {
   SOURCES,
   STATUSES,
   formatAppointment,
+  planLabel,
   type Lead,
   type LeadEvent,
   type StatusId,
@@ -36,9 +37,13 @@ function describe(event: LeadEvent) {
     return `Opted in again${back}`;
   }
   if (event.type === "appointment") {
+    const what = event.data.kind === "callback" ? "Callback" : "Appointment";
     return event.data.at
-      ? `Appointment set for ${formatAppointment(event.data.at, event.data.timeZone || null)}`
-      : "Appointment time cleared";
+      ? `${what} set for ${formatAppointment(event.data.at, event.data.timeZone || null)}`
+      : `${what} time cleared`;
+  }
+  if (event.type === "close") {
+    return `Updated the close (${planLabel(event.data.plan ?? null)})`;
   }
   if (event.type === "claim") {
     if (event.data.action === "released") return "Released the claim";
@@ -46,7 +51,8 @@ function describe(event: LeadEvent) {
     return "Claimed the lead";
   }
   if (event.type === "status") {
-    return `Moved from ${statusLabel(event.data.from)} to ${statusLabel(event.data.to)}`;
+    const plan = event.data.to === "closed" && event.data.plan ? ` (${planLabel(event.data.plan)})` : "";
+    return `Moved from ${statusLabel(event.data.from)} to ${statusLabel(event.data.to)}${plan}`;
   }
   return `Added (${event.data.via ?? "manual"})`;
 }
@@ -61,6 +67,7 @@ export default function LeadDrawer({
   onDelete,
   onCall,
   onReschedule,
+  onEditClose,
   me,
   isOwner,
   onClaim,
@@ -73,6 +80,7 @@ export default function LeadDrawer({
   onDelete: () => void;
   onCall: () => void;
   onReschedule: () => void;
+  onEditClose: () => void;
   me: string;
   isOwner: boolean;
   onClaim: (claim: boolean) => Promise<LeadEvent[] | null>;
@@ -211,6 +219,39 @@ export default function LeadDrawer({
           </section>
 
           {lead.status === "closed" ? (
+            <section className="flex items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3">
+              {lead.hasPaymentProof ? (
+                <a
+                  href={`/api/crm/leads/${lead.id}/payment-proof?v=${lead.updatedAt}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0"
+                  title="Open the payment screenshot"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/crm/leads/${lead.id}/payment-proof?v=${lead.updatedAt}`}
+                    alt="Payment screenshot"
+                    className="h-16 w-16 rounded-lg border border-emerald-200 bg-white object-cover"
+                  />
+                </a>
+              ) : null}
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-emerald-700">Closed</p>
+                <p className="font-extrabold text-emerald-900">{planLabel(lead.closePlan)}</p>
+                <p className="truncate text-xs text-emerald-800">
+                  {lead.closedByName ? `By ${lead.closedByName}` : ""}
+                  {lead.closedAt ? ` · ${timeAgo(lead.closedAt)}` : ""}
+                  {!lead.hasPaymentProof ? " · no payment screenshot" : ""}
+                </p>
+              </div>
+              <button type="button" onClick={onEditClose} className="shrink-0 text-sm font-bold text-emerald-700 hover:underline">
+                {lead.closePlan && lead.hasPaymentProof ? "Change" : "Add details"}
+              </button>
+            </section>
+          ) : null}
+
+          {lead.status === "closed" ? (
             <section className="rounded-xl bg-emerald-50 px-4 py-3">
               <label className="text-xs font-bold uppercase tracking-widest text-emerald-700" htmlFor="recording-url">
                 Call recording link (optional)
@@ -243,11 +284,11 @@ export default function LeadDrawer({
             </section>
           ) : null}
 
-          {lead.status === "appointment" ? (
+          {lead.status === "appointment" || lead.status === "callback" ? (
             <section className="flex items-center gap-3 rounded-xl bg-violet-50 px-4 py-3">
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold uppercase tracking-widest text-violet-700">
-                  Appointment
+                  {lead.status === "callback" ? "Call back" : "Appointment"}
                 </p>
                 <p className="font-bold text-violet-900">
                   {lead.appointmentAt

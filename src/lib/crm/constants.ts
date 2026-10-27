@@ -81,6 +81,12 @@ export const STATUSES = [
     hint: "Booked a time to talk",
   },
   {
+    id: "no_show",
+    label: "No-show",
+    answered: true,
+    hint: "Booked a call but didn't show up",
+  },
+  {
     id: "not_interested",
     label: "Not interested",
     answered: true,
@@ -96,6 +102,26 @@ export const STATUSES = [
 ] as const;
 
 export type StatusId = (typeof STATUSES)[number]["id"];
+
+// Statuses that keep a time: the booked call, or when to call back.
+export const TIMED_STATUSES: readonly StatusId[] = ["appointment", "callback"];
+
+// What a close is worth to Maddox, by plan. Every close needs a plan and a
+// screenshot of the successful payment.
+export const CLOSE_PLANS = [
+  { id: "monthly", label: "Monthly", amount: 225 },
+  { id: "yearly", label: "Yearly", amount: 250 },
+] as const;
+export type ClosePlan = (typeof CLOSE_PLANS)[number]["id"];
+export function isClosePlan(value: unknown): value is ClosePlan {
+  return CLOSE_PLANS.some((p) => p.id === value);
+}
+export const planLabel = (plan: string | null) =>
+  CLOSE_PLANS.find((p) => p.id === plan)?.label ?? "Plan not recorded";
+
+// Monthly / yearly split of a number of closes. `unknown` = closed before
+// plans were recorded.
+export type CloseSplit = { total: number; monthly: number; yearly: number; unknown: number };
 
 export const STATUS_IDS = STATUSES.map((s) => s.id) as readonly StatusId[];
 
@@ -117,8 +143,8 @@ export type Lead = {
   extra: Record<string, string>;
   status: StatusId;
   notes: string;
-  // Set only while the lead is in "Appointment scheduled": the moment of the
-  // appointment and the time zone it was booked in (an IANA name like
+  // Set only while the lead is in "Appointment scheduled" (the booked call)
+  // or "Callback" (when to call back): the moment and the time zone it was set in (an IANA name like
   // "America/New_York"), so it can be shown the way it was agreed.
   appointmentAt: string | null;
   appointmentTz: string | null;
@@ -135,6 +161,13 @@ export type Lead = {
   attribution: Record<string, string>;
   callCount: number;
   lastCalledAt: string | null;
+  // Set while the lead is Closed: the plan, what it's worth, when and by
+  // whom, and whether a payment screenshot is on file.
+  closePlan: ClosePlan | null;
+  closeAmount: number | null;
+  closedAt: string | null;
+  closedByName: string | null;
+  hasPaymentProof: boolean;
   // Who is working the lead ("owner" or a team member's id). Set by their
   // first call or by Claim; null = nobody yet.
   claimedById: string | null;
@@ -150,7 +183,7 @@ export type Actor = { id: string; name: string };
 
 export type LeadEvent = {
   id: number;
-  type: "status" | "call" | "created" | "appointment" | "reoptin" | "claim";
+  type: "status" | "call" | "created" | "appointment" | "reoptin" | "claim" | "close";
   // For calls: callSid and, once added, notes.
   data: Record<string, string>;
   actorName: string | null;
@@ -164,9 +197,15 @@ export type LeaderboardRow = {
   leadsCalled: number;
   answered: number;
   answerRate: number | null;
-  // Leads they moved to Appointment scheduled / Closed during the range.
+  // Leads they moved to Appointment scheduled during the range, and how
+  // those calls went: no-shows, and showed ÷ (booked − still upcoming).
   booked: number;
+  noShows: number;
+  showRate: number | null;
+  // Leads they closed during the range (still Closed), by plan.
   closes: number;
+  monthly: number;
+  yearly: number;
   // Leads they claimed during the range, how many of those are closed now,
   // and closed ÷ claimed.
   claimed: number;
@@ -179,6 +218,15 @@ export type LeaderboardRow = {
 };
 
 // Whole-team numbers for the range, shown to everyone on the Dashboard.
+export type Revenue = {
+  total: number;
+  closes: CloseSplit;
+  monthlyAmount: number;
+  yearlyAmount: number;
+  byCloser: { name: string; closes: CloseSplit; amount: number }[];
+  bySource: { source: SourceId; label: string; closes: CloseSplit; amount: number }[];
+};
+
 export type TeamSummary = {
   optIns: number | null; // null when this person can't see the opt-ins
   dials: number;
@@ -186,7 +234,9 @@ export type TeamSummary = {
   answered: number;
   answerRate: number | null; // picked up ÷ leads called
   booked: number;
-  closes: number;
+  noShows: number;
+  showRate: number | null; // showed ÷ booked calls that already happened
+  closes: CloseSplit;
   bookRate: number | null; // booked ÷ leads that picked up
   closeRate: number | null; // closes ÷ booked
   avgFirstContactSeconds: number | null;
@@ -250,6 +300,7 @@ export type CampaignRow = {
   optIns: number;
   booked: number;
   closed: number;
+  revenue: number;
 };
 
 export type Stats = {
@@ -258,7 +309,11 @@ export type Stats = {
   // Calls and closes per team member during the range (lists this viewer
   // can see only).
   leaderboard: LeaderboardRow[];
+  // Callbacks with a time, due today or overdue (any list this person sees).
+  callbacks: Lead[];
   // Everything below is the owner's Analytics tab (null for team members).
+  // Cash collected from closes during the range.
+  revenue: Revenue | null;
   // Free course opt-ins, organic and ads side by side: the opt-ins that came
   // in during the range and what has happened to them since. null when this
   // person can't see the opt-ins.

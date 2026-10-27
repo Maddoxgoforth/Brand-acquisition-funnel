@@ -1,12 +1,17 @@
 import "server-only";
 
+import { createHmac } from "node:crypto";
+
 import { sendMetaEvent } from "@/lib/meta";
 import { sendTikTokEvent } from "@/lib/tiktok";
 
 import { query } from "./db";
 import {
   ANSWERED_STATUS_IDS,
-  APPOINTMENT_STATUS,
+  CLOSE_PLANS,
+  TIMED_STATUSES,
+  isClosePlan,
+  type ClosePlan,
   FUNNEL_STEPS,
   OPT_IN_SOURCES,
   SOURCES,
@@ -28,6 +33,8 @@ import {
   type StatusId,
   type LeaderboardRow,
   type TeamSummary,
+  type CloseSplit,
+  type Revenue,
 } from "./constants";
 
 type LeadRow = {
@@ -52,6 +59,11 @@ type LeadRow = {
   claimed_by_id: string | null;
   claimed_by_name: string | null;
   claimed_at: string | Date | null;
+  close_plan: string | null;
+  close_amount: number | null;
+  closed_at: string | Date | null;
+  closed_by_name: string | null;
+  payment_proof_id: string | null;
   created_at: string | Date;
   updated_at: string | Date;
 };
@@ -106,6 +118,11 @@ function toLead(row: LeadRow): Lead {
     claimedById: row.claimed_by_id ?? null,
     claimedByName: row.claimed_by_name ?? null,
     claimedAt: iso(row.claimed_at ?? null),
+    closePlan: isClosePlan(row.close_plan) ? row.close_plan : null,
+    closeAmount: row.close_amount ?? null,
+    closedAt: iso(row.closed_at ?? null),
+    closedByName: row.closed_by_name ?? null,
+    hasPaymentProof: Boolean(row.payment_proof_id),
     createdAt: iso(row.created_at)!,
     updatedAt: iso(row.updated_at)!,
   };
@@ -486,25 +503,41 @@ export async function updateLead(
     extra: patch.extra ? cleanExtra(patch.extra) : current.extra,
   };
 
-  // The appointment time only exists while the lead sits in that column
-  // (and is optional there); moving the lead out clears it.
+  // Closing needs a plan and a payment screenshot, so it only happens
+  // through closeLead.
+  if (next.status === "closed" && current.status !== "closed") {
+    throw new CloseNeedsDetailsError();
+  }
+
+  // The time (booked call or callback) only exists while the lead sits in
+  // one of those columns, and is optional there. A new column starts with
+  // no time unless one is given.
   let appointmentAt = current.appointmentAt;
   let appointmentTz = current.appointmentTz;
-  if (next.status === APPOINTMENT_STATUS) {
+  if (TIMED_STATUSES.includes(next.status)) {
     if (patch.appointment !== undefined) {
       appointmentAt = patch.appointment?.at ?? null;
       appointmentTz = patch.appointment?.timeZone ?? null;
+    } else if (next.status !== current.status) {
+      appointmentAt = null;
+      appointmentTz = null;
     }
   } else {
     appointmentAt = null;
     appointmentTz = null;
   }
+  const leavingClosed = current.status === "closed" && next.status !== "closed";
 
   const rows = await query<LeadRow>(
     `UPDATE crm_leads
      SET name = $2, phone = $3, phone_e164 = $4, email = $5, notes = $6,
          status = $7, extra = $8::jsonb, appointment_at = $9,
-         appointment_tz = $10, recording_url = $11, updated_at = now()
+         appointment_tz = $10, recording_url = $11, updated_at = now(),
+         close_plan = CASE WHEN $12 THEN NULL ELSE close_plan END,
+         close_amount = CASE WHEN $12 THEN NULL ELSE close_amount END,
+         closed_at = CASE WHEN $12 THEN NULL ELSE closed_at END,
+         closed_by_id = CASE WHEN $12 THEN NULL ELSE closed_by_id END,
+         closed_by_name = CASE WHEN $12 THEN NULL ELSE closed_by_name END
      WHERE id = $1 RETURNING *`,
     [
       id,
@@ -520,6 +553,7 @@ export async function updateLead(
       patch.recordingUrl !== undefined
         ? patch.recordingUrl.trim() || null
         : current.recordingUrl,
+      leavingClosed,
     ]
   );
 
@@ -532,13 +566,119 @@ export async function updateLead(
   if (next.status !== current.status) {
     await reportStageToAdPlatforms(id, next.status);
   }
-  if (next.status === APPOINTMENT_STATUS && appointmentAt !== current.appointmentAt) {
+  if (TIMED_STATUSES.includes(next.status) && appointmentAt !== current.appointmentAt) {
     await addEvent(id, "appointment", {
       at: appointmentAt ?? "",
       timeZone: appointmentTz ?? "",
+      kind: next.status,
     }, actor);
   }
   return rows[0] ? toLead(rows[0]) : null;
+}
+
+export class CloseNeedsDetailsError extends Error {
+  constructor() {
+    super("Closing a lead needs the plan and a screenshot of the payment.");
+  }
+}
+
+// Moves a lead to Closed with its plan and payment screenshot (a resized
+// JPEG/PNG/WebP, base64), credits the close, and posts it to Discord.
+export async function closeLead(
+  id: string,
+  plan: ClosePlan,
+  proof: { mime: string; base64: string },
+  actor: Actor
+): Promise<Lead | null> {
+  const current = await getLead(id);
+  if (!current) return null;
+  const amount = CLOSE_PLANS.find((p) => p.id === plan)!.amount;
+
+  const [saved] = await query<{ id: string }>(
+    `INSERT INTO crm_payment_proofs (lead_id, mime, data)
+     VALUES ($1, $2, decode($3, 'base64')) RETURNING id`,
+    [id, proof.mime, proof.base64]
+  );
+  const rows = await query<LeadRow>(
+    `UPDATE crm_leads
+     SET status = 'closed', close_plan = $2, close_amount = $3, closed_at = now(),
+         closed_by_id = $4, closed_by_name = $5, payment_proof_id = $6,
+         appointment_at = NULL, appointment_tz = NULL, updated_at = now(),
+         claimed_by_id = coalesce(claimed_by_id, $4),
+         claimed_by_name = CASE WHEN claimed_by_id IS NULL THEN $5 ELSE claimed_by_name END,
+         claimed_at = coalesce(claimed_at, now())
+     WHERE id = $1 RETURNING *`,
+    [id, plan, amount, actor.id, actor.name, saved.id]
+  );
+  if (!current.firstContactAt) await markFirstContact(id);
+  if (current.status !== "closed") {
+    await addEvent(id, "status", { from: current.status, to: "closed", plan }, actor);
+    await reportStageToAdPlatforms(id, "closed");
+  } else {
+    await addEvent(id, "close", { plan }, actor);
+  }
+  const lead = rows[0] ? toLead(rows[0]) : null;
+  if (lead) await announceClose(lead, saved.id, actor);
+  return lead;
+}
+
+// A link Discord can load the payment screenshot from without signing in.
+// The signature makes it unguessable.
+export function paymentProofUrl(proofId: string) {
+  const site = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.brandacquisition.co").replace(/\/$/, "");
+  return `${site}/api/payment-proof/${proofId}?sig=${signProof(proofId)}`;
+}
+
+export function signProof(proofId: string) {
+  return createHmac("sha256", process.env.CRM_SESSION_SECRET || "dev-secret")
+    .update(`payment-proof:${proofId}`)
+    .digest("hex")
+    .slice(0, 32);
+}
+
+export async function getPaymentProof(proofId: string) {
+  const rows = await query<{ mime: string; data: string }>(
+    `SELECT mime, encode(data, 'base64') AS data FROM crm_payment_proofs WHERE id = $1`,
+    [proofId]
+  );
+  return rows[0] ? { mime: rows[0].mime, bytes: Buffer.from(rows[0].data, "base64") } : null;
+}
+
+export async function getLeadProofId(leadId: string) {
+  const rows = await query<{ payment_proof_id: string | null }>(
+    `SELECT payment_proof_id FROM crm_leads WHERE id = $1`,
+    [leadId]
+  );
+  return rows[0]?.payment_proof_id ?? null;
+}
+
+// Sends the close to the Zapier workflow that posts it in Discord's
+// #successful-payments. Needs ZAPIER_CLOSE_WEBHOOK_URL; never blocks the close.
+async function announceClose(lead: Lead, proofId: string, actor: Actor) {
+  const hook = process.env.ZAPIER_CLOSE_WEBHOOK_URL;
+  if (!hook) return;
+  try {
+    const res = await fetch(hook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: lead.name,
+        phone: lead.phone,
+        email: lead.email,
+        plan: lead.closePlan,
+        plan_label: CLOSE_PLANS.find((p) => p.id === lead.closePlan)?.label ?? "",
+        amount: lead.closeAmount,
+        closed_by: actor.name,
+        source: SOURCES.find((s) => s.id === lead.source)?.label ?? lead.source,
+        screenshot_url: paymentProofUrl(proofId),
+        lead_id: lead.id,
+      }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) console.error(`Close webhook failed: ${res.status}`);
+  } catch (error) {
+    console.error("Close webhook request failed:", error);
+  }
 }
 
 // Tells Meta and TikTok when an opt-in books a call or buys, so ads can
@@ -557,7 +697,7 @@ async function reportStageToAdPlatforms(id: string, status: StatusId) {
     const found = await getLeadForTracking(id);
     if (!found || !isOptInSource(found.lead.source)) return;
     const { lead, attribution } = found;
-    const value = Number(process.env.META_PURCHASE_VALUE || 1000);
+    const value = lead.closeAmount ?? Number(process.env.META_PURCHASE_VALUE || 225);
     await sendMetaEvent({
       name,
       eventId: `${lead.id}-${status}`,
@@ -857,6 +997,7 @@ export async function getStats(
       opt_ins: number;
       booked: number;
       closed: number;
+      revenue: number;
     }>(
       `SELECT coalesce(nullif(attribution->>'utm_source', ''), '–') AS source,
          coalesce(nullif(attribution->>'utm_campaign', ''), '(no campaign tag)') AS campaign,
@@ -864,7 +1005,8 @@ export async function getStats(
          count(*)::int AS opt_ins,
          count(*) FILTER (WHERE status IN ('appointment', 'closed')
            OR EXISTS (SELECT 1 FROM crm_events e WHERE e.lead_id = l.id AND e.type = 'appointment'))::int AS booked,
-         count(*) FILTER (WHERE status = 'closed')::int AS closed
+         count(*) FILTER (WHERE status = 'closed')::int AS closed,
+         coalesce(sum(close_amount) FILTER (WHERE status = 'closed'), 0)::int AS revenue
        FROM crm_leads l
        WHERE source = 'ad_free_course_application'
          AND ($1::timestamptz IS NULL OR coalesce(last_opt_in_at, created_at) >= $1::timestamptz)
@@ -878,6 +1020,7 @@ export async function getStats(
       optIns: r.opt_ins,
       booked: r.booked,
       closed: r.closed,
+      revenue: r.revenue,
     }));
   }
 
@@ -947,7 +1090,8 @@ export async function getStats(
     leads_called: number;
     answered: number;
     booked: number;
-    closes: number;
+    no_shows: number;
+    pending: number;
   }>(
     `WITH ev AS (
        SELECT e.*, l.status AS lead_status FROM crm_events e
@@ -961,10 +1105,59 @@ export async function getStats(
        count(DISTINCT lead_id) FILTER (WHERE type = 'call')::int AS leads_called,
        count(DISTINCT lead_id) FILTER (WHERE type = 'call' AND lead_status = ANY($3::text[]))::int AS answered,
        count(DISTINCT lead_id) FILTER (WHERE type = 'status' AND data->>'to' = 'appointment')::int AS booked,
-       count(DISTINCT lead_id) FILTER (WHERE type = 'status' AND data->>'to' = 'closed')::int AS closes
+       count(DISTINCT lead_id) FILTER (WHERE type = 'status' AND data->>'to' = 'appointment'
+         AND lead_status = 'no_show')::int AS no_shows,
+       count(DISTINCT lead_id) FILTER (WHERE type = 'status' AND data->>'to' = 'appointment'
+         AND lead_status = 'appointment')::int AS pending
      FROM ev GROUP BY ROLLUP (actor_id)`,
     [sinceIso, visible, answeredIds]
   );
+  // Closes during the range that are still Closed, by closer and plan
+  // (the row with is_total = true is everyone).
+  const closeRows = await query<{
+    id: string | null;
+    name: string | null;
+    source: SourceId | null;
+    is_total: boolean;
+    by_source: boolean;
+    total: number;
+    monthly: number;
+    yearly: number;
+    amount: number;
+  }>(
+    `SELECT closed_by_id AS id, max(closed_by_name) AS name, source,
+       GROUPING(closed_by_id, source) = 3 AS is_total,
+       GROUPING(closed_by_id) = 1 AND GROUPING(source) = 0 AS by_source,
+       count(*)::int AS total,
+       count(*) FILTER (WHERE close_plan = 'monthly')::int AS monthly,
+       count(*) FILTER (WHERE close_plan = 'yearly')::int AS yearly,
+       coalesce(sum(close_amount), 0)::int AS amount
+     FROM crm_leads
+     WHERE status = 'closed' AND source = ANY($2::text[])
+       AND ($1::timestamptz IS NULL OR coalesce(closed_at, updated_at) >= $1::timestamptz)
+     GROUP BY GROUPING SETS ((closed_by_id), (source), ())`,
+    [sinceIso, visible]
+  );
+  const split = (r?: { total: number; monthly: number; yearly: number }): CloseSplit => ({
+    total: r?.total ?? 0,
+    monthly: r?.monthly ?? 0,
+    yearly: r?.yearly ?? 0,
+    unknown: (r?.total ?? 0) - (r?.monthly ?? 0) - (r?.yearly ?? 0),
+  });
+  const closerRows = closeRows.filter((r) => !r.is_total && !r.by_source);
+  const totalClose = closeRows.find((r) => r.is_total);
+
+  // Callbacks with a time that are due by the end of tomorrow (UTC), so
+  // every time zone's "today" is covered; the page picks out today's.
+  const callbackRows = await query<LeadRow>(
+    `SELECT * FROM crm_leads
+     WHERE status = 'callback' AND appointment_at IS NOT NULL AND source = ANY($1::text[])
+       AND appointment_at < date_trunc('day', now()) + interval '2 days'
+     ORDER BY appointment_at LIMIT 200`,
+    [visible]
+  );
+  const callbacks = callbackRows.map(toLead);
+
   const claims = await query<{ id: string; name: string | null; claimed: number; closed: number }>(
     `SELECT claimed_by_id AS id, max(claimed_by_name) AS name, count(*)::int AS claimed,
        count(*) FILTER (WHERE status = 'closed')::int AS closed
@@ -1006,7 +1199,8 @@ export async function getStats(
         actorId: id,
         name: name || (id === "owner" ? "Owner" : "Unknown"),
         dials: 0, leadsCalled: 0, answered: 0, answerRate: null,
-        booked: 0, closes: 0, claimed: 0, claimedClosed: 0, closeRate: null,
+        booked: 0, noShows: 0, showRate: null, closes: 0, monthly: 0, yearly: 0,
+        claimed: 0, claimedClosed: 0, closeRate: null,
         avgSpeedSeconds: null, speedLeads: 0,
       };
       people.set(id, row);
@@ -1017,13 +1211,22 @@ export async function getStats(
   for (const r of board) {
     if (r.actor_id === null) continue;
     const row = person(r.actor_id, r.name);
+    const happened = r.booked - r.pending;
     Object.assign(row, {
       dials: r.dials,
       leadsCalled: r.leads_called,
       answered: r.answered,
       booked: r.booked,
-      closes: r.closes,
+      noShows: r.no_shows,
+      showRate: happened > 0 ? (happened - r.no_shows) / happened : null,
     });
+  }
+  for (const c of closerRows) {
+    if (c.id === null) continue;
+    const row = person(c.id, c.name);
+    row.closes = c.total;
+    row.monthly = c.monthly;
+    row.yearly = c.yearly;
   }
   for (const c of claims) {
     const row = person(c.id, c.name);
@@ -1047,6 +1250,8 @@ export async function getStats(
 
   const all = board.find((r) => r.actor_id === null);
   const t = optIns?.total;
+  const closes = split(totalClose);
+  const happened = (all?.booked ?? 0) - (all?.pending ?? 0);
   const team: TeamSummary = {
     optIns: t ? t.total : null,
     dials: all?.dials ?? 0,
@@ -1054,14 +1259,41 @@ export async function getStats(
     answered: all?.answered ?? 0,
     answerRate: all && all.leads_called > 0 ? all.answered / all.leads_called : null,
     booked: all?.booked ?? 0,
-    closes: all?.closes ?? 0,
+    noShows: all?.no_shows ?? 0,
+    showRate: happened > 0 ? (happened - (all?.no_shows ?? 0)) / happened : null,
+    closes,
     bookRate: all && all.answered > 0 ? all.booked / all.answered : null,
-    closeRate: all && all.booked > 0 ? all.closes / all.booked : null,
+    closeRate: all && all.booked > 0 ? closes.total / all.booked : null,
     avgFirstContactSeconds: t?.avgFirstContactSeconds ?? null,
     within5Rate: t && t.total > 0 ? t.within5 / t.total : null,
     waiting: t ? t.waiting : null,
   };
 
-  if (!owner) return { range, team, leaderboard, optIns: null, adFunnel: null, campaigns: null, dial: null };
-  return { range, team, leaderboard, optIns, adFunnel, campaigns, dial };
+  if (!owner) {
+    return {
+      range, team, leaderboard, callbacks,
+      revenue: null, optIns: null, adFunnel: null, campaigns: null, dial: null,
+    };
+  }
+
+  const amountOf = (plan: ClosePlan) => CLOSE_PLANS.find((p) => p.id === plan)!.amount;
+  const revenue: Revenue = {
+    total: totalClose?.amount ?? 0,
+    closes,
+    monthlyAmount: closes.monthly * amountOf("monthly"),
+    yearlyAmount: closes.yearly * amountOf("yearly"),
+    byCloser: closerRows
+      .map((r) => ({ name: r.name || (r.id === "owner" ? "Owner" : "Unknown"), closes: split(r), amount: r.amount }))
+      .sort((a, b) => b.amount - a.amount),
+    bySource: SOURCE_IDS.map((source) => {
+      const r = closeRows.find((x) => x.by_source && x.source === source);
+      return {
+        source,
+        label: SOURCES.find((x) => x.id === source)!.label,
+        closes: split(r),
+        amount: r?.amount ?? 0,
+      };
+    }).filter((r) => visible.includes(r.source)),
+  };
+  return { range, team, leaderboard, callbacks, revenue, optIns, adFunnel, campaigns, dial };
 }

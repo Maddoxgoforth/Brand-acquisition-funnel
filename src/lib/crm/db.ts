@@ -42,6 +42,28 @@ const SCHEMA = [
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS claimed_by_id text`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS claimed_by_name text`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS claimed_at timestamptz`,
+  // Closes: plan (monthly / yearly), what it's worth, when and by whom.
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS close_plan text`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS close_amount integer`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS closed_at timestamptz`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS closed_by_id text`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS closed_by_name text`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS payment_proof_id uuid`,
+  // Closes from before these columns: when and by whom, from the history.
+  `UPDATE crm_leads l
+   SET closed_at = c.created_at, closed_by_id = c.actor_id, closed_by_name = c.actor_name
+   FROM (SELECT DISTINCT ON (lead_id) lead_id, actor_id, actor_name, created_at
+         FROM crm_events WHERE type = 'status' AND data->>'to' = 'closed'
+         ORDER BY lead_id, created_at DESC) c
+   WHERE l.id = c.lead_id AND l.status = 'closed' AND l.closed_at IS NULL`,
+  // Payment screenshots for closes (small JPEGs, resized in the browser).
+  `CREATE TABLE IF NOT EXISTS crm_payment_proofs (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    lead_id uuid REFERENCES crm_leads (id) ON DELETE CASCADE,
+    mime text NOT NULL,
+    data bytea NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
   // Leads worked before claiming existed go to whoever called them first
   // (skipping any lead with claim history, so a release stays released).
   `UPDATE crm_leads l

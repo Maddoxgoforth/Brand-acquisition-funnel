@@ -40,14 +40,16 @@ function splitTime(time: string) {
   };
 }
 
-// Asked whenever a lead moves into "Appointment scheduled" (or the booked
-// time is changed). Cancelling leaves the lead where it was.
+// Asked whenever a lead moves into "Appointment scheduled" or "Callback"
+// (or that time is changed). Cancelling leaves the lead where it was.
 export default function AppointmentDialog({
   lead,
+  kind = "appointment",
   onCancel,
   onConfirm,
 }: {
   lead: Lead;
+  kind?: "appointment" | "callback";
   onCancel: () => void;
   // Resolves to null when saved, or to an error message to show. Called
   // with null for "Save without a time".
@@ -55,7 +57,9 @@ export default function AppointmentDialog({
 }) {
   const localZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const startZone = lead.appointmentTz ?? localZone;
-  const existing = lead.appointmentAt ? partsIn(lead.appointmentAt, startZone) : null;
+  const callback = kind === "callback";
+  // Prefill only when changing the time of the same kind.
+  const existing = lead.appointmentAt && lead.status === kind ? partsIn(lead.appointmentAt, startZone) : null;
 
   // Plain dropdowns instead of the browser's time box: Safari's time box
   // can reject a half-typed time with "Invalid value" and block saving.
@@ -98,10 +102,12 @@ export default function AppointmentDialog({
         className="w-full max-w-sm rounded-2xl border border-border bg-background p-6 shadow-lg"
       >
         <p className="text-xs font-bold uppercase tracking-widest text-accent">
-          Appointment scheduled
+          {callback ? "Callback" : "Appointment scheduled"}
         </p>
         <h2 className="mt-1 text-xl font-extrabold">
-          When are you talking to {lead.name || "this lead"}?
+          {callback
+            ? `When should you call ${lead.name || "this lead"} back?`
+            : `When are you talking to ${lead.name || "this lead"}?`}
         </h2>
 
         <p className="mt-5 text-sm font-semibold">Time</p>
@@ -149,7 +155,7 @@ export default function AppointmentDialog({
             disabled={busy}
             className="rounded-full bg-accent px-6 py-2.5 font-bold text-white hover:bg-accent-dim disabled:opacity-40"
           >
-            {busy ? "Saving…" : "Save appointment"}
+            {busy ? "Saving…" : callback ? "Save callback" : "Save appointment"}
           </button>
           <button type="button" onClick={onCancel} className="px-3 font-bold text-muted hover:text-foreground">
             Cancel
@@ -169,7 +175,7 @@ export default function AppointmentDialog({
           }}
           className="mt-4 text-sm font-bold text-accent hover:underline disabled:opacity-40"
         >
-          {lead.appointmentAt ? "Remove the time" : "Save without a time"}
+          {existing ? "Remove the time" : "Save without a time"}
         </button>
       </form>
     </div>

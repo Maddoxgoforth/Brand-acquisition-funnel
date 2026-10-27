@@ -11,19 +11,21 @@ const METRICS = [
   { id: "booked", label: "Booked" },
   { id: "dials", label: "Dials" },
   { id: "closeRate", label: "Close rate" },
+  { id: "showRate", label: "Show rate" },
   { id: "speed", label: "Speed to lead" },
 ] as const;
 type Metric = (typeof METRICS)[number]["id"];
 
 function metricValue(row: LeaderboardRow, metric: Metric): number | null {
   if (metric === "closeRate") return row.closeRate;
+  if (metric === "showRate") return row.showRate;
   if (metric === "speed") return row.avgSpeedSeconds;
   return row[metric];
 }
 
 function showMetric(row: LeaderboardRow, metric: Metric) {
   const v = metricValue(row, metric);
-  if (metric === "closeRate") return percent(v);
+  if (metric === "closeRate" || metric === "showRate") return percent(v);
   if (metric === "speed") return v === null ? "–" : formatDuration(v);
   return String(v ?? 0);
 }
@@ -111,6 +113,11 @@ function PodiumSpot({
           </p>
           <p className="text-2xl font-extrabold tabular-nums text-white">{showMetric(row, metric)}</p>
           <p className="text-xs text-white/60">{METRICS.find((m) => m.id === metric)!.label.toLowerCase()}</p>
+          {metric === "closes" ? (
+            <p className="mt-1 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold text-white/80">
+              {row.monthly} monthly · {row.yearly} yearly
+            </p>
+          ) : null}
         </>
       ) : (
         <p className="pb-2 text-sm text-white/40">Open spot</p>
@@ -188,7 +195,10 @@ export default function Leaderboard({
                 <th className="px-4 py-3 text-right font-bold">Dials</th>
                 <th className="px-4 py-3 text-right font-bold">Answer rate</th>
                 <th className="px-4 py-3 text-right font-bold">Booked</th>
-                <th className="px-4 py-3 text-right font-bold">Closes</th>
+                <th className="px-4 py-3 text-right font-bold">Show rate</th>
+                <th className="px-4 py-3 text-right font-bold">Monthly</th>
+                <th className="px-4 py-3 text-right font-bold">Yearly</th>
+                <th className="px-4 py-3 text-right font-bold">Total closes</th>
                 <th className="px-4 py-3 text-right font-bold">Close rate</th>
                 <th className="px-4 py-3 text-right font-bold">Speed to lead</th>
               </tr>
@@ -214,6 +224,14 @@ export default function Leaderboard({
                   <td className="px-4 py-3 text-right tabular-nums">{row.dials}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{percent(row.answerRate)}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{row.booked}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    {percent(row.showRate)}
+                    {row.noShows > 0 ? (
+                      <span className="block text-xs text-muted">{row.noShows} no-show{row.noShows === 1 ? "" : "s"}</span>
+                    ) : null}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">{row.monthly}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{row.yearly}</td>
                   <td className="px-4 py-3 text-right font-extrabold tabular-nums">{row.closes}</td>
                   <td className="px-4 py-3 text-right tabular-nums" title={`${row.claimedClosed} closed of ${row.claimed} claimed`}>
                     {percent(row.closeRate)}
@@ -238,7 +256,8 @@ export default function Leaderboard({
 
       <p className="text-xs text-muted">
         Dials: calls placed from the CRM. Booked: leads they moved to Appointment scheduled. Closes:
-        leads they moved to Closed. Close rate: of the leads they claimed in this time frame, how
+        leads they closed in this time frame (monthly and yearly). Show rate: of the calls they booked that
+        already happened, how many weren&apos;t no-shows. Close rate: of the leads they claimed in this time frame, how
         many are closed. Speed to lead: average time from opt-in to their first call, on the
         opt-ins they reached first.
       </p>

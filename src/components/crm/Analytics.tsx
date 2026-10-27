@@ -3,13 +3,39 @@
 import { useState } from "react";
 
 import {
+  CLOSE_PLANS,
   SOURCES,
   formatDuration,
+  type CloseSplit,
   type FunnelNumbers,
   type OptInChannel,
   type StatRange,
 } from "@/lib/crm/constants";
+import { splitText } from "./Dashboard";
 import { RangePicker, StatCard, percent, rangeText, useStats } from "./statsUi";
+
+const money = (n: number) => `$${n.toLocaleString("en-US")}`;
+const PRICE = Object.fromEntries(CLOSE_PLANS.map((p) => [p.id, p.amount])) as Record<"monthly" | "yearly", number>;
+
+function SplitCells({ c, amount }: { c: CloseSplit; amount: number }) {
+  return (
+    <>
+      <td className="px-5 py-3 text-right tabular-nums">{c.monthly}</td>
+      <td className="px-5 py-3 text-right tabular-nums">{c.yearly}</td>
+      <td className="px-5 py-3 text-right font-bold tabular-nums">{c.total}</td>
+      <td className="px-5 py-3 text-right font-extrabold tabular-nums text-emerald-700">{money(amount)}</td>
+    </>
+  );
+}
+
+const splitHead = (
+  <>
+    <th className="px-5 py-3 text-right font-bold">Monthly</th>
+    <th className="px-5 py-3 text-right font-bold">Yearly</th>
+    <th className="px-5 py-3 text-right font-bold">Total closes</th>
+    <th className="px-5 py-3 text-right font-bold">Cash collected</th>
+  </>
+);
 
 function FunnelCards({
   n,
@@ -52,6 +78,113 @@ export default function Analytics({
       <RangePicker range={range} onChange={setRange} />
 
       {!current ? <p className="text-muted">Loading analytics…</p> : null}
+
+      {current?.revenue ? (
+        <section>
+          <h2 className="text-lg font-extrabold">💰 Cash collected</h2>
+          <p className="text-sm text-muted">
+            What your closes made you during {inRange}: {money(PRICE.monthly)} per monthly close,{" "}
+            {money(PRICE.yearly)} per yearly close.
+          </p>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              highlight
+              label="Total cash collected"
+              value={money(current.revenue.total)}
+              detail={`From ${current.revenue.closes.total} closes`}
+            />
+            <StatCard
+              label="Monthly closes"
+              value={String(current.revenue.closes.monthly)}
+              detail={`${current.revenue.closes.monthly} × ${money(PRICE.monthly)} = ${money(current.revenue.monthlyAmount)}`}
+            />
+            <StatCard
+              label="Yearly closes"
+              value={String(current.revenue.closes.yearly)}
+              detail={`${current.revenue.closes.yearly} × ${money(PRICE.yearly)} = ${money(current.revenue.yearlyAmount)}`}
+            />
+            <StatCard
+              label="Avg per close"
+              value={
+                current.revenue.closes.total - current.revenue.closes.unknown > 0
+                  ? money(Math.round(current.revenue.total / (current.revenue.closes.total - current.revenue.closes.unknown)))
+                  : "–"
+              }
+              detail={
+                current.revenue.closes.unknown > 0
+                  ? `${current.revenue.closes.unknown} older close${current.revenue.closes.unknown === 1 ? "" : "s"} have no plan recorded`
+                  : "Across monthly and yearly"
+              }
+            />
+          </div>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <div className="overflow-x-auto rounded-2xl border border-border bg-background">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-border text-xs uppercase tracking-widest text-muted">
+                  <tr>
+                    <th className="px-5 py-3 font-bold">Closer</th>
+                    {splitHead}
+                  </tr>
+                </thead>
+                <tbody>
+                  {current.revenue.byCloser.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-5 py-4 text-muted">No closes in this time frame yet.</td>
+                    </tr>
+                  ) : (
+                    current.revenue.byCloser.map((r) => (
+                      <tr key={r.name} className="border-b border-border last:border-0">
+                        <td className="px-5 py-3 font-semibold">{r.name}</td>
+                        <SplitCells c={r.closes} amount={r.amount} />
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="overflow-x-auto rounded-2xl border border-border bg-background">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-border text-xs uppercase tracking-widest text-muted">
+                  <tr>
+                    <th className="px-5 py-3 font-bold">Lead list</th>
+                    {splitHead}
+                  </tr>
+                </thead>
+                <tbody>
+                  {current.revenue.bySource.map((r) => (
+                    <tr key={r.source} className="border-b border-border last:border-0">
+                      <td className="px-5 py-3 font-semibold">{r.label}</td>
+                      <SplitCells c={r.closes} amount={r.amount} />
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {current ? (
+        <section>
+          <h2 className="text-lg font-extrabold">Sales calls</h2>
+          <p className="text-sm text-muted">Booked calls and how they went, {inRange}.</p>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard label="Booked appointments" value={String(current.team.booked)} detail={`${percent(current.team.bookRate)} of leads who picked up`} />
+            <StatCard
+              label="Show rate"
+              value={percent(current.team.showRate)}
+              detail={`${current.team.noShows} no-show${current.team.noShows === 1 ? "" : "s"}`}
+            />
+            <StatCard label="Closes" value={String(current.team.closes.total)} detail={splitText(current.team.closes)} />
+            <StatCard
+              label="Close rate"
+              value={percent(current.team.closeRate)}
+              detail={`${current.team.closes.total} closes from ${current.team.booked} booked`}
+            />
+          </div>
+        </section>
+      ) : null}
 
       {current?.optIns ? (
         <section>
@@ -221,6 +354,7 @@ export default function Analytics({
                   <th className="px-5 py-3 text-right font-bold">Opt-ins</th>
                   <th className="px-5 py-3 text-right font-bold">Booked</th>
                   <th className="px-5 py-3 text-right font-bold">Closed</th>
+                  <th className="px-5 py-3 text-right font-bold">Cash collected</th>
                   <th className="px-5 py-3 text-right font-bold">Book rate</th>
                 </tr>
               </thead>
@@ -233,6 +367,7 @@ export default function Analytics({
                     <td className="px-5 py-3 text-right tabular-nums">{r.optIns}</td>
                     <td className="px-5 py-3 text-right tabular-nums">{r.booked}</td>
                     <td className="px-5 py-3 text-right tabular-nums">{r.closed}</td>
+                    <td className="px-5 py-3 text-right font-bold tabular-nums text-emerald-700">{money(r.revenue)}</td>
                     <td className="px-5 py-3 text-right tabular-nums">
                       {percent(r.optIns > 0 ? r.booked / r.optIns : null)}
                     </td>

@@ -6,6 +6,7 @@ import {
   SPEED_TO_LEAD_SECONDS,
   STATUSES,
   formatAppointment,
+  planLabel,
   formatDuration,
   type Lead,
   type StatusId,
@@ -20,6 +21,7 @@ const COLUMN_ACCENT: Record<StatusId, string> = {
   no_answer: "bg-amber-400",
   callback: "bg-sky-500",
   appointment: "bg-violet-500",
+  no_show: "bg-rose-400",
   not_interested: "bg-slate-500",
   closed: "bg-emerald-500",
   do_not_call: "bg-red-500",
@@ -124,8 +126,14 @@ export default function Board({
       }
       return a.appointmentAt < b.appointmentAt ? -1 : 1;
     });
+    grouped.callback.sort((a, b) => {
+      if (!a.appointmentAt || !b.appointmentAt) {
+        return Number(!a.appointmentAt) - Number(!b.appointmentAt) || b.updatedAt.localeCompare(a.updatedAt);
+      }
+      return a.appointmentAt < b.appointmentAt ? -1 : 1;
+    });
     for (const status of STATUSES) {
-      if (status.id !== "new" && status.id !== "appointment") {
+      if (status.id !== "new" && status.id !== "appointment" && status.id !== "callback") {
         grouped[status.id].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
       }
     }
@@ -207,6 +215,16 @@ export default function Board({
                     >
                       ▶ Call recording
                     </a>
+                  ) : null}
+                  {lead.status === "closed" ? (
+                    <p className="mt-1 mr-1 inline-block rounded-md bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-800">
+                      💰 {planLabel(lead.closePlan)}
+                    </p>
+                  ) : null}
+                  {lead.status === "callback" && lead.appointmentAt ? (
+                    <p className="mt-1 truncate rounded-md bg-sky-50 px-2 py-1 text-xs font-bold text-sky-800">
+                      📞 Call back {formatAppointment(lead.appointmentAt, lead.appointmentTz)}
+                    </p>
                   ) : null}
                   {lead.status === "appointment" ? (
                     <p className="mt-1 truncate rounded-md bg-violet-50 px-2 py-1 text-xs font-bold text-violet-800">

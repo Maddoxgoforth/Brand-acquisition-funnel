@@ -7,6 +7,7 @@ import {
 } from "@/lib/crm/constants";
 import {
   ClaimConflictError,
+  CloseNeedsDetailsError,
   deleteLead,
   getLead,
   listEvents,
@@ -103,7 +104,15 @@ export async function PATCH(request: Request, { params }: Context) {
       patch.appointment = { at, timeZone: (a as { timeZone: string }).timeZone };
     }
 
-    const lead = await updateLead(id, patch, sessionActor(session));
+    let lead;
+    try {
+      lead = await updateLead(id, patch, sessionActor(session));
+    } catch (error) {
+      if (error instanceof CloseNeedsDetailsError) {
+        return Response.json({ error: error.message }, { status: 400 });
+      }
+      throw error;
+    }
     if (!lead) return notFound();
     return Response.json({ lead, events: await listEvents(id) });
   });

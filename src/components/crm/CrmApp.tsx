@@ -21,6 +21,7 @@ import {
 } from "@/lib/crm/constants";
 import AddLeadsDialog from "./AddLeadsDialog";
 import AppointmentDialog from "./AppointmentDialog";
+import CloseDialog from "./CloseDialog";
 import Board from "./Board";
 import CallBar from "./CallBar";
 import Analytics from "./Analytics";
@@ -74,7 +75,9 @@ export default function CrmApp({
   const [outcomeFor, setOutcomeFor] = useState<string | null>(null);
   const [dialog, setDialog] = useState<"single" | "import" | null>(null);
   // The lead waiting for an appointment time before it can move columns.
-  const [booking, setBooking] = useState<Lead | null>(null);
+  const [booking, setBooking] = useState<{ lead: Lead; kind: "appointment" | "callback" } | null>(null);
+  // The lead waiting for its plan and payment screenshot before it can close.
+  const [closing, setClosing] = useState<Lead | null>(null);
   const [error, setError] = useState<string | null>(null);
   const repaired = useRef(new Set<SourceId>());
   // New free-course opt-ins that arrived while this page was open, and how
@@ -252,7 +255,7 @@ export default function CrmApp({
     async (lead: Lead, patch: LeadPatch): Promise<LeadEvent[] | null> => {
       // Show the change straight away, then confirm with the server.
       const { appointment, ...fields } = patch;
-      const leavingAppointment = fields.status && fields.status !== "appointment";
+      const leavingAppointment = fields.status && fields.status !== lead.status;
       if (!appointment) {
         putLead({
           ...lead,
@@ -290,11 +293,16 @@ export default function CrmApp({
     [putLead]
   );
 
-  // Moving into "Appointment scheduled" (by drag or button) first asks when.
+  // Moving into "Appointment scheduled" or "Callback" (by drag or button)
+  // first asks when; moving into Closed asks for the plan and payment proof.
   const changeStatus = useCallback(
     (lead: Lead, status: StatusId) => {
-      if (status === "appointment" && lead.status !== "appointment") {
-        setBooking(lead);
+      if ((status === "appointment" || status === "callback") && lead.status !== status) {
+        setBooking({ lead, kind: status });
+        return Promise.resolve(null);
+      }
+      if (status === "closed" && lead.status !== "closed") {
+        setClosing(lead);
         return Promise.resolve(null);
       }
       return patchLead(lead, { status });
@@ -362,6 +370,12 @@ export default function CrmApp({
     }
     setSearch("");
     setSelectedId(null);
+  }
+
+  // Jump to a lead's list and open it (e.g. from the callbacks list).
+  function openLead(lead: Lead) {
+    go(lead.source);
+    setSelectedId(lead.id);
   }
 
   const inDialGroup = DIAL_LISTS.some((s) => s.id === view);
@@ -447,7 +461,7 @@ export default function CrmApp({
         </main>
       ) : view === "dashboard" ? (
         <main className="flex-1 overflow-y-auto bg-background-elevated/40">
-          <Dashboard me={user.id} refreshKey={statsKey} onError={report} />
+          <Dashboard me={user.id} refreshKey={statsKey} onError={report} onOpenLead={openLead} />
         </main>
       ) : view === "leaderboard" ? (
         <main className="flex-1 overflow-y-auto bg-background-elevated/40">
@@ -543,7 +557,10 @@ export default function CrmApp({
             }
             return patchLead(selected, patch);
           }}
-          onReschedule={() => setBooking(selected)}
+          onReschedule={() =>
+            setBooking({ lead: selected, kind: selected.status === "callback" ? "callback" : "appointment" })
+          }
+          onEditClose={() => setClosing(selected)}
           onDelete={() => deleteLead(selected)}
           onCall={() => callLead(selected)}
           me={user.id}
@@ -554,22 +571,45 @@ export default function CrmApp({
 
       {booking ? (
         <AppointmentDialog
-          key={booking.id}
-          lead={booking}
+          key={booking.lead.id}
+          lead={booking.lead}
+          kind={booking.kind}
           onCancel={() => setBooking(null)}
           onConfirm={async (appointment) => {
             // Saved here rather than through patchLead so a problem shows
             // inside the dialog instead of behind it.
             try {
-              const data = await crmFetch<{ lead: Lead }>(`/api/crm/leads/${booking.id}`, {
+              const data = await crmFetch<{ lead: Lead }>(`/api/crm/leads/${booking.lead.id}`, {
                 method: "PATCH",
-                body: { status: "appointment", appointment },
+                body: { status: booking.kind, appointment },
               });
               putLead(data.lead);
               setBooking(null);
               return null;
             } catch (e) {
               return e instanceof Error ? e.message : "Couldn't save the appointment.";
+            }
+          }}
+        />
+      ) : null}
+
+      {closing ? (
+        <CloseDialog
+          key={closing.id}
+          lead={closing}
+          onCancel={() => setClosing(null)}
+          onConfirm={async (plan, screenshot) => {
+            try {
+              const data = await crmFetch<{ lead: Lead }>(`/api/crm/leads/${closing.id}/close`, {
+                method: "POST",
+                body: { plan, screenshot },
+              });
+              putLead(data.lead);
+              setClosing(null);
+              setOutcomeFor(null);
+              return null;
+            } catch (e) {
+              return e instanceof Error ? e.message : "Couldn't save the close.";
             }
           }}
         />
