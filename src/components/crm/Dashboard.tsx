@@ -151,7 +151,7 @@ export default function Dashboard({
           <StatCard
             label="Close rate"
             value={percent(t.closeRate)}
-            detail={`${t.closes.total} closes from ${t.booked} booked appointments`}
+            detail={`${t.closes.total} closes from ${t.talked} leads you talked to · ${t.closesDirect} without a booked call`}
           />
           {t.optIns !== null ? (
             <>

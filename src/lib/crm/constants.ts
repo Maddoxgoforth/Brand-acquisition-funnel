@@ -238,7 +238,16 @@ export type TeamSummary = {
   showRate: number | null; // showed ÷ booked calls that already happened
   closes: CloseSplit;
   bookRate: number | null; // booked ÷ leads that picked up
-  closeRate: number | null; // closes ÷ booked
+  // Leads someone talked to during the range (called or moved, and now in
+  // a picked-up column). Close rate = closes ÷ these.
+  talked: number;
+  closeRate: number | null;
+  // Closes that had a booked call first, and those closed without one
+  // (e.g. on the first call). Booked close rate = fromBooked ÷ booked
+  // calls that already happened.
+  closesFromBooked: number;
+  closesDirect: number;
+  bookedCloseRate: number | null;
   avgFirstContactSeconds: number | null;
   within5Rate: number | null;
   waiting: number | null; // opt-ins in the range nobody has called yet

@@ -180,7 +180,17 @@ export default function Analytics({
             <StatCard
               label="Close rate"
               value={percent(current.team.closeRate)}
-              detail={`${current.team.closes.total} closes from ${current.team.booked} booked`}
+              detail={`${current.team.closes.total} closes from ${current.team.talked} leads you talked to`}
+            />
+            <StatCard
+              label="Closed on a booked call"
+              value={String(current.team.closesFromBooked)}
+              detail={`${percent(current.team.bookedCloseRate)} of booked calls that happened`}
+            />
+            <StatCard
+              label="Closed without booking"
+              value={String(current.team.closesDirect)}
+              detail="Closed straight away, e.g. on the first call"
             />
           </div>
         </section>

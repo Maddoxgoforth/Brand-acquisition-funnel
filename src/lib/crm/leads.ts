@@ -1089,6 +1089,7 @@ export async function getStats(
     dials: number;
     leads_called: number;
     answered: number;
+    talked: number;
     booked: number;
     no_shows: number;
     pending: number;
@@ -1104,6 +1105,7 @@ export async function getStats(
        count(*) FILTER (WHERE type = 'call')::int AS dials,
        count(DISTINCT lead_id) FILTER (WHERE type = 'call')::int AS leads_called,
        count(DISTINCT lead_id) FILTER (WHERE type = 'call' AND lead_status = ANY($3::text[]))::int AS answered,
+       count(DISTINCT lead_id) FILTER (WHERE lead_status = ANY($3::text[]))::int AS talked,
        count(DISTINCT lead_id) FILTER (WHERE type = 'status' AND data->>'to' = 'appointment')::int AS booked,
        count(DISTINCT lead_id) FILTER (WHERE type = 'status' AND data->>'to' = 'appointment'
          AND lead_status = 'no_show')::int AS no_shows,
@@ -1124,6 +1126,7 @@ export async function getStats(
     monthly: number;
     yearly: number;
     amount: number;
+    from_booked: number;
   }>(
     `SELECT closed_by_id AS id, max(closed_by_name) AS name, source,
        GROUPING(closed_by_id, source) = 3 AS is_total,
@@ -1131,7 +1134,11 @@ export async function getStats(
        count(*)::int AS total,
        count(*) FILTER (WHERE close_plan = 'monthly')::int AS monthly,
        count(*) FILTER (WHERE close_plan = 'yearly')::int AS yearly,
-       coalesce(sum(close_amount), 0)::int AS amount
+       coalesce(sum(close_amount), 0)::int AS amount,
+       count(*) FILTER (WHERE EXISTS (
+         SELECT 1 FROM crm_events e WHERE e.lead_id = crm_leads.id AND e.type = 'status'
+           AND e.data->>'to' = 'appointment' AND e.created_at <= coalesce(crm_leads.closed_at, now())
+       ))::int AS from_booked
      FROM crm_leads
      WHERE status = 'closed' AND source = ANY($2::text[])
        AND ($1::timestamptz IS NULL OR coalesce(closed_at, updated_at) >= $1::timestamptz)
@@ -1263,7 +1270,13 @@ export async function getStats(
     showRate: happened > 0 ? (happened - (all?.no_shows ?? 0)) / happened : null,
     closes,
     bookRate: all && all.answered > 0 ? all.booked / all.answered : null,
-    closeRate: all && all.booked > 0 ? closes.total / all.booked : null,
+    talked: Math.max(all?.talked ?? 0, closes.total),
+    closeRate: closes.total > 0 || (all?.talked ?? 0) > 0
+      ? closes.total / Math.max(all?.talked ?? 0, closes.total)
+      : null,
+    closesFromBooked: totalClose?.from_booked ?? 0,
+    closesDirect: closes.total - (totalClose?.from_booked ?? 0),
+    bookedCloseRate: happened > 0 ? Math.min(1, (totalClose?.from_booked ?? 0) / happened) : null,
     avgFirstContactSeconds: t?.avgFirstContactSeconds ?? null,
     within5Rate: t && t.total > 0 ? t.within5 / t.total : null,
     waiting: t ? t.waiting : null,
