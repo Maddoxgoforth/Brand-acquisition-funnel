@@ -34,6 +34,10 @@ export async function POST(request: Request, { params }: Context) {
     }
     const closed = await closeLead(id, body.plan, { mime: match[1], base64: match[2] }, sessionActor(session));
     if (!closed) return Response.json({ error: "Lead not found" }, { status: 404 });
-    return Response.json({ lead: closed, events: await listEvents(id) });
+    return Response.json({
+      lead: closed.lead,
+      discordProblem: closed.discordProblem,
+      events: await listEvents(id),
+    });
   });
 }

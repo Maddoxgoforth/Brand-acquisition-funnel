@@ -589,7 +589,7 @@ export async function closeLead(
   plan: ClosePlan,
   proof: { mime: string; base64: string },
   actor: Actor
-): Promise<Lead | null> {
+): Promise<{ lead: Lead; discordProblem: string | null } | null> {
   const current = await getLead(id);
   if (!current) return null;
   const amount = CLOSE_PLANS.find((p) => p.id === plan)!.amount;
@@ -618,8 +618,8 @@ export async function closeLead(
     await addEvent(id, "close", { plan }, actor);
   }
   const lead = rows[0] ? toLead(rows[0]) : null;
-  if (lead) await announceClose(lead, saved.id, actor);
-  return lead;
+  const discordProblem = lead ? await announceClose(lead, saved.id, actor) : null;
+  return lead ? { lead, discordProblem } : null;
 }
 
 // A link Discord can load the payment screenshot from without signing in.
@@ -652,11 +652,15 @@ export async function getLeadProofId(leadId: string) {
   return rows[0]?.payment_proof_id ?? null;
 }
 
+// The Zapier workflow "CRM close → #successful-payments" (catch hook).
+// ZAPIER_CLOSE_WEBHOOK_URL overrides it.
+const DEFAULT_CLOSE_WEBHOOK = "https://hooks.zapier.com/hooks/catch/18009751/Y15K2rmN1M2uVVHA/";
+
 // Sends the close to the Zapier workflow that posts it in Discord's
-// #successful-payments. Needs ZAPIER_CLOSE_WEBHOOK_URL; never blocks the close.
-async function announceClose(lead: Lead, proofId: string, actor: Actor) {
-  const hook = process.env.ZAPIER_CLOSE_WEBHOOK_URL;
-  if (!hook) return;
+// #successful-payments. Never blocks the close; returns a problem to show
+// in the CRM if the post didn't go out.
+async function announceClose(lead: Lead, proofId: string, actor: Actor): Promise<string | null> {
+  const hook = process.env.ZAPIER_CLOSE_WEBHOOK_URL || DEFAULT_CLOSE_WEBHOOK;
   try {
     const res = await fetch(hook, {
       method: "POST",
@@ -675,9 +679,14 @@ async function announceClose(lead: Lead, proofId: string, actor: Actor) {
       }),
       signal: AbortSignal.timeout(5000),
     });
-    if (!res.ok) console.error(`Close webhook failed: ${res.status}`);
+    if (!res.ok) {
+      console.error(`Close webhook failed: ${res.status}`);
+      return `Saved, but the Discord post failed (Zapier answered ${res.status}).`;
+    }
+    return null;
   } catch (error) {
     console.error("Close webhook request failed:", error);
+    return "Saved, but the Discord post couldn't be sent (Zapier didn't answer).";
   }
 }
 

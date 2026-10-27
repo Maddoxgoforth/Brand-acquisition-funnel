@@ -600,11 +600,12 @@ export default function CrmApp({
           onCancel={() => setClosing(null)}
           onConfirm={async (plan, screenshot) => {
             try {
-              const data = await crmFetch<{ lead: Lead }>(`/api/crm/leads/${closing.id}/close`, {
-                method: "POST",
-                body: { plan, screenshot },
-              });
+              const data = await crmFetch<{ lead: Lead; discordProblem: string | null }>(
+                `/api/crm/leads/${closing.id}/close`,
+                { method: "POST", body: { plan, screenshot } }
+              );
               putLead(data.lead);
+              if (data.discordProblem) setError(data.discordProblem);
               setClosing(null);
               setOutcomeFor(null);
               return null;
