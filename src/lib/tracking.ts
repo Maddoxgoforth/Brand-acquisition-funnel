@@ -11,6 +11,7 @@ declare global {
     fbq?: (...args: unknown[]) => void;
     ttq?: {
       page: () => void;
+      identify: (data: Record<string, string>) => void;
       track: (event: string, params?: Record<string, unknown>, options?: Record<string, unknown>) => void;
     };
   }
@@ -126,6 +127,28 @@ export function pixelEvent(name: string, params: Record<string, unknown> = {}, e
   window.fbq?.("track", name, params, eventId ? { eventID: eventId } : undefined);
   const tt = TIKTOK_EVENTS[name];
   if (tt) window.ttq?.track(tt, params, eventId ? { event_id: eventId } : undefined);
+}
+
+async function sha256Hex(value: string) {
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// TikTok advanced matching: tells the pixel who just opted in (email and phone
+// hashed with SHA-256 in the browser, as TikTok requires), before the
+// SubmitForm event, so TikTok can match the sign-up to the ad they saw.
+export async function identifyForAds(email: string, phone: string) {
+  if (typeof window === "undefined" || !window.ttq || !crypto?.subtle) return;
+  try {
+    const data: Record<string, string> = {};
+    const e = email.trim().toLowerCase();
+    if (e) data.email = await sha256Hex(e);
+    const digits = phone.replace(/\D/g, "");
+    if (digits) data.phone_number = await sha256Hex(`+${digits.length === 10 ? `1${digits}` : digits}`);
+    if (Object.keys(data).length) window.ttq.identify(data);
+  } catch {
+    // matching is a bonus; the event still goes out
+  }
 }
 
 export function pixelCustom(name: string, params: Record<string, unknown> = {}) {

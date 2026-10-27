@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { FunnelId } from "@/lib/crm/constants";
 import {
   attribution,
+  identifyForAds,
   newEventId,
   pixelEvent,
   trackStep,
@@ -62,6 +63,7 @@ export default function FreeCourseCta({
 
       if (!res.ok) throw new Error("Request failed");
       // Same event id as the server's Conversions API event: Meta keeps one.
+      await identifyForAds(email, phone);
       pixelEvent("Lead", { content_name: funnel === "ads" ? "free_course_ad_funnel" : "free_course" }, eventId);
       setStatus("success");
       router.push("/free-course/confirmation");
