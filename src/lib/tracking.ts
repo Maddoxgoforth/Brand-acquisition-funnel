@@ -113,8 +113,10 @@ export function trackStep(funnel: FunnelId, step: string) {
 }
 
 // Meta's event name → TikTok's standard event (case-sensitive).
+// TikTok shows its "Submit form" event with the code "Lead" (Events Manager →
+// pixel → events list), so opt-ins go out as Lead.
 const TIKTOK_EVENTS: Record<string, string> = {
-  Lead: "SubmitForm",
+  Lead: "Lead",
   ViewContent: "ViewContent",
 };
 

@@ -201,7 +201,7 @@ export async function POST(request: Request) {
     }),
     // TikTok's version of the same opt-in, same event id as the browser pixel.
     sendTikTokEvent({
-      name: "SubmitForm",
+      name: "Lead", // TikTok's "Submit form" event
       eventId,
       url: attribution.landing_url || request.headers.get("referer") || undefined,
       user: {

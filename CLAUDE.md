@@ -692,7 +692,8 @@ Built for running Meta ads to the free course (owner's request, Oct 2026).
   `DBFUQ5BC77UASCMGN6O0` by default, `NEXT_PUBLIC_TIKTOK_PIXEL_ID` overrides;
   never on `/crm`) and `src/lib/tiktok.ts`
   (Events API v1.3, needs `TIKTOK_EVENTS_TOKEN`). TikTok standard event names:
-  opt-in = SubmitForm (browser + server, same event id), booked =
+  opt-in = Lead (TikTok labels it "Submit form"; browser + server, same
+  event id), booked =
   Schedule, closed = Purchase, VSL page = ViewContent. `pixelEvent()` in
   `tracking.ts` fires both pixels. Attribution also keeps `ttclid` and the
   `_ttp` cookie. Ad links: `utm_source=tiktok&utm_medium=paid&utm_campaign=__CAMPAIGN_NAME__&utm_content=__CID_NAME__`.

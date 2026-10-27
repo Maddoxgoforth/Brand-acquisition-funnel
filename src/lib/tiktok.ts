@@ -10,8 +10,9 @@ import { createHash } from "node:crypto";
 // defaults to Mad Media LLC's pixel; TIKTOK_PIXEL_ID overrides it.
 // TIKTOK_TEST_EVENT_CODE (optional) shows events under Events Manager → Test events.
 //
-// Event names are TikTok standard events (case-sensitive): SubmitForm (opt-in),
-// Schedule (booked call), Purchase (closed), ViewContent.
+// Event names are TikTok event codes (case-sensitive): Lead (shown as "Submit
+// form" in Events Manager: the opt-in), Schedule (booked call), Purchase
+// (closed), ViewContent.
 
 export type TikTokUser = {
   email?: string;
@@ -39,7 +40,7 @@ export function tiktokConfigured() {
 
 // Best effort: never throws, gives up after 4 seconds.
 export async function sendTikTokEvent(event: {
-  name: "SubmitForm" | "Schedule" | "Purchase" | "ViewContent" | string;
+  name: "Lead" | "Schedule" | "Purchase" | "ViewContent" | string;
   eventId: string;
   url?: string;
   user: TikTokUser;
