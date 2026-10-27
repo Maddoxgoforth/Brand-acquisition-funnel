@@ -8,7 +8,12 @@ export default async function CrmPage() {
   if (!session) redirect("/crm/login");
   return (
     <CrmApp
-      user={{ role: session.role, name: session.name, access: session.access }}
+      user={{
+        role: session.role,
+        id: session.role === "owner" ? "owner" : session.userId,
+        name: session.name,
+        access: session.access,
+      }}
     />
   );
 }

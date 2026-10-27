@@ -37,6 +37,11 @@ const SCHEMA = [
   // ids, IP and user agent (the last four are only used server-side, to send
   // conversions to Meta's Conversions API).
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS attribution jsonb NOT NULL DEFAULT '{}'::jsonb`,
+  // Who is working the lead: set by their first call, or by Claim in the
+  // lead panel. Name is copied so it still shows if the account is removed.
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS claimed_by_id text`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS claimed_by_name text`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS claimed_at timestamptz`,
   `UPDATE crm_leads l SET first_contact_at = e.first
    FROM (SELECT lead_id, min(created_at) AS first FROM crm_events
          WHERE type IN ('call', 'status') GROUP BY lead_id) e

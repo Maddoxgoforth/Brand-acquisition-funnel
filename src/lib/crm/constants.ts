@@ -135,6 +135,11 @@ export type Lead = {
   attribution: Record<string, string>;
   callCount: number;
   lastCalledAt: string | null;
+  // Who is working the lead ("owner" or a team member's id). Set by their
+  // first call or by Claim; null = nobody yet.
+  claimedById: string | null;
+  claimedByName: string | null;
+  claimedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -145,7 +150,7 @@ export type Actor = { id: string; name: string };
 
 export type LeadEvent = {
   id: number;
-  type: "status" | "call" | "created" | "appointment" | "reoptin";
+  type: "status" | "call" | "created" | "appointment" | "reoptin" | "claim";
   // For calls: callSid and, once added, notes.
   data: Record<string, string>;
   actorName: string | null;

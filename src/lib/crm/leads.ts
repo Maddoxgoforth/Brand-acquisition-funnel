@@ -47,6 +47,9 @@ type LeadRow = {
   attribution: Record<string, unknown> | string | null;
   call_count: number;
   last_called_at: string | Date | null;
+  claimed_by_id: string | null;
+  claimed_by_name: string | null;
+  claimed_at: string | Date | null;
   created_at: string | Date;
   updated_at: string | Date;
 };
@@ -98,6 +101,9 @@ function toLead(row: LeadRow): Lead {
     ),
     callCount: Number(row.call_count),
     lastCalledAt: iso(row.last_called_at),
+    claimedById: row.claimed_by_id ?? null,
+    claimedByName: row.claimed_by_name ?? null,
+    claimedAt: iso(row.claimed_at ?? null),
     createdAt: iso(row.created_at)!,
     updatedAt: iso(row.updated_at)!,
   };
@@ -614,6 +620,54 @@ export async function recordCall(id: string, callSid: string, actor: Actor | nul
     [id]
   );
   await addEvent(id, "call", { callSid }, actor);
+  // The first person to call a lead claims it.
+  if (actor) {
+    const claimed = await query(
+      `UPDATE crm_leads
+       SET claimed_by_id = $2, claimed_by_name = $3, claimed_at = now()
+       WHERE id = $1 AND claimed_by_id IS NULL RETURNING id`,
+      [id, actor.id, actor.name]
+    );
+    if (claimed.length) await addEvent(id, "claim", { action: "claimed", by: actor.name }, actor);
+  }
+}
+
+export class ClaimConflictError extends Error {}
+
+// Claim (or release) a lead. Anyone can claim a lead nobody has; a lead
+// someone else claimed can only be taken over or released by the owner.
+export async function setClaim(
+  id: string,
+  claim: boolean,
+  actor: Actor,
+  isOwner: boolean
+): Promise<Lead | null> {
+  const current = await getLead(id);
+  if (!current) return null;
+  const mine = current.claimedById === actor.id;
+  if (claim && mine) return current;
+  if (!claim && !current.claimedById) return current;
+  if (current.claimedById && !mine && !isOwner) {
+    throw new ClaimConflictError(
+      `${current.claimedByName || "Someone else"} already claimed this lead.`
+    );
+  }
+  const rows = await query<LeadRow>(
+    `UPDATE crm_leads
+     SET claimed_by_id = $2, claimed_by_name = $3, claimed_at = $4, updated_at = now()
+     WHERE id = $1 RETURNING *`,
+    claim
+      ? [id, actor.id, actor.name, new Date().toISOString()]
+      : [id, null, null, null]
+  );
+  const action = claim ? (current.claimedById ? "took over" : "claimed") : "released";
+  await addEvent(
+    id,
+    "claim",
+    { action, by: actor.name, ...(current.claimedByName ? { from: current.claimedByName } : {}) },
+    actor
+  );
+  return rows[0] ? toLead(rows[0]) : null;
 }
 
 export async function setCallNotes(leadId: string, eventId: number, notes: string) {

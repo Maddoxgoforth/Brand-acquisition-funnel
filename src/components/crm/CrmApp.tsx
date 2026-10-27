@@ -55,13 +55,15 @@ const tab = (active: boolean) =>
 export default function CrmApp({
   user,
 }: {
-  user: { role: "owner" | "member"; name: string; access: Access };
+  user: { role: "owner" | "member"; id: string; name: string; access: Access };
 }) {
   const [view, setView] = useState<View>("dashboard");
   const [cache, setCache] = useState<LeadCache>({});
   // Bumped when a new opt-in arrives so the dashboard reloads its numbers.
   const [statsKey, setStatsKey] = useState(0);
   const [search, setSearch] = useState("");
+  // Board filter: only leads claimed by this person.
+  const [onlyMine, setOnlyMine] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [outcomeFor, setOutcomeFor] = useState<string | null>(null);
   const [dialog, setDialog] = useState<"single" | "import" | null>(null);
@@ -121,6 +123,26 @@ export default function CrmApp({
       cancelled = true;
     };
   }, [view, report]);
+
+  // Reload the open list every 20 seconds so claims, calls and moves made by
+  // teammates show up without a refresh.
+  useEffect(() => {
+    if (view === "team" || view === "dashboard") return;
+    let stopped = false;
+    const timer = setInterval(async () => {
+      if (document.hidden) return;
+      try {
+        const data = await crmFetch<{ leads: Lead[] }>(`/api/crm/leads?source=${view}`);
+        if (!stopped) setCache((c) => ({ ...c, [view]: data.leads }));
+      } catch {
+        // Try again next time.
+      }
+    }, 20_000);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, [view]);
 
   useEffect(() => {
     viewRef.current = view;
@@ -279,6 +301,43 @@ export default function CrmApp({
   const dialer = useDialer(handleCallEnded);
   const canCall = dialer.state.phase === "idle";
 
+  const claimLead = useCallback(
+    async (lead: Lead, claim: boolean): Promise<LeadEvent[] | null> => {
+      try {
+        const data = await crmFetch<{ lead: Lead; events: LeadEvent[] }>(
+          `/api/crm/leads/${lead.id}`,
+          { method: "PATCH", body: { claim } }
+        );
+        putLead(data.lead);
+        return data.events;
+      } catch (e) {
+        report(e);
+        // Someone may have claimed it first: show who.
+        crmFetch<{ lead: Lead }>(`/api/crm/leads/${lead.id}`)
+          .then((data) => putLead(data.lead))
+          .catch(() => {});
+        return null;
+      }
+    },
+    [putLead, report]
+  );
+
+  // Calling claims an unclaimed lead (the server records it). Calling a lead
+  // someone else claimed asks first.
+  function callLead(lead: Lead) {
+    if (
+      lead.claimedById &&
+      lead.claimedById !== user.id &&
+      !window.confirm(`${lead.claimedByName || "Someone else"} claimed this lead. Call anyway?`)
+    ) {
+      return;
+    }
+    if (!lead.claimedById) {
+      putLead({ ...lead, claimedById: user.id, claimedByName: user.name, claimedAt: new Date().toISOString() });
+    }
+    dialer.call(lead);
+  }
+
   async function deleteLead(lead: Lead) {
     try {
       await crmFetch(`/api/crm/leads/${lead.id}`, { method: "DELETE" });
@@ -395,6 +454,15 @@ export default function CrmApp({
               {activeList?.description}
             </p>
             <div className="ml-auto flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setOnlyMine((v) => !v)}
+                className={`rounded-full border px-4 py-2 text-sm font-bold ${
+                  onlyMine ? "border-accent bg-accent text-white" : "border-border hover:border-accent"
+                }`}
+              >
+                My leads
+              </button>
               <input
                 type="search"
                 placeholder="Search name, phone, email…"
@@ -421,7 +489,8 @@ export default function CrmApp({
 
           {leads ? (
             <Board
-              leads={leads}
+              leads={onlyMine ? leads.filter((l) => l.claimedById === user.id) : leads}
+              me={user.id}
               search={search}
               canCall={canCall}
               onOpen={(lead) => {
@@ -429,7 +498,7 @@ export default function CrmApp({
                 setOutcomeFor(null);
               }}
               onMove={(lead, status: StatusId) => changeStatus(lead, status)}
-              onCall={dialer.call}
+              onCall={callLead}
             />
           ) : (
             <p className="px-6 text-muted">Loading leads…</p>
@@ -456,7 +525,10 @@ export default function CrmApp({
           }}
           onReschedule={() => setBooking(selected)}
           onDelete={() => deleteLead(selected)}
-          onCall={() => dialer.call(selected)}
+          onCall={() => callLead(selected)}
+          me={user.id}
+          isOwner={user.role === "owner"}
+          onClaim={(claim) => claimLead(selected, claim)}
         />
       ) : null}
 

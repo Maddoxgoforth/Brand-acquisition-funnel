@@ -40,6 +40,11 @@ function describe(event: LeadEvent) {
       ? `Appointment set for ${formatAppointment(event.data.at, event.data.timeZone || null)}`
       : "Appointment time cleared";
   }
+  if (event.type === "claim") {
+    if (event.data.action === "released") return "Released the claim";
+    if (event.data.action === "took over") return `Took over the lead from ${event.data.from ?? "a teammate"}`;
+    return "Claimed the lead";
+  }
   if (event.type === "status") {
     return `Moved from ${statusLabel(event.data.from)} to ${statusLabel(event.data.to)}`;
   }
@@ -56,6 +61,9 @@ export default function LeadDrawer({
   onDelete,
   onCall,
   onReschedule,
+  me,
+  isOwner,
+  onClaim,
 }: {
   lead: Lead;
   askOutcome: boolean;
@@ -65,6 +73,9 @@ export default function LeadDrawer({
   onDelete: () => void;
   onCall: () => void;
   onReschedule: () => void;
+  me: string;
+  isOwner: boolean;
+  onClaim: (claim: boolean) => Promise<LeadEvent[] | null>;
 }) {
   const [name, setName] = useState(lead.name);
   const [phone, setPhone] = useState(lead.phone);
@@ -94,6 +105,11 @@ export default function LeadDrawer({
     const next = await onSave(patch);
     if (next) setEvents(next);
   }
+
+  const claim = (value: boolean) => async () => {
+    const next = await onClaim(value);
+    if (next) setEvents(next);
+  };
 
   function saveIfChanged(key: "name" | "phone" | "email" | "notes", value: string) {
     if (value !== lead[key]) save({ [key]: value });
@@ -244,6 +260,38 @@ export default function LeadDrawer({
               </button>
             </section>
           ) : null}
+
+          <section className="flex items-center gap-3 rounded-xl border border-border px-4 py-3">
+            <p className="min-w-0 flex-1 truncate text-sm">
+              {lead.claimedById ? (
+                <>
+                  👤 Claimed by{" "}
+                  <strong>{lead.claimedById === me ? "you" : lead.claimedByName || "a teammate"}</strong>
+                  {lead.claimedAt ? <span className="text-muted"> · {timeAgo(lead.claimedAt)}</span> : null}
+                </>
+              ) : (
+                <span className="text-muted">Nobody has claimed this lead yet.</span>
+              )}
+            </p>
+            {!lead.claimedById ? (
+              <button type="button" onClick={claim(true)} className="shrink-0 rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-white hover:bg-accent-dim">
+                Claim
+              </button>
+            ) : lead.claimedById === me ? (
+              <button type="button" onClick={claim(false)} className="shrink-0 text-sm font-bold text-muted hover:underline">
+                Release
+              </button>
+            ) : isOwner ? (
+              <span className="flex shrink-0 gap-3">
+                <button type="button" onClick={claim(true)} className="text-sm font-bold text-accent hover:underline">
+                  Take over
+                </button>
+                <button type="button" onClick={claim(false)} className="text-sm font-bold text-muted hover:underline">
+                  Release
+                </button>
+              </span>
+            ) : null}
+          </section>
 
           <section className="space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-widest text-muted">

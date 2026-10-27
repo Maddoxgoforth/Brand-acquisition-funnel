@@ -32,6 +32,7 @@ function matches(lead: Lead, needle: string) {
     lead.phone,
     lead.email,
     lead.notes,
+    lead.claimedByName ?? "",
     ...Object.values(lead.extra),
   ]
     .join(" ")
@@ -67,8 +68,24 @@ function useNow(active: boolean) {
   return now;
 }
 
+// Who claimed the lead: "You" for your own, otherwise their name.
+function ClaimBadge({ lead, me }: { lead: Lead; me: string }) {
+  if (!lead.claimedById) return null;
+  const mine = lead.claimedById === me;
+  return (
+    <p
+      className={`mt-1 mr-1 inline-block max-w-full truncate rounded-md px-2 py-1 text-xs font-bold ${
+        mine ? "bg-accent/10 text-accent" : "bg-slate-100 text-slate-700"
+      }`}
+    >
+      👤 {mine ? "Claimed by you" : `Claimed by ${lead.claimedByName || "a teammate"}`}
+    </p>
+  );
+}
+
 export default function Board({
   leads,
+  me,
   search,
   onOpen,
   onMove,
@@ -76,6 +93,7 @@ export default function Board({
   canCall,
 }: {
   leads: Lead[];
+  me: string;
   search: string;
   onOpen: (lead: Lead) => void;
   onMove: (lead: Lead, status: StatusId) => void;
@@ -170,6 +188,7 @@ export default function Board({
                   {lead.email ? (
                     <p className="truncate text-xs text-muted">{lead.email}</p>
                   ) : null}
+                  <ClaimBadge lead={lead} me={me} />
                   {lead.optInCount > 1 ? (
                     <p className="mt-1 mr-1 inline-block rounded-md bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800">
                       Opted in {lead.optInCount}×

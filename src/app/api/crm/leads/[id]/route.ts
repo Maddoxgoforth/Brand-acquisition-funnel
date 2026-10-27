@@ -6,9 +6,11 @@ import {
   zonedTimeToIso,
 } from "@/lib/crm/constants";
 import {
+  ClaimConflictError,
   deleteLead,
   getLead,
   listEvents,
+  setClaim,
   updateLead,
   type LeadPatch,
 } from "@/lib/crm/leads";
@@ -43,6 +45,20 @@ export async function PATCH(request: Request, { params }: Context) {
     const body = (await readJson(request)) as Record<string, unknown> | null;
     if (!body) {
       return Response.json({ error: "Invalid request" }, { status: 400 });
+    }
+
+    // { claim: true } claims the lead for this person, { claim: false } releases it.
+    if (typeof body.claim === "boolean") {
+      try {
+        const lead = await setClaim(id, body.claim, sessionActor(session), session.role === "owner");
+        if (!lead) return notFound();
+        return Response.json({ lead, events: await listEvents(id) });
+      } catch (error) {
+        if (error instanceof ClaimConflictError) {
+          return Response.json({ error: error.message }, { status: 409 });
+        }
+        throw error;
+      }
     }
 
     const patch: LeadPatch = {};
