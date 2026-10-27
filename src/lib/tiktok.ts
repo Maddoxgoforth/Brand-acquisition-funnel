@@ -6,8 +6,8 @@ import { createHash } from "node:crypto";
 // still sees conversions when a browser blocks the pixel. Events carry the
 // same event_id as the browser event, so TikTok counts each one once.
 //
-// Needs TIKTOK_EVENTS_TOKEN and a pixel id (TIKTOK_PIXEL_ID or
-// NEXT_PUBLIC_TIKTOK_PIXEL_ID). Without them every call is a no-op.
+// Needs TIKTOK_EVENTS_TOKEN (without it every call is a no-op). The pixel id
+// defaults to Mad Media LLC's pixel; TIKTOK_PIXEL_ID overrides it.
 // TIKTOK_TEST_EVENT_CODE (optional) shows events under Events Manager → Test events.
 //
 // Event names are TikTok standard events (case-sensitive): SubmitForm (opt-in),
@@ -31,11 +31,10 @@ function e164(phone: string) {
   return `+${digits.length === 10 ? `1${digits}` : digits}`;
 }
 
+const DEFAULT_PIXEL_ID = "DBFUQ5BC77UASCMGN6O0";
+
 export function tiktokConfigured() {
-  return Boolean(
-    process.env.TIKTOK_EVENTS_TOKEN &&
-      (process.env.TIKTOK_PIXEL_ID || process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID)
-  );
+  return Boolean(process.env.TIKTOK_EVENTS_TOKEN);
 }
 
 // Best effort: never throws, gives up after 4 seconds.
@@ -47,7 +46,8 @@ export async function sendTikTokEvent(event: {
   properties?: Record<string, string | number>;
 }): Promise<void> {
   if (!tiktokConfigured()) return;
-  const pixel = process.env.TIKTOK_PIXEL_ID || process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID;
+  const pixel =
+    process.env.TIKTOK_PIXEL_ID || process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || DEFAULT_PIXEL_ID;
   const u = event.user;
   const user: Record<string, string> = {};
   const email = u.email?.trim().toLowerCase();

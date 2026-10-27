@@ -4,11 +4,13 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Script from "next/script";
 
-const PIXEL_ID = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID;
+// Mad Media LLC's pixel ("Brand Acquisition" in TikTok Events Manager).
+// NEXT_PUBLIC_TIKTOK_PIXEL_ID overrides it.
+export const TIKTOK_PIXEL_ID = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || "DBFUQ5BC77UASCMGN6O0";
+const PIXEL_ID = TIKTOK_PIXEL_ID;
 
 // Loads the TikTok Pixel on the public pages (never on the private /crm) and
-// sends a page view on every page change. No-op until
-// NEXT_PUBLIC_TIKTOK_PIXEL_ID is set (needs a redeploy, it's built in).
+// sends a page view on every page change.
 export default function TikTokPixel() {
   const pathname = usePathname();
   const isPrivate = pathname?.startsWith("/crm");

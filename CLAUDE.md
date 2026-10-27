@@ -688,8 +688,9 @@ Built for running Meta ads to the free course (owner's request, Oct 2026).
   (`META_PURCHASE_VALUE`, default 1000 USD), event id `<lead id>-<status>` so
   repeats don't double count. Email/phone/name are SHA-256 hashed. Use
   `META_TEST_EVENT_CODE` to check events in Events Manager → Test events.
-- **TikTok** works the same way: `TikTokPixel.tsx` (loads only with
-  `NEXT_PUBLIC_TIKTOK_PIXEL_ID`, never on `/crm`) and `src/lib/tiktok.ts`
+- **TikTok** works the same way: `TikTokPixel.tsx` (pixel
+  `DBFUQ5BC77UASCMGN6O0` by default, `NEXT_PUBLIC_TIKTOK_PIXEL_ID` overrides;
+  never on `/crm`) and `src/lib/tiktok.ts`
   (Events API v1.3, needs `TIKTOK_EVENTS_TOKEN`). TikTok standard event names:
   opt-in = SubmitForm (browser + server, same event id), booked =
   Schedule, closed = Purchase, VSL page = ViewContent. `pixelEvent()` in
