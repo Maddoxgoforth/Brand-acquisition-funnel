@@ -26,6 +26,8 @@ import {
   type StatRange,
   type Stats,
   type StatusId,
+  type LeaderboardRow,
+  type TeamSummary,
 } from "./constants";
 
 type LeadRow = {
@@ -718,7 +720,11 @@ export async function recordSiteEvent(
   );
 }
 
-export async function getStats(access: Access, range: StatRange): Promise<Stats> {
+export async function getStats(
+  access: Access,
+  range: StatRange,
+  owner: boolean
+): Promise<Stats> {
   const days = STAT_RANGES.find((r) => r.id === range)!.days;
   const [{ since }] = await query<{ since: string | Date | null }>(
     days === null
@@ -753,8 +759,11 @@ export async function getStats(access: Access, range: StatRange): Promise<Stats>
          count(*) FILTER (WHERE status = 'closed')::int AS closed,
          count(first_contact_at)::int AS contacted,
          count(*) FILTER (WHERE first_contact_at - opt_at <= interval '5 minutes')::int AS within5,
-         avg(extract(epoch FROM first_contact_at - opt_at))::float AS avg_s,
-         percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM first_contact_at - opt_at))::float AS median_s
+         -- Leads called before their latest opt-in (kept in Closed / Do not
+         -- call) have no speed to lead for it.
+         avg(extract(epoch FROM first_contact_at - opt_at)) FILTER (WHERE first_contact_at >= opt_at)::float AS avg_s,
+         percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM first_contact_at - opt_at))
+           FILTER (WHERE first_contact_at >= opt_at)::float AS median_s
        FROM (SELECT *, coalesce(last_opt_in_at, created_at) AS opt_at FROM crm_leads) l
        WHERE source = ANY($3::text[])
          AND ($1::timestamptz IS NULL OR opt_at >= $1::timestamptz)
@@ -930,18 +939,20 @@ export async function getStats(access: Access, range: StatRange): Promise<Stats>
   const visible = SOURCE_IDS.filter((s) =>
     isOptInSource(s) ? access.applications : access.dial
   ) as string[];
+  // Activity per person (and, in the row with no actor_id, the whole team).
   const board = await query<{
-    actor_id: string;
-    name: string;
+    actor_id: string | null;
+    name: string | null;
     dials: number;
     leads_called: number;
     answered: number;
+    booked: number;
     closes: number;
   }>(
     `WITH ev AS (
        SELECT e.*, l.status AS lead_status FROM crm_events e
        JOIN crm_leads l ON l.id = e.lead_id
-       WHERE e.actor_id IS NOT NULL AND e.actor_id NOT IN ('website', 'webhook', 'manual')
+       WHERE e.type IN ('call', 'status') AND e.actor_id IS NOT NULL AND e.actor_id NOT IN ('website', 'webhook', 'manual')
          AND l.source = ANY($2::text[])
          AND ($1::timestamptz IS NULL OR e.created_at >= $1::timestamptz)
      )
@@ -949,20 +960,108 @@ export async function getStats(access: Access, range: StatRange): Promise<Stats>
        count(*) FILTER (WHERE type = 'call')::int AS dials,
        count(DISTINCT lead_id) FILTER (WHERE type = 'call')::int AS leads_called,
        count(DISTINCT lead_id) FILTER (WHERE type = 'call' AND lead_status = ANY($3::text[]))::int AS answered,
+       count(DISTINCT lead_id) FILTER (WHERE type = 'status' AND data->>'to' = 'appointment')::int AS booked,
        count(DISTINCT lead_id) FILTER (WHERE type = 'status' AND data->>'to' = 'closed')::int AS closes
-     FROM ev GROUP BY actor_id
-     ORDER BY closes DESC, dials DESC`,
+     FROM ev GROUP BY ROLLUP (actor_id)`,
     [sinceIso, visible, answeredIds]
   );
-  const leaderboard = board.map((r) => ({
-    actorId: r.actor_id,
-    name: r.name || "Unknown",
-    dials: r.dials,
-    leadsCalled: r.leads_called,
-    answered: r.answered,
-    closes: r.closes,
-    answerRate: r.leads_called > 0 ? r.answered / r.leads_called : null,
-  }));
+  const claims = await query<{ id: string; name: string | null; claimed: number; closed: number }>(
+    `SELECT claimed_by_id AS id, max(claimed_by_name) AS name, count(*)::int AS claimed,
+       count(*) FILTER (WHERE status = 'closed')::int AS closed
+     FROM crm_leads
+     WHERE claimed_by_id IS NOT NULL AND source = ANY($2::text[])
+       AND ($1::timestamptz IS NULL OR claimed_at >= $1::timestamptz)
+     GROUP BY claimed_by_id`,
+    [sinceIso, visible]
+  );
+  // Speed to lead per person: opt-ins in the range, credited to whoever made
+  // the first call or move after the (latest) opt-in.
+  const speed = access.applications
+    ? await query<{ id: string; avg_s: number; n: number }>(
+        `SELECT f.actor_id AS id, avg(extract(epoch FROM l.first_contact_at - l.opt_at))::float AS avg_s,
+           count(*)::int AS n
+         FROM (SELECT *, coalesce(last_opt_in_at, created_at) AS opt_at FROM crm_leads) l
+         JOIN LATERAL (
+           SELECT actor_id FROM crm_events e
+           WHERE e.lead_id = l.id AND e.type IN ('call', 'status') AND e.actor_id IS NOT NULL
+             AND e.actor_id NOT IN ('website', 'webhook', 'manual') AND e.created_at >= l.opt_at
+           ORDER BY e.created_at LIMIT 1
+         ) f ON true
+         WHERE l.source = ANY($2::text[]) AND l.first_contact_at >= l.opt_at
+           AND ($1::timestamptz IS NULL OR l.opt_at >= $1::timestamptz)
+         GROUP BY f.actor_id`,
+        [sinceIso, OPT_IN_SOURCES]
+      )
+    : [];
+  // Active team members show up even before their first dial.
+  const members = await query<{ id: string; name: string }>(
+    `SELECT id::text AS id, name FROM crm_users WHERE status = 'active'`
+  );
 
-  return { range, leaderboard, optIns, adFunnel, campaigns, dial };
+  const people = new Map<string, LeaderboardRow>();
+  const person = (id: string, name: string | null) => {
+    let row = people.get(id);
+    if (!row) {
+      row = {
+        actorId: id,
+        name: name || (id === "owner" ? "Owner" : "Unknown"),
+        dials: 0, leadsCalled: 0, answered: 0, answerRate: null,
+        booked: 0, closes: 0, claimed: 0, claimedClosed: 0, closeRate: null,
+        avgSpeedSeconds: null, speedLeads: 0,
+      };
+      people.set(id, row);
+    }
+    return row;
+  };
+  for (const m of members) person(m.id, m.name);
+  for (const r of board) {
+    if (r.actor_id === null) continue;
+    const row = person(r.actor_id, r.name);
+    Object.assign(row, {
+      dials: r.dials,
+      leadsCalled: r.leads_called,
+      answered: r.answered,
+      booked: r.booked,
+      closes: r.closes,
+    });
+  }
+  for (const c of claims) {
+    const row = person(c.id, c.name);
+    row.claimed = c.claimed;
+    row.claimedClosed = c.closed;
+  }
+  for (const r of speed) {
+    const row = people.get(r.id);
+    if (row) {
+      row.avgSpeedSeconds = r.avg_s;
+      row.speedLeads = r.n;
+    }
+  }
+  const leaderboard = [...people.values()]
+    .map((r) => ({
+      ...r,
+      answerRate: r.leadsCalled > 0 ? r.answered / r.leadsCalled : null,
+      closeRate: r.claimed > 0 ? r.claimedClosed / r.claimed : null,
+    }))
+    .sort((a, b) => b.closes - a.closes || b.booked - a.booked || b.dials - a.dials);
+
+  const all = board.find((r) => r.actor_id === null);
+  const t = optIns?.total;
+  const team: TeamSummary = {
+    optIns: t ? t.total : null,
+    dials: all?.dials ?? 0,
+    leadsCalled: all?.leads_called ?? 0,
+    answered: all?.answered ?? 0,
+    answerRate: all && all.leads_called > 0 ? all.answered / all.leads_called : null,
+    booked: all?.booked ?? 0,
+    closes: all?.closes ?? 0,
+    bookRate: all && all.answered > 0 ? all.booked / all.answered : null,
+    closeRate: all && all.booked > 0 ? all.closes / all.booked : null,
+    avgFirstContactSeconds: t?.avgFirstContactSeconds ?? null,
+    within5Rate: t && t.total > 0 ? t.within5 / t.total : null,
+    waiting: t ? t.waiting : null,
+  };
+
+  if (!owner) return { range, team, leaderboard, optIns: null, adFunnel: null, campaigns: null, dial: null };
+  return { range, team, leaderboard, optIns, adFunnel, campaigns, dial };
 }

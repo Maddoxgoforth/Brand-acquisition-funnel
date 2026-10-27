@@ -163,8 +163,35 @@ export type LeaderboardRow = {
   dials: number;
   leadsCalled: number;
   answered: number;
-  closes: number;
   answerRate: number | null;
+  // Leads they moved to Appointment scheduled / Closed during the range.
+  booked: number;
+  closes: number;
+  // Leads they claimed during the range, how many of those are closed now,
+  // and closed ÷ claimed.
+  claimed: number;
+  claimedClosed: number;
+  closeRate: number | null;
+  // Speed to lead: average time from opt-in to their first call, over the
+  // opt-ins (during the range) they were first to reach. null = none yet.
+  avgSpeedSeconds: number | null;
+  speedLeads: number;
+};
+
+// Whole-team numbers for the range, shown to everyone on the Dashboard.
+export type TeamSummary = {
+  optIns: number | null; // null when this person can't see the opt-ins
+  dials: number;
+  leadsCalled: number;
+  answered: number;
+  answerRate: number | null; // picked up ÷ leads called
+  booked: number;
+  closes: number;
+  bookRate: number | null; // booked ÷ leads that picked up
+  closeRate: number | null; // closes ÷ booked
+  avgFirstContactSeconds: number | null;
+  within5Rate: number | null;
+  waiting: number | null; // opt-ins in the range nobody has called yet
 };
 
 // Time frames the dashboard can switch between.
@@ -227,9 +254,11 @@ export type CampaignRow = {
 
 export type Stats = {
   range: StatRange;
+  team: TeamSummary;
   // Calls and closes per team member during the range (lists this viewer
   // can see only).
   leaderboard: LeaderboardRow[];
+  // Everything below is the owner's Analytics tab (null for team members).
   // Free course opt-ins, organic and ads side by side: the opt-ins that came
   // in during the range and what has happened to them since. null when this
   // person can't see the opt-ins.

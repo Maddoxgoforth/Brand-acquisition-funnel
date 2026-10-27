@@ -23,14 +23,20 @@ import AddLeadsDialog from "./AddLeadsDialog";
 import AppointmentDialog from "./AppointmentDialog";
 import Board from "./Board";
 import CallBar from "./CallBar";
+import Analytics from "./Analytics";
 import Dashboard from "./Dashboard";
+import Leaderboard from "./Leaderboard";
 import LeadDrawer, { type LeadPatch } from "./LeadDrawer";
 import Team from "./Team";
 import { crmFetch } from "./api";
 import { armChime, playChime, soundSetting } from "./chime";
 import { useDialer } from "./useDialer";
 
-type View = "dashboard" | "team" | SourceId;
+// Screens that load their own data (everything except the lead boards).
+const PAGES = ["dashboard", "leaderboard", "analytics", "team"] as const;
+type Page = (typeof PAGES)[number];
+type View = Page | SourceId;
+const isPage = (view: View): view is Page => (PAGES as readonly string[]).includes(view);
 type LeadCache = Partial<Record<SourceId, Lead[]>>;
 
 const DIAL_LISTS = SOURCES.filter((s) => s.group === "dial");
@@ -84,7 +90,7 @@ export default function CrmApp({
   );
   const viewRef = useRef<View>("dashboard");
 
-  const source = view === "dashboard" || view === "team" ? null : view;
+  const source = isPage(view) ? null : view;
   const leads = source ? cache[source] : undefined;
   const selected = leads?.find((l) => l.id === selectedId) ?? null;
 
@@ -101,9 +107,7 @@ export default function CrmApp({
 
   useEffect(() => {
     let cancelled = false;
-    if (view === "team" || view === "dashboard") {
-      // These screens load their own data.
-    } else {
+    if (!isPage(view)) {
       const load = () =>
         crmFetch<{ leads: Lead[] }>(`/api/crm/leads?source=${view}`);
       load()
@@ -127,7 +131,7 @@ export default function CrmApp({
   // Reload the open list every 20 seconds so claims, calls and moves made by
   // teammates show up without a refresh.
   useEffect(() => {
-    if (view === "team" || view === "dashboard") return;
+    if (isPage(view)) return;
     let stopped = false;
     const timer = setInterval(async () => {
       if (document.hidden) return;
@@ -198,7 +202,7 @@ export default function CrmApp({
           }
           return next;
         });
-        if (viewRef.current === "dashboard") {
+        if (viewRef.current === "dashboard" || viewRef.current === "analytics") {
           setStatsKey((k) => k + 1);
         }
         if (soundSetting.isOn()) playChime();
@@ -373,6 +377,9 @@ export default function CrmApp({
           <button type="button" className={tab(view === "dashboard")} onClick={() => go("dashboard")}>
             Dashboard
           </button>
+          <button type="button" className={tab(view === "leaderboard")} onClick={() => go("leaderboard")}>
+            🏆 Leaderboard
+          </button>
           {user.access.applications
             ? OPT_IN_SOURCES.map((src) => (
                 <button key={src} type="button" className={tab(view === src)} onClick={() => go(src)}>
@@ -392,6 +399,11 @@ export default function CrmApp({
               onClick={() => !inDialGroup && go(DIAL_LISTS[0].id)}
             >
               Leads to dial
+            </button>
+          ) : null}
+          {user.role === "owner" ? (
+            <button type="button" className={tab(view === "analytics")} onClick={() => go("analytics")}>
+              Analytics
             </button>
           ) : null}
           {user.role === "owner" ? (
@@ -435,7 +447,15 @@ export default function CrmApp({
         </main>
       ) : view === "dashboard" ? (
         <main className="flex-1 overflow-y-auto bg-background-elevated/40">
-          <Dashboard refreshKey={statsKey} onError={report} />
+          <Dashboard me={user.id} refreshKey={statsKey} onError={report} />
+        </main>
+      ) : view === "leaderboard" ? (
+        <main className="flex-1 overflow-y-auto bg-background-elevated/40">
+          <Leaderboard me={user.id} onError={report} />
+        </main>
+      ) : view === "analytics" && user.role === "owner" ? (
+        <main className="flex-1 overflow-y-auto bg-background-elevated/40">
+          <Analytics refreshKey={statsKey} onError={report} />
         </main>
       ) : (
         <main className="flex min-h-0 flex-1 flex-col">

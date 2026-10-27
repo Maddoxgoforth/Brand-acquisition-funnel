@@ -42,6 +42,15 @@ const SCHEMA = [
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS claimed_by_id text`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS claimed_by_name text`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS claimed_at timestamptz`,
+  // Leads worked before claiming existed go to whoever called them first
+  // (skipping any lead with claim history, so a release stays released).
+  `UPDATE crm_leads l
+   SET claimed_by_id = c.actor_id, claimed_by_name = c.actor_name, claimed_at = c.created_at
+   FROM (SELECT DISTINCT ON (lead_id) lead_id, actor_id, actor_name, created_at
+         FROM crm_events WHERE type = 'call' AND actor_id IS NOT NULL
+         ORDER BY lead_id, created_at) c
+   WHERE l.id = c.lead_id AND l.claimed_by_id IS NULL
+     AND NOT EXISTS (SELECT 1 FROM crm_events x WHERE x.lead_id = l.id AND x.type = 'claim')`,
   `UPDATE crm_leads l SET first_contact_at = e.first
    FROM (SELECT lead_id, min(created_at) AS first FROM crm_events
          WHERE type IN ('call', 'status') GROUP BY lead_id) e

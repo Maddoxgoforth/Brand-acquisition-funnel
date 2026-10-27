@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   return crmRoute(request, async (session) => {
     const range = new URL(request.url).searchParams.get("range");
     return Response.json(
-      await getStats(session.access, isStatRange(range) ? range : "30d")
+      await getStats(session.access, isStatRange(range) ? range : "30d", session.role === "owner")
     );
   });
 }
