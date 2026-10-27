@@ -148,7 +148,7 @@ async function sha256Hex(value: string) {
 
 // TikTok advanced matching: tells the pixel who just opted in (email and phone
 // hashed with SHA-256 in the browser, as TikTok requires), before the
-// SubmitForm event, so TikTok can match the sign-up to the ad they saw.
+// opt-in (Lead) event, so TikTok can match the sign-up to the ad they saw.
 export async function identifyForAds(email: string, phone: string) {
   if (typeof window === "undefined" || !window.ttq || !crypto?.subtle) return;
   try {
