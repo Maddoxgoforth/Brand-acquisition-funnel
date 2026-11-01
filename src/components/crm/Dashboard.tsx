@@ -154,6 +154,13 @@ export default function Dashboard({
             detail={`${t.closes.total} closes from ${t.talked} leads you talked to · ${t.closesDirect} without a booked call`}
           />
           {t.optIns !== null ? (
+            <StatCard
+              label="Opt-in to close rate"
+              value={percent(t.optInCloseRate)}
+              detail={`${t.optInClosed ?? 0} closed of ${t.optIns} opt-ins from ${inRange}`}
+            />
+          ) : null}
+          {t.optIns !== null ? (
             <>
               <StatCard
                 label="Avg speed to lead"

@@ -1283,6 +1283,8 @@ export async function getStats(
     closeRate: closes.total > 0 || (all?.talked ?? 0) > 0
       ? closes.total / Math.max(all?.talked ?? 0, closes.total)
       : null,
+    optInClosed: t ? t.closed : null,
+    optInCloseRate: t && t.total > 0 ? t.closed / t.total : null,
     closesFromBooked: totalClose?.from_booked ?? 0,
     closesDirect: closes.total - (totalClose?.from_booked ?? 0),
     bookedCloseRate: happened > 0 ? Math.min(1, (totalClose?.from_booked ?? 0) / happened) : null,

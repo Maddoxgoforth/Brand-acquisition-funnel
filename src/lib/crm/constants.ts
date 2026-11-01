@@ -242,6 +242,10 @@ export type TeamSummary = {
   // a picked-up column). Close rate = closes ÷ these.
   talked: number;
   closeRate: number | null;
+  // Opt-ins that came in during the range and are now closed, and that as a
+  // share of those opt-ins. null when this person can't see the opt-ins.
+  optInClosed: number | null;
+  optInCloseRate: number | null;
   // Closes that had a booked call first, and those closed without one
   // (e.g. on the first call). Booked close rate = fromBooked ÷ booked
   // calls that already happened.
