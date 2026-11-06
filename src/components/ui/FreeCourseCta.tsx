@@ -13,19 +13,28 @@ import {
   visitorId,
 } from "@/lib/tracking";
 
-// Countries people can opt in from. UK numbers are often typed with the
-// leading 0 ("07700 900123"), which is dropped once +44 is in front.
+// Countries people can opt in from. UK, AU and NZ numbers are often typed
+// with a leading 0 ("07700 900123"), which is dropped once the code is in front.
 const COUNTRIES = [
   { id: "US", flag: "🇺🇸", code: "1", placeholder: "(201) 555-0123" },
   { id: "CA", flag: "🇨🇦", code: "1", placeholder: "(416) 555-0123" },
   { id: "UK", flag: "🇬🇧", code: "44", placeholder: "07700 900123" },
+  { id: "AU", flag: "🇦🇺", code: "61", placeholder: "0412 345 678" },
+  { id: "NZ", flag: "🇳🇿", code: "64", placeholder: "021 123 4567" },
 ] as const;
 
 // Full international number, e.g. "+44 7700900123", so the CRM can dial it.
 function withCountryCode(countryId: string, raw: string) {
   const country = COUNTRIES.find((c) => c.id === countryId) ?? COUNTRIES[0];
-  let digits = raw.replace(/\D/g, "");
-  if (digits.startsWith(country.code) && digits.length > 10) digits = digits.slice(country.code.length);
+  const typed = raw.trim();
+  let digits = typed.replace(/\D/g, "");
+  // They typed the country code themselves: "+61 412…", "0061 412…" or "1 201…".
+  if (typed.startsWith("+") || typed.startsWith("00")) {
+    digits = digits.replace(/^0+/, "");
+    if (digits.startsWith(country.code)) digits = digits.slice(country.code.length);
+  } else if (country.code === "1" && digits.length === 11 && digits.startsWith("1")) {
+    digits = digits.slice(1);
+  }
   digits = digits.replace(/^0+/, "");
   return `+${country.code} ${digits}`;
 }
