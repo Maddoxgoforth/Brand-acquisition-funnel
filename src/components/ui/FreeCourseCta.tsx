@@ -13,6 +13,23 @@ import {
   visitorId,
 } from "@/lib/tracking";
 
+// Countries people can opt in from. UK numbers are often typed with the
+// leading 0 ("07700 900123"), which is dropped once +44 is in front.
+const COUNTRIES = [
+  { id: "US", flag: "🇺🇸", code: "1", placeholder: "(201) 555-0123" },
+  { id: "CA", flag: "🇨🇦", code: "1", placeholder: "(416) 555-0123" },
+  { id: "UK", flag: "🇬🇧", code: "44", placeholder: "07700 900123" },
+] as const;
+
+// Full international number, e.g. "+44 7700900123", so the CRM can dial it.
+function withCountryCode(countryId: string, raw: string) {
+  const country = COUNTRIES.find((c) => c.id === countryId) ?? COUNTRIES[0];
+  let digits = raw.replace(/\D/g, "");
+  if (digits.startsWith(country.code) && digits.length > 10) digits = digits.slice(country.code.length);
+  digits = digits.replace(/^0+/, "");
+  return `+${country.code} ${digits}`;
+}
+
 // `funnel` decides which CRM tab the lead lands in: "organic" (the main free
 // course page) or "ads" (the /free-training quiz funnel). `answers` (the quiz)
 // are saved on the lead. `locked` greys the button out until the VSL unlocks it.
@@ -39,11 +56,14 @@ export default function FreeCourseCta({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState<string>("US");
+  const countryInfo = COUNTRIES.find((c) => c.id === country) ?? COUNTRIES[0];
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setStatus("submitting");
     const eventId = newEventId();
+    const fullPhone = withCountryCode(country, phone);
 
     try {
       const res = await fetch("/api/free-course-lead", {
@@ -52,7 +72,7 @@ export default function FreeCourseCta({
         body: JSON.stringify({
           name,
           email,
-          phone,
+          phone: fullPhone,
           funnel,
           answers: getAnswers ? getAnswers() : answers,
           attribution: attribution(),
@@ -63,7 +83,7 @@ export default function FreeCourseCta({
 
       if (!res.ok) throw new Error("Request failed");
       // Same event id as the server's Conversions API event: Meta keeps one.
-      await identifyForAds(email, phone);
+      await identifyForAds(email, fullPhone);
       pixelEvent("Lead", { content_name: funnel === "ads" ? "free_course_ad_funnel" : "free_course" }, eventId);
       setStatus("success");
       router.push("/free-course/confirmation");
@@ -133,15 +153,24 @@ export default function FreeCourseCta({
                   className="rounded-xl border border-border bg-background-elevated px-4 py-3 text-foreground placeholder:text-muted"
                 />
                 <div className="flex gap-2">
-                  <span className="flex items-center rounded-xl border border-border bg-background-elevated px-3 text-muted">
-                    +1
-                  </span>
+                  <select
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    aria-label="Country code"
+                    className="rounded-xl border border-border bg-background-elevated px-2 text-foreground"
+                  >
+                    {COUNTRIES.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.flag} +{c.code}
+                      </option>
+                    ))}
+                  </select>
                   <input
                     required
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="(201) 555-0123"
+                    placeholder={countryInfo.placeholder}
                     className="w-full rounded-xl border border-border bg-background-elevated px-4 py-3 text-foreground placeholder:text-muted"
                   />
                 </div>
