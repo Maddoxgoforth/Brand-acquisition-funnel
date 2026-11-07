@@ -86,7 +86,7 @@ export default function VslGate() {
 
       <div className="mt-5 w-full max-w-[340px]">
         {AD_VSL_MEDIA_ID ? (
-          <WistiaEmbed mediaId={AD_VSL_MEDIA_ID} aspect={9 / 16} scrubbingDisabled />
+          <WistiaEmbed mediaId={AD_VSL_MEDIA_ID} aspect={9 / 16} scrubbingDisabled fastProgress />
         ) : (
           <EmbedPlaceholder aspect="vertical" label="Video coming soon" />
         )}

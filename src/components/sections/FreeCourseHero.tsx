@@ -35,6 +35,7 @@ export default function FreeCourseHero() {
             mediaId="mmgcz1a9lr"
             aspect={0.5625}
             scrubbingDisabled
+            fastProgress
           />
         </div>
 
