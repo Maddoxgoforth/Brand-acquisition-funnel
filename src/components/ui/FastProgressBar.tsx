@@ -5,8 +5,8 @@ import { useEffect, useRef } from "react";
 type PlayerElement = HTMLElement & { currentTime?: number; duration?: number };
 
 // Shown progress for real progress p (0–1). Runs fast early and slows later,
-// so the video feels shorter: 50% shown at ~29% watched, 75% at half way.
-const shown = (p: number) => 1 - (1 - p) ** 2;
+// so the video feels shorter: 50% shown at ~21% watched, 88% at half way.
+const shown = (p: number) => 1 - (1 - p) ** 3;
 
 /** Progress bar along the bottom of a Wistia video that moves fast at the start and slows down. */
 export default function FastProgressBar({ mediaId }: { mediaId: string }) {
@@ -29,7 +29,7 @@ export default function FastProgressBar({ mediaId }: { mediaId: string }) {
   }, [mediaId]);
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-1.5 bg-black/40">
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-3 bg-black/40">
       <div
         ref={fill}
         className="h-full origin-left bg-accent"
