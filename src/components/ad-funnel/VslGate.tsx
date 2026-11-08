@@ -8,13 +8,12 @@ import WistiaEmbed from "@/components/ui/WistiaEmbed";
 import { pixelCustom, pixelEvent, trackStep } from "@/lib/tracking";
 import { ANSWERS_KEY, answersForCrm, type Answers } from "./quiz";
 
-// The ad funnel's video (vertical). Put the Wistia media id here once the
-// VSL is uploaded. While it's empty the page shows a placeholder and the
-// opt-in button is unlocked straight away, so the funnel still works.
-export const AD_VSL_MEDIA_ID = "";
+// The ad funnel's video (vertical, Wistia). If this is ever emptied the page
+// shows a placeholder and the opt-in button is unlocked straight away.
+export const AD_VSL_MEDIA_ID = "acxh5jjbxz";
 
-// The opt-in button unlocks this many seconds before the video ends.
-const UNLOCK_BEFORE_END = 30;
+// The opt-in button unlocks after this many seconds of the VSL (8:56).
+const UNLOCK_AT = 8 * 60 + 56;
 const UNLOCKED_KEY = "ba_vsl_unlocked";
 
 // The quiz answers saved by /free-training, as CRM-readable text.
@@ -50,7 +49,7 @@ export default function VslGate() {
   }, []);
 
   // Count only time actually watched (seeking ahead doesn't count), then
-  // unlock once they're UNLOCK_BEFORE_END seconds from the end.
+  // unlock once they've watched UNLOCK_AT seconds (capped at the video length).
   useEffect(() => {
     if (!AD_VSL_MEDIA_ID || unlocked) return;
     let last: number | null = null;
@@ -61,7 +60,7 @@ export default function VslGate() {
       if (typeof t !== "number" || typeof d !== "number" || !d) return;
       if (last !== null && t > last && t - last < 1.5) watched.current += t - last;
       last = t;
-      const target = Math.max(0, d - UNLOCK_BEFORE_END);
+      const target = Math.min(UNLOCK_AT, d);
       setRemaining(Math.max(0, Math.ceil(target - watched.current)));
       if (watched.current >= target) {
         setUnlocked(true);
@@ -81,7 +80,7 @@ export default function VslGate() {
         Watch This Short Video To <span className="text-accent">Unlock Your Free Course</span>
       </h1>
       <p className="mt-3 rounded-full bg-background-elevated px-4 py-2 text-center text-sm font-semibold">
-        👀 Keep watching. Your access button unlocks near the end of the video.
+        👀 Keep watching. Your access button unlocks later in the video.
       </p>
 
       <div className="mt-5 w-full max-w-[340px]">
