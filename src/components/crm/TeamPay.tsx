@@ -171,6 +171,58 @@ const KIND = {
   payout: { label: "Paid out", style: "bg-emerald-50 text-emerald-800" },
 } as const;
 
+// Type the exact amount someone is owed; the CRM saves the difference as an
+// adjustment (so it shows in their lines and can be removed), after a confirm.
+function SetOwed({ member, onPost }: { member: PayMemberRow; onPost: (body: Record<string, unknown>) => Promise<boolean> }) {
+  const [value, setValue] = useState("");
+  const [note, setNote] = useState("");
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    const target = Number(value);
+    if (!Number.isInteger(target)) return;
+    const diff = target - member.owed;
+    if (diff === 0) return;
+    const ok = window.confirm(
+      `Change what ${member.name} is owed?\n\nFrom: ${money(member.owed)}\nTo: ${money(target)}\n\n` +
+        `This adds a ${diff > 0 ? "+" : "−"}${money(Math.abs(diff))} adjustment. You can remove it later from their commission lines.`
+    );
+    if (!ok) return;
+    const done = await onPost({
+      action: "entry",
+      userId: member.userId,
+      kind: "adjustment",
+      amount: diff,
+      note: note.trim() || `Manual edit: owed ${money(member.owed)} → ${money(target)}`,
+      at: null,
+    });
+    if (done) {
+      setValue("");
+      setNote("");
+    }
+  }
+
+  return (
+    <form onSubmit={save} className="rounded-xl border border-border bg-background p-4">
+      <p className="font-extrabold">
+        Owed now: <span className="tabular-nums">{money(member.owed)}</span>
+      </p>
+      <p className="text-xs text-muted">Type the exact amount they should be owed. You&apos;ll be asked to confirm before it saves.</p>
+      <div className="mt-2 flex flex-wrap items-end gap-2">
+        <input className={`${input} w-32`} type="number" step={1} placeholder="New amount $" value={value} onChange={(e) => setValue(e.target.value)} required />
+        <input className={`${input} min-w-40 flex-1`} placeholder="Reason (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+        <button
+          type="submit"
+          disabled={value === "" || Number(value) === member.owed}
+          className="rounded-full bg-accent px-4 py-2 text-sm font-bold text-white hover:bg-accent-dim disabled:opacity-40"
+        >
+          Change
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function Lines({
   member,
   lines,
@@ -187,6 +239,12 @@ function Lines({
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
+    const n = Number(amount);
+    const what =
+      kind === "payout"
+        ? `Record that you paid ${member.name} ${money(n)}?`
+        : `${n < 0 ? "Take" : "Add"} ${money(Math.abs(n))} ${n < 0 ? "off" : "to"} ${member.name}'s commission?`;
+    if (!window.confirm(`${what}\n\nOwed now: ${money(member.owed)} → ${money(member.owed + (kind === "payout" ? -n : n))}`)) return;
     const ok = await onPost({
       action: "entry",
       userId: member.userId,
@@ -203,7 +261,8 @@ function Lines({
 
   return (
     <div>
-      <p className="font-extrabold">Commission lines</p>
+      <SetOwed member={member} onPost={onPost} />
+      <p className="mt-5 font-extrabold">Commission lines</p>
       {lines.length === 0 ? (
         <p className="mt-2 text-sm text-muted">No commission in this time frame.</p>
       ) : (

@@ -49,6 +49,10 @@ function CommissionRate({
   const first = !rate || (rate.monthly === 0 && rate.yearly === 0);
 
   async function save() {
+    const was = `$${rate?.monthly ?? 0} monthly / $${rate?.yearly ?? 0} yearly`;
+    const now = `$${Number(monthly)} monthly / $${Number(yearly)} yearly`;
+    const which = first || past ? "all of their closes, including past ones" : "their closes from now on";
+    if (!window.confirm(`Change ${member.name}'s commission?\n\nFrom: ${was}\nTo: ${now}\n\nThis counts for ${which}.`)) return;
     try {
       await crmFetch("/api/crm/pay", {
         method: "POST",
