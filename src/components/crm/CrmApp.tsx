@@ -29,12 +29,13 @@ import Dashboard from "./Dashboard";
 import Leaderboard from "./Leaderboard";
 import LeadDrawer, { type LeadPatch } from "./LeadDrawer";
 import Team from "./Team";
+import TeamPay from "./TeamPay";
 import { crmFetch } from "./api";
 import { armChime, playChime, soundSetting } from "./chime";
 import { useDialer } from "./useDialer";
 
 // Screens that load their own data (everything except the lead boards).
-const PAGES = ["dashboard", "leaderboard", "analytics", "team"] as const;
+const PAGES = ["dashboard", "leaderboard", "analytics", "pay", "team"] as const;
 type Page = (typeof PAGES)[number];
 type View = Page | SourceId;
 const isPage = (view: View): view is Page => (PAGES as readonly string[]).includes(view);
@@ -421,6 +422,11 @@ export default function CrmApp({
             </button>
           ) : null}
           {user.role === "owner" ? (
+            <button type="button" className={tab(view === "pay")} onClick={() => go("pay")}>
+              💰 Team stats
+            </button>
+          ) : null}
+          {user.role === "owner" ? (
             <button type="button" className={tab(view === "team")} onClick={() => go("team")}>
               Team
               {pendingAccounts > 0 ? (
@@ -466,6 +472,10 @@ export default function CrmApp({
       ) : view === "leaderboard" ? (
         <main className="flex-1 overflow-y-auto bg-background-elevated/40">
           <Leaderboard me={user.id} onError={report} />
+        </main>
+      ) : view === "pay" && user.role === "owner" ? (
+        <main className="flex-1 overflow-y-auto bg-background-elevated/40">
+          <TeamPay onError={report} />
         </main>
       ) : view === "analytics" && user.role === "owner" ? (
         <main className="flex-1 overflow-y-auto bg-background-elevated/40">

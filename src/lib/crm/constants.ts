@@ -517,3 +517,108 @@ export function classifyField(header: string): ContactField | null {
   if (/^(full )?name$|\bfull name\b|\byour name\b/.test(key)) return "name";
   return null;
 }
+
+// ---------------------------------------------------------------------------
+// Commissions, bounties and bonuses (owner sets them; see lib/crm/pay.ts).
+
+// Which closes a bounty or bonus rule counts.
+export const PAY_PLANS = [
+  { id: "yearly", label: "Yearly" },
+  { id: "monthly", label: "Monthly" },
+  { id: "any", label: "Any plan" },
+] as const;
+export type PayPlan = (typeof PAY_PLANS)[number]["id"];
+export const isPayPlan = (v: unknown): v is PayPlan => PAY_PLANS.some((p) => p.id === v);
+// "yearly close" / "monthly close" / "close"
+export const payPlanNoun = (plan: PayPlan) => (plan === "any" ? "close" : `${plan} close`);
+
+// replace = each counted close pays the bounty amount instead of the normal
+// commission; extra = the bounty amount is paid on top of it.
+export type BountyMode = "replace" | "extra";
+
+// What everyone on the team sees about a bounty.
+export type Bounty = {
+  id: string;
+  title: string;
+  description: string;
+  plan: PayPlan;
+  target: number;
+  amount: number;
+  mode: BountyMode;
+  startsAt: string;
+  endsAt: string | null; // optional deadline
+  endedAt: string | null; // ended early by the owner
+  createdAt: string;
+  // live | done (all spots filled) | ended (deadline passed or ended early)
+  state: "live" | "done" | "ended";
+  // Closes that took a spot, in order.
+  claims: { name: string; closedAt: string }[];
+};
+
+export type BonusRule = {
+  id: string;
+  name: string;
+  plan: PayPlan;
+  everyN: number;
+  amount: number;
+  startsAt: string;
+  endedAt: string | null;
+};
+
+export type CommissionRate = { monthly: number; yearly: number };
+
+// One line of what a team member earned (or was paid).
+export type PayLine = {
+  kind: "close" | "bounty" | "bonus" | "adjustment" | "payout";
+  userId: string;
+  amount: number;
+  at: string;
+  label: string;
+  leadId: string | null;
+  entryId: string | null; // manual lines: so the owner can remove them
+};
+
+export type PayMemberRow = {
+  userId: string;
+  name: string;
+  status: string;
+  rate: CommissionRate;
+  // Activity in the range (from the lead history).
+  dials: number;
+  leadsCalled: number;
+  statusChanges: number;
+  booked: number;
+  claimed: number;
+  lastActiveAt: string | null;
+  // Closes in the range that are still Closed.
+  monthly: number;
+  yearly: number;
+  // Earnings in the range.
+  base: number;
+  bounty: number;
+  bonus: number;
+  adjustments: number;
+  earned: number;
+  paidInRange: number;
+  // All time: everything earned minus everything paid out.
+  owed: number;
+};
+
+export type PayReport = {
+  from: string | null;
+  to: string;
+  members: PayMemberRow[];
+  lines: PayLine[];
+  rules: BonusRule[];
+  totals: { earned: number; paid: number; owed: number };
+};
+
+export type ActivityItem = {
+  id: number;
+  type: string;
+  data: Record<string, string>;
+  leadId: string;
+  leadName: string;
+  source: SourceId;
+  createdAt: string;
+};

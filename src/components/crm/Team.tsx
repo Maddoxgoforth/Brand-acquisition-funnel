@@ -26,6 +26,79 @@ const STATUS_STYLE: Record<Member["status"], string> = {
   disabled: "bg-slate-200 text-slate-700",
 };
 
+type Rate = { monthly: number; yearly: number };
+
+// Commission per close for one person. A new rate counts from now on unless
+// "apply to past closes too" is ticked.
+function CommissionRate({
+  member,
+  rate,
+  onSaved,
+  onError,
+}: {
+  member: Member;
+  rate: Rate | undefined;
+  onSaved: () => void;
+  onError: (error: unknown) => void;
+}) {
+  const [monthly, setMonthly] = useState(String(rate?.monthly ?? 0));
+  const [yearly, setYearly] = useState(String(rate?.yearly ?? 0));
+  const [past, setPast] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const changed = Number(monthly) !== (rate?.monthly ?? 0) || Number(yearly) !== (rate?.yearly ?? 0);
+  const first = !rate || (rate.monthly === 0 && rate.yearly === 0);
+
+  async function save() {
+    try {
+      await crmFetch("/api/crm/pay", {
+        method: "POST",
+        body: { action: "rate", userId: member.id, monthly: Number(monthly), yearly: Number(yearly), applyToPast: past },
+      });
+      setSaved(true);
+      setPast(false);
+      onSaved();
+    } catch (e) {
+      onError(e);
+    }
+  }
+
+  const box = "w-20 rounded-lg border border-border bg-background px-2 py-1 text-sm tabular-nums";
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+      <span className="font-semibold">Commission per close:</span>
+      <label className="flex items-center gap-1">
+        Monthly $
+        <input className={box} type="number" min={0} value={monthly} onChange={(e) => { setMonthly(e.target.value); setSaved(false); }} />
+      </label>
+      <label className="flex items-center gap-1">
+        Yearly $
+        <input className={box} type="number" min={0} value={yearly} onChange={(e) => { setYearly(e.target.value); setSaved(false); }} />
+      </label>
+      {changed ? (
+        <>
+          {!first ? (
+            <label className="flex items-center gap-1 text-xs text-muted">
+              <input type="checkbox" checked={past} onChange={(e) => setPast(e.target.checked)} />
+              Also apply to their past closes
+            </label>
+          ) : null}
+          <button type="button" onClick={save} className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-white hover:bg-accent-dim">
+            Save
+          </button>
+        </>
+      ) : saved ? (
+        <span className="text-xs font-bold text-emerald-700">Saved</span>
+      ) : null}
+      <span className="w-full text-xs text-muted">
+        {first
+          ? "The first rate you set also counts for closes they already made."
+          : "A new rate counts for closes from now on, unless you tick the box."}{" "}
+        Only you see this.
+      </span>
+    </div>
+  );
+}
+
 const button =
   "rounded-full border border-border px-3 py-1.5 text-sm font-bold hover:border-accent disabled:opacity-40";
 
@@ -40,6 +113,18 @@ export default function Team({
 }) {
   const [team, setTeam] = useState<Member[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [rates, setRates] = useState<Record<string, Rate> | null>(null);
+  const [ratesKey, setRatesKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    crmFetch<{ members: { userId: string; rate: Rate }[] }>("/api/crm/pay")
+      .then((d) => !cancelled && setRates(Object.fromEntries(d.members.map((m) => [m.userId, m.rate]))))
+      .catch((e) => !cancelled && onError(e));
+    return () => {
+      cancelled = true;
+    };
+  }, [ratesKey, onError]);
 
   useEffect(() => {
     let cancelled = false;
@@ -156,6 +241,15 @@ export default function Team({
                     Leads to dial
                   </label>
                 </div>
+                {member.status !== "pending" && rates ? (
+                  <CommissionRate
+                    key={`${member.id}-${rates[member.id]?.monthly ?? 0}-${rates[member.id]?.yearly ?? 0}`}
+                    member={member}
+                    rate={rates[member.id]}
+                    onSaved={() => setRatesKey((k) => k + 1)}
+                    onError={onError}
+                  />
+                ) : null}
                 {!member.access.applications && !member.access.dial ? (
                   <p className="mt-1 text-xs text-danger">
                     With both unticked they can sign in but won&apos;t see any leads.

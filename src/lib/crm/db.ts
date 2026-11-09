@@ -117,6 +117,58 @@ const SCHEMA = [
   // Which parts of the CRM this person can see (set by the owner).
   `ALTER TABLE crm_users ADD COLUMN IF NOT EXISTS can_applications boolean NOT NULL DEFAULT true`,
   `ALTER TABLE crm_users ADD COLUMN IF NOT EXISTS can_dial boolean NOT NULL DEFAULT true`,
+  // Commission rates per team member, kept as a history so a new rate only
+  // changes closes from then on. effective_from NULL = applies to every
+  // close before the next rate (used for the first rate and "apply to past
+  // closes too"). See pay.ts.
+  `CREATE TABLE IF NOT EXISTS crm_commission_rates (
+    id bigserial PRIMARY KEY,
+    user_id text NOT NULL,
+    monthly integer NOT NULL DEFAULT 0,
+    yearly integer NOT NULL DEFAULT 0,
+    effective_from timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS crm_commission_rates_user_idx ON crm_commission_rates (user_id)`,
+  // Bounties the owner posts for the team: the next `target` closes (of a
+  // plan) by team members pay `amount` commission each, instead of
+  // (mode 'replace') or on top of (mode 'extra') the normal rate.
+  `CREATE TABLE IF NOT EXISTS crm_bounties (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    title text NOT NULL,
+    description text NOT NULL DEFAULT '',
+    plan text NOT NULL DEFAULT 'yearly',
+    target integer NOT NULL,
+    amount integer NOT NULL,
+    mode text NOT NULL DEFAULT 'replace',
+    starts_at timestamptz NOT NULL DEFAULT now(),
+    ends_at timestamptz,
+    ended_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  // Bonus rules: every `every_n` closes (of a plan) a team member makes
+  // while the rule is on pays an extra `amount`.
+  `CREATE TABLE IF NOT EXISTS crm_bonus_rules (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    name text NOT NULL,
+    plan text NOT NULL DEFAULT 'yearly',
+    every_n integer NOT NULL,
+    amount integer NOT NULL,
+    starts_at timestamptz NOT NULL DEFAULT now(),
+    ended_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  // Manual commission lines (adjustments, + or -) and payouts the owner has
+  // sent, per team member.
+  `CREATE TABLE IF NOT EXISTS crm_pay_entries (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id text NOT NULL,
+    kind text NOT NULL,
+    amount integer NOT NULL,
+    note text NOT NULL DEFAULT '',
+    at timestamptz NOT NULL DEFAULT now(),
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
 ];
 
 export class CrmDbNotConfiguredError extends Error {

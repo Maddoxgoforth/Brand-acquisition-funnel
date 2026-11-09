@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { formatDuration, type LeaderboardRow, type StatRange } from "@/lib/crm/constants";
+import Bounties from "./Bounties";
 import { RangePicker, percent, rangeText, useStats } from "./statsUi";
 
 // What the leaderboard can be ranked by. Speed to lead ranks lowest first.
@@ -184,6 +185,8 @@ export default function Leaderboard({
           </div>
         )}
       </section>
+
+      <Bounties owner={me === "owner"} onError={onError} />
 
       {rows.length > 0 ? (
         <section className="overflow-x-auto rounded-2xl border border-border bg-background">

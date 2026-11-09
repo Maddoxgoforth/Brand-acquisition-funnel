@@ -563,6 +563,33 @@ linked from any public page and is `noindex`.
   the Twilio number as caller ID. Leads marked Do not call can't be dialed
   (blocked in the UI and again in `/api/crm/twilio/voice`).
 
+- **Commissions, bounties and bonuses** (`src/lib/crm/pay.ts`, owner's
+  request Nov 9 2026). Never stored per close: `buildLedger()` works every
+  commission line out from the leads currently in Closed, so moving a close
+  back out of Closed drops its commission, bounty spot and bonus by itself.
+  Only team members' closes count (`closed_by_id`); the owner's own closes
+  never earn commission or fill a bounty.
+  - *Rates* — set per person on the **Team** tab (monthly $ / yearly $ per
+    close), kept as history in `crm_commission_rates`: a new rate counts from
+    now on; the first rate set (or "Also apply to their past closes") gets
+    `effective_from NULL` and covers every earlier close.
+  - *Bounties* (`crm_bounties`) — the owner posts them from the bounty board
+    on the **Dashboard** and **Leaderboard**; everyone sees them (progress,
+    who took each spot). The first `target` matching closes after the bounty
+    starts (before its deadline / early end) take the spots in order, oldest
+    bounty first, one bounty per close. `mode` replace = pays the bounty
+    amount instead of the normal rate; extra = on top. Owner-only actions are
+    enforced in `POST /api/crm/bounties`.
+  - *Bonus rules* (`crm_bonus_rules`) — every N matching closes a member
+    makes while the rule is on pays +$X. Rules count from the day they're
+    turned on; to change an amount, turn the old one off and add a new one.
+  - *Manual lines* (`crm_pay_entries`) — adjustments (+/−) and payouts.
+  - **💰 Team stats** tab (owner only, `TeamPay.tsx`, `GET /api/crm/pay`,
+    `GET /api/crm/activity`): any time frame (Today, 1/7/30 days, 3 months,
+    1 year, Lifetime, custom dates) → per-person dials, booked, closes,
+    commission by type, paid out, owed (all time); click a person for every
+    commission line and their full activity feed from `crm_events`.
+
 **Code map**
 
 - `src/app/crm/` — the page, login page and `login`/`logout` server actions.

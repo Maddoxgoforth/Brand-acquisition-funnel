@@ -10,6 +10,7 @@ import {
   type Lead,
   type StatRange,
 } from "@/lib/crm/constants";
+import Bounties from "./Bounties";
 import { RangePicker, StatCard, percent, rangeText, useStats } from "./statsUi";
 
 const duration = (s: number | null) => (s === null ? "–" : formatDuration(s));
@@ -121,6 +122,8 @@ export default function Dashboard({
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8 p-6">
       <RangePicker range={range} onChange={setRange} />
+
+      <Bounties owner={me === "owner"} onError={onError} />
 
       <CallbacksDue callbacks={stats.callbacks} me={me} onOpenLead={onOpenLead} />
 
