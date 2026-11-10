@@ -343,6 +343,39 @@ export default function Analytics({
         </section>
       ) : null}
 
+      {current?.organicByApp && current.organicByApp.length > 0 ? (
+        <section>
+          <h2 className="text-lg font-extrabold">Organic opt-ins by app</h2>
+          <p className="text-sm text-muted">
+            Which app organic opt-ins came from during {inRange}, based on the app&apos;s built-in browser (people who
+            tap your bio link inside TikTok or Instagram). &quot;Regular browser&quot; means they opened the link
+            another way, like copying it into Safari.
+          </p>
+          <div className="mt-3 overflow-x-auto rounded-2xl border border-border bg-background">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border text-xs uppercase tracking-widest text-muted">
+                <tr>
+                  <th className="px-5 py-3 font-bold">App</th>
+                  <th className="px-5 py-3 text-right font-bold">Opt-ins</th>
+                  <th className="px-5 py-3 text-right font-bold">Booked</th>
+                  <th className="px-5 py-3 text-right font-bold">Closed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {current.organicByApp.map((r) => (
+                  <tr key={r.app} className="border-b border-border last:border-0">
+                    <td className="px-5 py-3 font-semibold">{r.app}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">{r.optIns}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">{r.booked}</td>
+                    <td className="px-5 py-3 text-right tabular-nums">{r.closed}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
       {current?.adFunnel ? (
         <section>
           <h2 className="text-lg font-extrabold">Ad funnel drop-off</h2>

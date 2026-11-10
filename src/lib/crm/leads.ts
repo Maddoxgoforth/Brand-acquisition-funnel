@@ -1307,7 +1307,7 @@ export async function getStats(
   if (!owner) {
     return {
       range, team, leaderboard, callbacks,
-      revenue: null, optIns: null, adFunnel: null, campaigns: null, dial: null,
+      revenue: null, optIns: null, adFunnel: null, campaigns: null, dial: null, organicByApp: null,
     };
   }
 
@@ -1330,7 +1330,32 @@ export async function getStats(
       };
     }).filter((r) => visible.includes(r.source)),
   };
-  return { range, team, leaderboard, callbacks, revenue, optIns, adFunnel, campaigns, dial };
+  // Organic opt-ins by app: TikTok and Instagram open links in their own
+  // in-app browsers, which name themselves in the user agent.
+  const organicByApp = access.applications
+    ? await query<{ app: string; opt_ins: number; booked: number; closed: number }>(
+        `SELECT CASE
+             WHEN ua ~* '(musical_ly|bytedancewebview|tiktok|trill_)' THEN 'TikTok'
+             WHEN ua ~* 'instagram' THEN 'Instagram'
+             WHEN ua ~* '(fban|fbav|fb_iab)' THEN 'Facebook'
+             WHEN ua ~* 'snapchat' THEN 'Snapchat'
+             WHEN ua ~* 'youtube' THEN 'YouTube'
+             WHEN ua = '' THEN 'Unknown (before tracking)'
+             ELSE 'Regular browser (link copied, Google, etc.)'
+           END AS app,
+           count(*)::int AS opt_ins,
+           count(*) FILTER (WHERE status IN ('appointment', 'closed')
+             OR EXISTS (SELECT 1 FROM crm_events e WHERE e.lead_id = l.id AND e.type = 'appointment'))::int AS booked,
+           count(*) FILTER (WHERE status = 'closed')::int AS closed
+         FROM (SELECT *, coalesce(attribution->>'user_agent', '') AS ua,
+                 coalesce(last_opt_in_at, created_at) AS opt_at FROM crm_leads) l
+         WHERE source = 'free_course_application'
+           AND ($1::timestamptz IS NULL OR opt_at >= $1::timestamptz)${upTo("opt_at")}
+         GROUP BY 1 ORDER BY opt_ins DESC`,
+        [sinceIso]
+      ).then((rows) => rows.map((r) => ({ app: r.app, optIns: r.opt_ins, booked: r.booked, closed: r.closed })))
+    : null;
+  return { range, team, leaderboard, callbacks, revenue, optIns, adFunnel, campaigns, dial, organicByApp };
 }
 
 // ---- Calls to the Twilio number (leads calling back) ------------------------

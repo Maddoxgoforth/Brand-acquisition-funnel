@@ -364,6 +364,9 @@ export type Stats = {
   adFunnel: FunnelStep[] | null;
   // Ad opt-ins by platform / campaign / ad (utm_source / utm_campaign / utm_content).
   campaigns: CampaignRow[] | null;
+  // Owner only: organic opt-ins by the app they opted in from, read from the
+  // browser's in-app signature (TikTok, Instagram…). null for team members.
+  organicByApp?: { app: string; optIns: number; booked: number; closed: number }[] | null;
   // The hand-filled dial lists: calling activity during the range.
   // null when this person can't see the dial lists.
   dial:
