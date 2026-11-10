@@ -53,7 +53,7 @@ function SpeedBadge({ lead, now }: { lead: Lead; now: number }) {
   const late = seconds > SPEED_TO_LEAD_SECONDS;
   const color = late ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700";
   return (
-    <p className={`mt-1 inline-block rounded-md px-2 py-1 text-xs font-bold tabular-nums ${color}`}>
+    <p className={`mt-0.5 mr-1 inline-block rounded-md px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${color}`}>
       {lead.firstContactAt
         ? `Called in ${formatDuration(seconds)}`
         : `⏱ ${formatDuration(seconds)} waiting`}
@@ -78,7 +78,7 @@ function ClaimBadge({ lead, me }: { lead: Lead; me: string }) {
   const mine = lead.claimedById === me;
   return (
     <p
-      className={`mt-1 mr-1 inline-block max-w-full truncate rounded-md px-2 py-1 text-xs font-bold ${
+      className={`mt-0.5 mr-1 inline-block max-w-full truncate rounded-md px-1.5 py-0.5 text-[11px] font-bold ${
         mine ? "bg-accent/10 text-accent" : "bg-slate-100 text-slate-700"
       }`}
     >
@@ -155,9 +155,10 @@ export default function Board({
   }
 
   return (
-    // Ten columns as two rows of five that fit the screen: no sideways
-    // scrolling, each column scrolls its own cards. Narrow screens stack.
-    <div className="grid min-h-0 flex-1 auto-rows-[26rem] grid-cols-2 gap-3 overflow-y-auto px-6 pb-6 md:grid-cols-3 xl:auto-rows-auto xl:grid-cols-5 xl:grid-rows-2 xl:overflow-hidden">
+    // Ten columns as two rows of five, no sideways scrolling. Each row is
+    // nearly a screen tall (scroll down for the second row) and each column
+    // scrolls its own cards. Narrow screens stack.
+    <div className="grid min-h-0 flex-1 auto-rows-[32rem] grid-cols-2 gap-3 overflow-y-auto px-6 pb-6 md:grid-cols-3 xl:auto-rows-[calc(100vh-10rem)] xl:grid-cols-5">
       {STATUSES.map((status) => {
         const items = columns[status.id];
         const limit = limits[status.id] ?? PAGE;
@@ -182,10 +183,10 @@ export default function Board({
                   {items.length}
                 </span>
               </div>
-              <p className="mt-1 truncate text-xs text-muted" title={status.hint}>{status.hint}</p>
+              <p className="mt-0.5 truncate text-xs text-muted" title={status.hint}>{status.hint}</p>
             </header>
 
-            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
+            <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-2 pb-2">
               {items.slice(0, limit).map((lead) => (
                 <article
                   key={lead.id}
@@ -195,24 +196,24 @@ export default function Board({
                     event.dataTransfer.effectAllowed = "move";
                   }}
                   onClick={() => onOpen(lead)}
-                  className="cursor-grab rounded-xl border border-border bg-background p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing"
+                  className="cursor-grab rounded-lg border border-border bg-background px-2.5 py-2 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing"
                 >
-                  <p className="truncate font-bold">{lead.name || "No name"}</p>
-                  <p className="truncate text-sm tabular-nums text-muted">
+                  <p className="truncate text-sm font-bold leading-tight">{lead.name || "No name"}</p>
+                  <p className="truncate text-xs leading-tight tabular-nums text-muted">
                     {lead.phone || "No phone"}
                   </p>
                   {lead.email ? (
-                    <p className="truncate text-xs text-muted">{lead.email}</p>
+                    <p className="truncate text-[11px] leading-tight text-muted">{lead.email}</p>
                   ) : null}
                   {lead.missedCallAt ? (
-                    <p className="mt-1 mr-1 inline-block rounded-md bg-red-100 px-2 py-1 text-xs font-extrabold text-red-700">
+                    <p className="mt-0.5 mr-1 inline-block rounded-md bg-red-100 px-1.5 py-0.5 text-[11px] font-extrabold text-red-700">
                       📞 Missed call {timeAgo(lead.missedCallAt)}
                       {lead.hasVoicemail ? " · 🎙️ voicemail" : ""}
                     </p>
                   ) : null}
                   <ClaimBadge lead={lead} me={me} />
                   {lead.optInCount > 1 ? (
-                    <p className="mt-1 mr-1 inline-block rounded-md bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800">
+                    <p className="mt-0.5 mr-1 inline-block rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-800">
                       Opted in {lead.optInCount}×
                     </p>
                   ) : null}
@@ -225,29 +226,29 @@ export default function Board({
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(event) => event.stopPropagation()}
-                      className="mt-1 inline-block rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-800 hover:underline"
+                      className="mt-0.5 inline-block rounded-md bg-emerald-50 px-1.5 py-0.5 text-[11px] font-bold text-emerald-800 hover:underline"
                     >
                       ▶ Call recording
                     </a>
                   ) : null}
                   {lead.status === "closed" ? (
-                    <p className="mt-1 mr-1 inline-block rounded-md bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-800">
+                    <p className="mt-0.5 mr-1 inline-block rounded-md bg-emerald-100 px-1.5 py-0.5 text-[11px] font-bold text-emerald-800">
                       💰 {planLabel(lead.closePlan)}
                     </p>
                   ) : null}
                   {lead.status === "callback" && lead.appointmentAt ? (
-                    <p className="mt-1 truncate rounded-md bg-sky-50 px-2 py-1 text-xs font-bold text-sky-800">
+                    <p className="mt-0.5 truncate rounded-md bg-sky-50 px-1.5 py-0.5 text-[11px] font-bold text-sky-800">
                       📞 Call back {formatAppointment(lead.appointmentAt, lead.appointmentTz)}
                     </p>
                   ) : null}
                   {lead.status === "appointment" ? (
-                    <p className="mt-1 truncate rounded-md bg-violet-50 px-2 py-1 text-xs font-bold text-violet-800">
+                    <p className="mt-0.5 truncate rounded-md bg-violet-50 px-1.5 py-0.5 text-[11px] font-bold text-violet-800">
                       {lead.appointmentAt
                         ? formatAppointment(lead.appointmentAt, lead.appointmentTz)
                         : "No time set"}
                     </p>
                   ) : null}
-                  <div className="mt-2 flex items-center gap-2 text-xs text-muted">
+                  <div className="mt-1 flex items-center gap-2 text-[11px] text-muted">
                     <span>
                       {lead.callCount > 0
                         ? `${lead.callCount} call${lead.callCount === 1 ? "" : "s"}`
@@ -261,7 +262,7 @@ export default function Board({
                           event.stopPropagation();
                           onCall(lead);
                         }}
-                        className="ml-auto rounded-full bg-accent px-3 py-1 font-bold text-white transition-colors hover:bg-accent-dim disabled:opacity-40"
+                        className="ml-auto rounded-full bg-accent px-2.5 py-0.5 font-bold text-white transition-colors hover:bg-accent-dim disabled:opacity-40"
                       >
                         Call
                       </button>
