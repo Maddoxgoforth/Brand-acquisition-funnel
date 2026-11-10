@@ -11,8 +11,12 @@ type TokenResponse =
   | { configured: false; missing: string[] };
 
 export type DialerState = {
-  phase: "idle" | "connecting" | "ringing" | "in-call";
+  // "incoming" = a lead is calling the Twilio number back and this tab rings.
+  phase: "idle" | "connecting" | "ringing" | "in-call" | "incoming";
   lead: Lead | null;
+  // Who's on the line, for the call bar (also set before the lead loads).
+  party: { name: string; phone: string } | null;
+  inbound: boolean;
   muted: boolean;
   startedAt: number | null;
   error: string | null;
@@ -21,6 +25,8 @@ export type DialerState = {
 const IDLE: DialerState = {
   phase: "idle",
   lead: null,
+  party: null,
+  inbound: false,
   muted: false,
   startedAt: null,
   error: null,
@@ -40,20 +46,27 @@ function describeError(error: unknown, fallback: string) {
 }
 
 // Browser dialer backed by Twilio's Voice SDK. `onCallEnded` fires once per
-// call so the UI can ask how it went.
-export function useDialer(onCallEnded: (lead: Lead) => void) {
+// call so the UI can ask how it went. The tab also registers for incoming
+// calls (leads calling the number back); `onAnswered` fires with the lead
+// once one is picked up, so the UI can open it.
+export function useDialer(onCallEnded: (lead: Lead) => void, onAnswered?: (lead: Lead) => void) {
   const [state, setState] = useState<DialerState>(IDLE);
   const deviceRef = useRef<Device | null>(null);
   const callRef = useRef<Call | null>(null);
+  // An incoming call that's ringing here and not answered yet.
+  const ringingRef = useRef<Call | null>(null);
   const onCallEndedRef = useRef(onCallEnded);
+  const onAnsweredRef = useRef(onAnswered);
 
   useEffect(() => {
     onCallEndedRef.current = onCallEnded;
-  }, [onCallEnded]);
+    onAnsweredRef.current = onAnswered;
+  }, [onCallEnded, onAnswered]);
 
   useEffect(() => {
     return () => {
       callRef.current?.disconnect();
+      ringingRef.current?.ignore();
       deviceRef.current?.destroy();
     };
   }, []);
@@ -99,9 +112,102 @@ export function useDialer(onCallEnded: (lead: Lead) => void) {
         // The next call attempt fetches a new token anyway.
       }
     });
+    device.on("incoming", (incoming: Call) => {
+      // Busy on another call, or something already ringing: let it ring
+      // for the others instead.
+      if (callRef.current || ringingRef.current) {
+        incoming.ignore();
+        return;
+      }
+      const p = incoming.customParameters;
+      ringingRef.current = incoming;
+      setState({
+        ...IDLE,
+        phase: "incoming",
+        inbound: true,
+        party: {
+          name: p.get("leadName") || "Unknown caller",
+          phone: p.get("phone") || incoming.parameters.From || "",
+        },
+      });
+      const stop = () => {
+        if (ringingRef.current !== incoming) return;
+        ringingRef.current = null;
+        setState((s) => (s.phase === "incoming" ? IDLE : s));
+      };
+      // The caller hung up, or a teammate answered first.
+      incoming.on("cancel", stop);
+      incoming.on("reject", stop);
+      incoming.on("disconnect", stop);
+    });
     deviceRef.current = device;
     return device;
   }, [fail]);
+
+  // Register this tab for incoming calls as soon as the CRM opens. Quietly
+  // does nothing until calling is set up.
+  useEffect(() => {
+    let stopped = false;
+    getDevice()
+      .then((device) => {
+        if (!stopped && device.state !== "registered" && device.state !== "registering") {
+          return device.register();
+        }
+      })
+      .catch(() => {
+        // Not set up, or no network: outgoing calls still show the reason.
+      });
+    return () => {
+      stopped = true;
+    };
+  }, [getDevice]);
+
+  const answer = useCallback(async () => {
+    const incoming = ringingRef.current;
+    if (!incoming) return;
+    ringingRef.current = null;
+    callRef.current = incoming;
+    const leadId = incoming.customParameters.get("leadId") || "";
+    const inboundSid = incoming.customParameters.get("inboundSid") || "";
+    let lead: Lead | null = null;
+
+    const finish = () => {
+      if (callRef.current !== incoming) return;
+      callRef.current = null;
+      setState(IDLE);
+      if (lead) onCallEndedRef.current(lead);
+    };
+    incoming.on("disconnect", finish);
+    incoming.on("cancel", finish);
+    incoming.on("error", (error: unknown) => {
+      if (callRef.current !== incoming) return;
+      fail(describeError(error, "The call failed."));
+    });
+
+    incoming.accept();
+    setState((s) => ({ ...s, phase: "in-call", startedAt: Date.now() }));
+    if (!leadId) return;
+    try {
+      const data = await crmFetch<{ lead: Lead }>("/api/crm/twilio/answered", {
+        method: "POST",
+        body: { leadId, inboundSid },
+      });
+      lead = data.lead;
+      setState((s) => (callRef.current === incoming ? { ...s, lead } : s));
+      onAnsweredRef.current?.(data.lead);
+    } catch {
+      // The call still works; it just isn't logged on the lead.
+    }
+  }, [fail]);
+
+  // Stop ringing in this tab only; it keeps ringing for teammates and then
+  // goes to voicemail.
+  const decline = useCallback(() => {
+    const incoming = ringingRef.current;
+    ringingRef.current = null;
+    incoming?.ignore();
+    setState((s) => (s.phase === "incoming" ? IDLE : s));
+  }, []);
 
   const call = useCallback(
     async (lead: Lead) => {
@@ -113,7 +219,7 @@ export function useDialer(onCallEnded: (lead: Lead) => void) {
         return fail("This lead doesn't have a phone number that can be dialed.");
       }
 
-      setState({ ...IDLE, phase: "connecting", lead });
+      setState({ ...IDLE, phase: "connecting", lead, party: { name: lead.name || "No name", phone: lead.phone } });
       try {
         const device = await getDevice();
         const active = await device.connect({ params: { LeadId: lead.id } });
@@ -163,5 +269,5 @@ export function useDialer(onCallEnded: (lead: Lead) => void) {
     []
   );
 
-  return { state, call, hangUp, toggleMute, clearError };
+  return { state, call, answer, decline, hangUp, toggleMute, clearError };
 }

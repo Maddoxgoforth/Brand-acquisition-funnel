@@ -45,6 +45,11 @@ function describe(event: LeadEvent) {
   if (event.type === "close") {
     return `Updated the close (${planLabel(event.data.plan ?? null)})`;
   }
+  if (event.type === "inbound") {
+    if (event.data.result === "answered") return "Answered their call back";
+    if (event.data.result === "voicemail") return `They left a ${event.data.seconds ?? ""}s voicemail`;
+    return "📞 They called back and nobody answered";
+  }
   if (event.type === "claim") {
     if (event.data.action === "released") return "Released the claim";
     if (event.data.action === "took over") return `Took over the lead from ${event.data.from ?? "a teammate"}`;
@@ -165,6 +170,21 @@ export default function LeadDrawer({
         </header>
 
         <div className="space-y-6 px-6 py-5">
+          {lead.missedCallAt ? (
+            <section className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm">
+              <p className="font-extrabold text-red-700">
+                📞 They called back {timeAgo(lead.missedCallAt)} and nobody answered.
+              </p>
+              {lead.hasVoicemail ? (
+                <>
+                  <p className="mt-1 text-xs font-bold text-red-700">🎙️ Voicemail</p>
+                  <audio className="mt-1 w-full" controls preload="none" src={`/api/crm/leads/${lead.id}/voicemail`} />
+                </>
+              ) : null}
+              <p className="mt-1 text-xs text-red-700/80">Calling them back clears this.</p>
+            </section>
+          ) : null}
+
           {Object.keys(lead.attribution).length > 0 ? (
             <section className="rounded-xl border border-border px-4 py-3 text-sm">
               <h3 className="text-xs font-bold uppercase tracking-widest text-muted">Came from</h3>

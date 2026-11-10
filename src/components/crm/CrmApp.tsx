@@ -311,7 +311,17 @@ export default function CrmApp({
     [patchLead]
   );
 
-  const dialer = useDialer(handleCallEnded);
+  // A lead calling back was picked up in this tab: open their card.
+  const handleAnswered = useCallback(
+    (lead: Lead) => {
+      putLead(lead);
+      go(lead.source);
+      setSelectedId(lead.id);
+      setOutcomeFor(null);
+    },
+    [putLead]
+  );
+  const dialer = useDialer(handleCallEnded, handleAnswered);
   const canCall = dialer.state.phase === "idle";
 
   const claimLead = useCallback(
@@ -682,6 +692,8 @@ export default function CrmApp({
 
       <CallBar
         state={dialer.state}
+        onAnswer={dialer.answer}
+        onDecline={dialer.decline}
         onHangUp={dialer.hangUp}
         onToggleMute={dialer.toggleMute}
         onDismissError={dialer.clearError}

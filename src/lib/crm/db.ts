@@ -169,6 +169,22 @@ const SCHEMA = [
     at timestamptz NOT NULL DEFAULT now(),
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
+  // Calls to the Twilio number (leads calling back). One row per call, so
+  // Twilio retries never notify twice. lead_id is null for unknown numbers.
+  `CREATE TABLE IF NOT EXISTS crm_inbound_calls (
+    call_sid text PRIMARY KEY,
+    lead_id uuid REFERENCES crm_leads (id) ON DELETE SET NULL,
+    from_number text NOT NULL,
+    status text NOT NULL DEFAULT 'ringing',
+    answered_by_name text,
+    recording_sid text,
+    recording_seconds integer,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  // The lead's latest missed call back, until someone calls them or answers.
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS missed_call_at timestamptz`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS missed_call_sid text`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS missed_voicemail_sid text`,
 ];
 
 export class CrmDbNotConfiguredError extends Error {

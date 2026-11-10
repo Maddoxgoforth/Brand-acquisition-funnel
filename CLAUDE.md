@@ -664,6 +664,29 @@ from each browser asks for microphone permission. The browser never chooses
 the number to dial: it sends a lead id, and the voice route looks the number
 up in the CRM database.
 
+**Calls back to the Twilio number** (`/api/crm/twilio/incoming`, owner's
+request Nov 9 2026). Every open CRM tab registers its Twilio device for
+incoming calls (token grant `incoming.allow`). When someone calls the number:
+1. it rings whoever last called that lead (else whoever claimed it), 20 s;
+2. then everyone who can see the lead's list and has the CRM open (owner
+   first; Twilio rings max 10 at once), 20 s;
+3. then voicemail (up to 2 min). Unknown numbers skip step 1.
+The tab shows a green "Incoming call" bar (Answer / Not me); answering opens
+the lead and logs "Answered their call back" (`/api/crm/twilio/answered`).
+Missed calls set `crm_leads.missed_call_at` (red "📞 Missed call" badge, lead
+floats to the top of its column, box in the lead panel with the voicemail
+player via `/api/crm/leads/[id]/voicemail`, which fetches the recording from
+Twilio with the account credentials). Calling the lead clears it. Each call is
+a row in `crm_inbound_calls`, so Twilio retries never alert twice.
+Alerts (`src/lib/crm/notify.ts`): "📞 We have a missed call from "Name"
+(phone)" and, if they leave one, a voicemail alert, posted to
+`SLACK_MISSED_CALL_WEBHOOK_URL` (Slack incoming webhook) and
+`DISCORD_MISSED_CALL_WEBHOOK_URL` (Discord channel webhook); each is skipped
+while unset.
+Setup: Twilio Console → Phone Numbers → Active numbers → the number →
+Voice configuration → "A call comes in": Webhook,
+`https://www.brandacquisition.co/api/crm/twilio/incoming`, HTTP POST.
+
 **Inbound webhook (optional).** `POST /api/crm/webhook?list=<list id>` with
 header `x-crm-secret: <CRM_WEBHOOK_SECRET>` and a JSON lead (or
 `{ "leads": [...] }`) adds leads from outside tools. List ids:

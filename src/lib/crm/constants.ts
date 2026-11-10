@@ -173,6 +173,10 @@ export type Lead = {
   claimedById: string | null;
   claimedByName: string | null;
   claimedAt: string | null;
+  // The lead called our Twilio number back and nobody answered. Cleared when
+  // someone calls them or answers their next call. hasVoicemail = they left one.
+  missedCallAt: string | null;
+  hasVoicemail: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -183,7 +187,7 @@ export type Actor = { id: string; name: string };
 
 export type LeadEvent = {
   id: number;
-  type: "status" | "call" | "created" | "appointment" | "reoptin" | "claim" | "close";
+  type: "status" | "call" | "created" | "appointment" | "reoptin" | "claim" | "close" | "inbound";
   // For calls: callSid and, once added, notes.
   data: Record<string, string>;
   actorName: string | null;

@@ -137,6 +137,10 @@ export default function Board({
         grouped[status.id].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
       }
     }
+    // Leads who called back and got missed go to the top of their column.
+    for (const status of STATUSES) {
+      grouped[status.id].sort((a, b) => Number(Boolean(b.missedCallAt)) - Number(Boolean(a.missedCallAt)));
+    }
     return grouped;
   }, [leads, search]);
 
@@ -195,6 +199,12 @@ export default function Board({
                   </p>
                   {lead.email ? (
                     <p className="truncate text-xs text-muted">{lead.email}</p>
+                  ) : null}
+                  {lead.missedCallAt ? (
+                    <p className="mt-1 mr-1 inline-block rounded-md bg-red-100 px-2 py-1 text-xs font-extrabold text-red-700">
+                      📞 Missed call {timeAgo(lead.missedCallAt)}
+                      {lead.hasVoicemail ? " · 🎙️ voicemail" : ""}
+                    </p>
                   ) : null}
                   <ClaimBadge lead={lead} me={me} />
                   {lead.optInCount > 1 ? (

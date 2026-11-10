@@ -79,7 +79,7 @@ function base64url(input: Buffer | string) {
 }
 
 // A Twilio Access Token: a short-lived JWT that lets this browser place calls
-// through the TwiML App, and nothing else. Built by hand (it's ~20 lines) to
+// through the TwiML App and receive calls to its identity, and nothing else. Built by hand (it's ~20 lines) to
 // avoid pulling the whole `twilio` server SDK into the bundle.
 // Format: https://www.twilio.com/docs/iam/access-tokens
 export function createVoiceToken(identity: string, ttlSeconds = 3600) {
@@ -96,6 +96,8 @@ export function createVoiceToken(identity: string, ttlSeconds = 3600) {
     grants: {
       identity,
       voice: {
+        // Lets the open CRM tab ring when a lead calls the number back.
+        incoming: { allow: true },
         outgoing: { application_sid: process.env.TWILIO_TWIML_APP_SID! },
       },
     },

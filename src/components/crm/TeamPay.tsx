@@ -91,6 +91,8 @@ function describe(a: ActivityItem): { icon: string; text: string } {
       return { icon: "💰", text: `Updated the close on ${a.leadName}${d.plan ? ` (${d.plan})` : ""}` };
     case "created":
       return { icon: "➕", text: `Added ${a.leadName}` };
+    case "inbound":
+      return { icon: "📲", text: `Answered ${a.leadName}'s call back` };
     default:
       return { icon: "•", text: `${a.type} · ${a.leadName}` };
   }

@@ -23,8 +23,12 @@ export default function CallBar({
   onHangUp,
   onToggleMute,
   onDismissError,
+  onAnswer,
+  onDecline,
 }: {
   state: DialerState;
+  onAnswer: () => void;
+  onDecline: () => void;
   onHangUp: () => void;
   onToggleMute: () => void;
   onDismissError: () => void;
@@ -44,14 +48,43 @@ export default function CallBar({
     );
   }
 
-  if (state.phase === "idle" || !state.lead) return null;
+  if (state.phase === "idle" || !state.party) return null;
+
+  if (state.phase === "incoming") {
+    return (
+      <div className="fixed inset-x-0 bottom-4 z-50 mx-auto flex w-fit max-w-[92vw] animate-pulse items-center gap-5 rounded-2xl bg-emerald-700 px-5 py-3 text-white shadow-2xl ring-4 ring-emerald-300">
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase tracking-widest text-white/80">📞 Incoming call</p>
+          <p className="truncate text-lg font-extrabold">{state.party.name}</p>
+          <p className="text-sm text-white/80">{state.party.phone}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onAnswer}
+          className="rounded-full bg-white px-5 py-2 text-sm font-extrabold text-emerald-800 hover:bg-emerald-50"
+        >
+          Answer
+        </button>
+        <button
+          type="button"
+          onClick={onDecline}
+          className="rounded-full border border-white/40 px-4 py-2 text-sm font-bold hover:bg-white/10"
+        >
+          Not me
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-fit max-w-[92vw] items-center gap-5 rounded-2xl bg-foreground px-5 py-3 text-white shadow-xl">
       <div className="min-w-0">
-        <p className="truncate font-bold">{state.lead.name || "No name"}</p>
+        <p className="truncate font-bold">
+          {state.inbound ? "📞 " : ""}
+          {state.party.name}
+        </p>
         <p className="text-sm text-white/70">
-          {state.lead.phone} ·{" "}
+          {state.party.phone} ·{" "}
           {state.phase === "in-call" && state.startedAt ? (
             <Timer startedAt={state.startedAt} />
           ) : state.phase === "ringing" ? (

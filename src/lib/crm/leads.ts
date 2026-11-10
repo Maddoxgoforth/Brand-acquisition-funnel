@@ -64,6 +64,8 @@ type LeadRow = {
   closed_at: string | Date | null;
   closed_by_name: string | null;
   payment_proof_id: string | null;
+  missed_call_at?: string | Date | null;
+  missed_voicemail_sid?: string | null;
   created_at: string | Date;
   updated_at: string | Date;
 };
@@ -123,6 +125,8 @@ function toLead(row: LeadRow): Lead {
     closedAt: iso(row.closed_at ?? null),
     closedByName: row.closed_by_name ?? null,
     hasPaymentProof: Boolean(row.payment_proof_id),
+    missedCallAt: iso(row.missed_call_at ?? null),
+    hasVoicemail: Boolean(row.missed_voicemail_sid),
     createdAt: iso(row.created_at)!,
     updatedAt: iso(row.updated_at)!,
   };
@@ -766,7 +770,8 @@ export async function recordCall(id: string, callSid: string, actor: Actor | nul
   await markFirstContact(id);
   await query(
     `UPDATE crm_leads
-     SET call_count = call_count + 1, last_called_at = now(), updated_at = now()
+     SET call_count = call_count + 1, last_called_at = now(), updated_at = now(),
+         missed_call_at = NULL, missed_call_sid = NULL, missed_voicemail_sid = NULL
      WHERE id = $1`,
     [id]
   );
@@ -1320,4 +1325,126 @@ export async function getStats(
     }).filter((r) => visible.includes(r.source)),
   };
   return { range, team, leaderboard, callbacks, revenue, optIns, adFunnel, campaigns, dial };
+}
+
+// ---- Calls to the Twilio number (leads calling back) ------------------------
+
+// The lead a caller is, by phone number: the most recently active one if the
+// same number is on several lists.
+export async function findLeadByPhone(e164: string): Promise<Lead | null> {
+  const rows = await query<LeadRow>(
+    `SELECT * FROM crm_leads WHERE phone_e164 = $1
+     ORDER BY coalesce(last_called_at, last_opt_in_at, created_at) DESC LIMIT 1`,
+    [e164]
+  );
+  return rows[0] ? toLead(rows[0]) : null;
+}
+
+// Who to ring first: whoever last called this lead, else whoever claimed it.
+export async function lastCallerOf(leadId: string): Promise<string | null> {
+  const rows = await query<{ actor_id: string | null }>(
+    `SELECT actor_id FROM crm_events
+     WHERE lead_id = $1 AND type = 'call' AND actor_id IS NOT NULL
+     ORDER BY created_at DESC LIMIT 1`,
+    [leadId]
+  );
+  if (rows[0]?.actor_id) return rows[0].actor_id;
+  const lead = await getLead(leadId);
+  return lead?.claimedById ?? null;
+}
+
+// Starts tracking a call. Returns false if Twilio already told us about it.
+export async function startInboundCall(callSid: string, leadId: string | null, from: string) {
+  const rows = await query(
+    `INSERT INTO crm_inbound_calls (call_sid, lead_id, from_number)
+     VALUES ($1, $2, $3) ON CONFLICT (call_sid) DO NOTHING RETURNING call_sid`,
+    [callSid, leadId, from]
+  );
+  return rows.length > 0;
+}
+
+export type InboundCall = {
+  callSid: string;
+  leadId: string | null;
+  from: string;
+  status: string;
+};
+
+export async function getInboundCall(callSid: string): Promise<InboundCall | null> {
+  const rows = await query<{ call_sid: string; lead_id: string | null; from_number: string; status: string }>(
+    `SELECT call_sid, lead_id, from_number, status FROM crm_inbound_calls WHERE call_sid = $1`,
+    [callSid]
+  );
+  const r = rows[0];
+  return r ? { callSid: r.call_sid, leadId: r.lead_id, from: r.from_number, status: r.status } : null;
+}
+
+// Marks the call missed (once). Returns true only the first time, so the
+// Slack/Discord alert goes out once per call.
+export async function markInboundMissed(callSid: string): Promise<boolean> {
+  const rows = await query<{ lead_id: string | null }>(
+    `UPDATE crm_inbound_calls SET status = 'missed'
+     WHERE call_sid = $1 AND status = 'ringing' RETURNING lead_id`,
+    [callSid]
+  );
+  if (!rows.length) return false;
+  const leadId = rows[0].lead_id;
+  if (leadId) {
+    await query(
+      `UPDATE crm_leads SET missed_call_at = now(), missed_call_sid = $2,
+         missed_voicemail_sid = NULL, updated_at = now()
+       WHERE id = $1`,
+      [leadId, callSid]
+    );
+    await addEvent(leadId, "inbound", { result: "missed", callSid });
+  }
+  return true;
+}
+
+// Someone picked up in the CRM. Credited to them, and the missed-call flag
+// on the lead clears.
+export async function markInboundAnswered(callSid: string | null, leadId: string, actor: Actor) {
+  if (callSid) {
+    await query(
+      `UPDATE crm_inbound_calls SET status = 'answered', answered_by_name = $2
+       WHERE call_sid = $1 AND status = 'ringing'`,
+      [callSid, actor.name]
+    );
+  }
+  await query(
+    `UPDATE crm_leads SET missed_call_at = NULL, missed_call_sid = NULL,
+       missed_voicemail_sid = NULL, updated_at = now()
+     WHERE id = $1`,
+    [leadId]
+  );
+  await markFirstContact(leadId);
+  await addEvent(leadId, "inbound", { result: "answered" }, actor);
+}
+
+// A voicemail finished recording. Attached to the lead if this is still its
+// latest missed call.
+export async function saveVoicemail(callSid: string, recordingSid: string, seconds: number) {
+  const rows = await query<{ lead_id: string | null }>(
+    `UPDATE crm_inbound_calls SET recording_sid = $2, recording_seconds = $3
+     WHERE call_sid = $1 RETURNING lead_id`,
+    [callSid, recordingSid, seconds]
+  );
+  const leadId = rows[0]?.lead_id;
+  if (leadId) {
+    await query(
+      `UPDATE crm_leads SET missed_voicemail_sid = $2, updated_at = now()
+       WHERE id = $1 AND missed_call_sid = $3`,
+      [leadId, recordingSid, callSid]
+    );
+    await addEvent(leadId, "inbound", { result: "voicemail", seconds: String(seconds) });
+  }
+  return leadId ?? null;
+}
+
+export async function voicemailSidFor(leadId: string): Promise<string | null> {
+  const rows = await query<{ missed_voicemail_sid: string | null }>(
+    `SELECT missed_voicemail_sid FROM crm_leads WHERE id = $1`,
+    [leadId]
+  );
+  return rows[0]?.missed_voicemail_sid ?? null;
 }
