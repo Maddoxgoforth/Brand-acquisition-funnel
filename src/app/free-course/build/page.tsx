@@ -14,7 +14,7 @@ export default function CreatorOsBuild() {
     <main>
       <CreatorOsIntro />
       <CreatorOsSteps />
-      <Footer />
+      <Footer disclaimer />
     </main>
   );
 }

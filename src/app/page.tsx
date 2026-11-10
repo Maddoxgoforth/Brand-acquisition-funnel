@@ -41,7 +41,7 @@ export default function Home() {
       <FreeCourseResults />
       <FreeCourseFaq />
       <FreeCourseClose />
-      <Footer />
+      <Footer disclaimer />
     </main>
   );
 }

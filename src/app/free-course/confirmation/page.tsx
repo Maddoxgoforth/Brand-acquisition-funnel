@@ -23,7 +23,7 @@ export default function FreeCourseConfirmation() {
       <FreeCourseConfirmationHowFree />
       <FreeCourseConfirmationResults />
       <FreeCourseConfirmationClosing />
-      <Footer />
+      <Footer disclaimer />
     </main>
   );
 }

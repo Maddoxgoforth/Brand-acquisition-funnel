@@ -77,7 +77,7 @@ export default function FreeCourseResults() {
         <SectionHeading
           eyebrow="Results"
           title="What Students Are Saying"
-          subtitle="This is the exact same system already covered in the free course. Here's proof it works."
+          subtitle="What students did with the same system covered in the free course. These results are not typical. Most people who take a free course make little or no money."
         />
 
         {RESULTS.map((result) => (
@@ -86,6 +86,10 @@ export default function FreeCourseResults() {
               {result.stat}
             </p>
             <p className="mt-1 text-sm text-muted">{result.caption}</p>
+            <p className="mt-1 text-[11px] text-muted/80">
+              Individual result. Not typical, and not a promise of what you
+              will make.
+            </p>
             <div className="mt-5 overflow-hidden rounded-2xl shadow-lg">
               <Image
                 src={result.src}
