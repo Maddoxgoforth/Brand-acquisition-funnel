@@ -49,7 +49,7 @@ export default function TrendPanel({
   const [list, setList] = useState<TrendList>(spec.list ?? "all");
   const [onlyActor, setOnlyActor] = useState(Boolean(spec.actor));
   const [data, setData] = useState<{ url: string; result: TrendResult } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState<{ url: string; message: string } | null>(null);
 
   const def = trendMetric(metric);
   const choices = TREND_METRICS.filter((m) => owner || !("ownerOnly" in m && m.ownerOnly));
@@ -75,12 +75,11 @@ export default function TrendPanel({
 
   useEffect(() => {
     let cancelled = false;
-    setError(null);
     crmFetch<TrendResult>(url)
       .then((result) => !cancelled && setData({ url, result }))
       .catch((e) => {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Couldn't load the graph");
+        setFailed({ url, message: e instanceof Error ? e.message : "Couldn't load the graph" });
         onError?.(e);
       });
     return () => {
@@ -89,6 +88,7 @@ export default function TrendPanel({
   }, [url, onError]);
 
   const result = data?.url === url ? data.result : null;
+  const error = failed?.url === url ? failed.message : null;
 
   return (
     <div className="space-y-4">
