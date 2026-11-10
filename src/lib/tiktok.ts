@@ -11,8 +11,8 @@ import { createHash } from "node:crypto";
 // TIKTOK_TEST_EVENT_CODE (optional) shows events under Events Manager → Test events.
 //
 // Event names are TikTok event codes (case-sensitive): Lead (shown as "Submit
-// form" in Events Manager: the opt-in), Schedule (booked call), Purchase
-// (closed), ViewContent.
+// form" in Events Manager: the opt-in), Purchase (closed),
+// ViewContent. Booked callbacks are deliberately not sent.
 
 export type TikTokUser = {
   email?: string;

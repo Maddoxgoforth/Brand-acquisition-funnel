@@ -690,12 +690,12 @@ async function announceClose(lead: Lead, proofId: string, actor: Actor): Promise
   }
 }
 
-// Tells Meta and TikTok when an opt-in books a call or buys, so ads can
-// optimize for buyers instead of just opt-ins. (TikTok uses the same names:
-// Schedule and Purchase are TikTok standard events too.) The event id is fixed per lead and stage,
-// so moving a card back and forth never counts twice.
+// Tells Meta and TikTok when an opt-in closes (signs up for Base44 through
+// the affiliate link on the call), so ads can learn from buyers. Appointment
+// scheduled is only a callback for leads who couldn't set up right then, so it
+// is never sent as a conversion. The event id is fixed per lead and stage, so
+// moving a card back and forth never counts twice.
 const META_STAGES: Partial<Record<StatusId, string>> = {
-  appointment: "Schedule",
   closed: "Purchase",
 };
 

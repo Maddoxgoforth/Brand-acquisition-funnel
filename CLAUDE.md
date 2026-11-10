@@ -710,9 +710,11 @@ Built for running Meta ads to the free course (owner's request, Oct 2026).
   from the ad click for the opt-in form.
 - **Conversions API** (`src/lib/meta.ts`): needs `META_CAPI_TOKEN`. Lead is
   sent by `/api/free-course-lead` with the same event id as the browser Lead
-  (Meta de-duplicates). When an opt-in moves to Appointment scheduled or
-  Closed in the CRM, `updateLead` sends Schedule / Purchase
-  (`META_PURCHASE_VALUE`, default 1000 USD), event id `<lead id>-<status>` so
+  (Meta de-duplicates). When an opt-in moves to Closed in the CRM (the
+  close = they signed up for Base44 with the affiliate link on the call),
+  `updateLead` sends Purchase (`META_PURCHASE_VALUE`, default 225 USD).
+  Appointment scheduled is only a callback for leads who couldn't set up on
+  the first call, so it is never sent to the ad platforms (owner, Nov 9), event id `<lead id>-<status>` so
   repeats don't double count. Email/phone/name are SHA-256 hashed. Use
   `META_TEST_EVENT_CODE` to check events in Events Manager → Test events.
 - **TikTok** works the same way: `TikTokPixel.tsx` (pixel
@@ -720,8 +722,7 @@ Built for running Meta ads to the free course (owner's request, Oct 2026).
   never on `/crm`) and `src/lib/tiktok.ts`
   (Events API v1.3, needs `TIKTOK_EVENTS_TOKEN`). TikTok standard event names:
   opt-in = Lead (TikTok labels it "Submit form"; browser + server, same
-  event id), booked =
-  Schedule, closed = Purchase, VSL page = ViewContent. `pixelEvent()` in
+  event id), closed = Purchase (no Schedule event), VSL page = ViewContent. `pixelEvent()` in
   `tracking.ts` fires both pixels. Attribution also keeps `ttclid` and the
   `_ttp` cookie. Ad links: `utm_source=tiktok&utm_medium=paid&utm_campaign=__CAMPAIGN_NAME__&utm_content=__CID_NAME__`.
   The dashboard's campaign table splits by `utm_source` (platform).
