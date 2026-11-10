@@ -62,11 +62,26 @@ export function isSourceId(value: unknown): value is SourceId {
 // columns picked up the phone. "new" means not dialed yet.
 export const STATUSES = [
   { id: "new", label: "To dial", answered: false, hint: "Not called yet" },
+  // Three tries before a lead is given up on (moved by hand to Not
+  // interested after No answer 3). "no_answer" keeps its id so existing
+  // leads and history stay in the first column.
   {
     id: "no_answer",
-    label: "No answer",
+    label: "No answer 1",
     answered: false,
-    hint: "Didn't pick up, call again",
+    hint: "Missed the 1st call, call again",
+  },
+  {
+    id: "no_answer_2",
+    label: "No answer 2",
+    answered: false,
+    hint: "Missed the 2nd call, call again",
+  },
+  {
+    id: "no_answer_3",
+    label: "No answer 3",
+    answered: false,
+    hint: "Missed the 3rd call, move to Not interested",
   },
   {
     id: "callback",

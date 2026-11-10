@@ -18,7 +18,9 @@ const PAGE = 50;
 
 const COLUMN_ACCENT: Record<StatusId, string> = {
   new: "bg-slate-400",
-  no_answer: "bg-amber-400",
+  no_answer: "bg-amber-300",
+  no_answer_2: "bg-amber-500",
+  no_answer_3: "bg-orange-600",
   callback: "bg-sky-500",
   appointment: "bg-violet-500",
   no_show: "bg-rose-400",
@@ -153,7 +155,9 @@ export default function Board({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto px-6 pb-6">
+    // Ten columns as two rows of five that fit the screen: no sideways
+    // scrolling, each column scrolls its own cards. Narrow screens stack.
+    <div className="grid min-h-0 flex-1 auto-rows-[26rem] grid-cols-2 gap-3 overflow-y-auto px-6 pb-6 md:grid-cols-3 xl:auto-rows-auto xl:grid-cols-5 xl:grid-rows-2 xl:overflow-hidden">
       {STATUSES.map((status) => {
         const items = columns[status.id];
         const limit = limits[status.id] ?? PAGE;
@@ -166,22 +170,22 @@ export default function Board({
             }}
             onDragLeave={() => setDragOver((s) => (s === status.id ? null : s))}
             onDrop={(event) => handleDrop(event, status.id)}
-            className={`flex w-72 shrink-0 flex-col rounded-2xl border bg-background-elevated transition-colors ${
+            className={`flex min-h-0 min-w-0 flex-col rounded-2xl border bg-background-elevated transition-colors ${
               dragOver === status.id ? "border-accent" : "border-border"
             }`}
           >
-            <header className="px-4 pb-2 pt-4">
+            <header className="px-3 pb-2 pt-3">
               <div className="flex items-center gap-2">
                 <span className={`h-2.5 w-2.5 rounded-full ${COLUMN_ACCENT[status.id]}`} />
-                <h3 className="font-extrabold">{status.label}</h3>
+                <h3 className="truncate font-extrabold">{status.label}</h3>
                 <span className="ml-auto rounded-full bg-background px-2 py-0.5 text-xs font-bold tabular-nums text-muted">
                   {items.length}
                 </span>
               </div>
-              <p className="mt-1 text-xs text-muted">{status.hint}</p>
+              <p className="mt-1 truncate text-xs text-muted" title={status.hint}>{status.hint}</p>
             </header>
 
-            <div className="flex min-h-24 flex-1 flex-col gap-2 overflow-y-auto px-3 pb-3">
+            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
               {items.slice(0, limit).map((lead) => (
                 <article
                   key={lead.id}
