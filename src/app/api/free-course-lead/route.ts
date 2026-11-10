@@ -50,7 +50,7 @@ async function sendToDiscord(lead: LeadBody, funnel: Funnel) {
       body: JSON.stringify({
         embeds: [
           {
-            title: funnel === "ads" ? "New Free Course Lead (Ad)" : "New Free Course Lead",
+            title: funnel === "ads" ? "New Free Course Ad Opt-in 🎯" : "New Free Course Organic Opt-in 🌱",
             color: 0x2563eb,
             fields: [
               { name: "Name", value: lead.name, inline: true },
