@@ -531,6 +531,15 @@ export default function CrmApp({
               >
                 Add lead
               </button>
+              {user.role === "owner" ? (
+                <a
+                  href={`/api/crm/export?list=${source}`}
+                  className="rounded-full border border-border px-4 py-2 text-sm font-bold hover:border-accent"
+                  title="Download this list (name, email, phone, status) as a spreadsheet. Only you can see this."
+                >
+                  ⬇ Export
+                </a>
+              ) : null}
               <button
                 type="button"
                 onClick={() => setDialog("import")}
