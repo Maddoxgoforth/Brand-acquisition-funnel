@@ -520,6 +520,16 @@ linked from any public page and is `noindex`.
     leads in the lists and how many haven't been called yet. "Lifetime" also
     counts leads worked before event logging.
   Each section only shows for people with access to it.
+- **Graphs and custom dates** (owner's request Nov 10 2026). Every stats
+  page's time-frame switcher has a **Custom** option (two date pickers;
+  `range=custom&from&to` on `/api/crm/stats`, whole local days, `upTo()` in
+  `getStats` adds the end date). Stat cards marked 📈 open a graph
+  (`TrendDialog` → `TrendPanel` → `TrendChart`, plain SVG, hover/tap for each
+  bucket). Analytics has a 📈 Graphs panel and the Leaderboard an "Over time"
+  panel (one line per person). Data: `GET /api/crm/trends`
+  (`src/lib/crm/trends.ts`; metrics listed in `trendMetrics.ts`), bucketed by
+  hour/day/week/month in the viewer's time zone, with the same access rules
+  as the dashboard (cash, visitors and opt-in rate are owner-only).
 - **Live opt-ins** — while the CRM is open it asks `/api/crm/leads/new`
   every 10 seconds (`POLL_MS` in `CrmApp.tsx`) for free-course opt-ins newer
   than its cursor. New ones are added to the board without a refresh, show a

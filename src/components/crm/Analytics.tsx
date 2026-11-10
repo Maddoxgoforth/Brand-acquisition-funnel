@@ -9,10 +9,10 @@ import {
   type CloseSplit,
   type FunnelNumbers,
   type OptInChannel,
-  type StatRange,
 } from "@/lib/crm/constants";
 import { splitText } from "./Dashboard";
-import { RangePicker, StatCard, percent, rangeText, useStats } from "./statsUi";
+import { ChartContext, RangePicker, StatCard, frameOf, percent, rangeText, useStats } from "./statsUi";
+import TrendPanel from "./TrendPanel";
 
 const money = (n: number) => `$${n.toLocaleString("en-US")}`;
 const PRICE = Object.fromEntries(CLOSE_PLANS.map((p) => [p.id, p.amount])) as Record<"monthly" | "yearly", number>;
@@ -48,13 +48,14 @@ function FunnelCards({
 }) {
   return (
     <>
-      <StatCard label="Dialed" value={String(n.dialed)} detail="Called or moved out of To dial" />
+      <StatCard chart={{ metric: "leads_called", list: "dial" }} label="Dialed" value={String(n.dialed)} detail="Called or moved out of To dial" />
       <StatCard
+        chart={{ metric: "answer_rate", list: "dial" }}
         label="Answer rate"
         value={percent(n.answerRate)}
         detail={`${n.answered} picked up out of ${n.dialed} dialed`}
       />
-      <StatCard label="Closed" value={String(n.closed)} detail={closedDetail} />
+      <StatCard chart={{ metric: "closes", list: "dial" }} label="Closed" value={String(n.closed)} detail={closedDetail} />
       <StatCard label="Conversion rate" value={percent(n.conversionRate)} detail={conversionDetail} />
     </>
   );
@@ -69,13 +70,23 @@ export default function Analytics({
   refreshKey: number;
   onError: (error: unknown) => void;
 }) {
-  const [range, setRange] = useState<StatRange>("30d");
-  const current = useStats(range, refreshKey, onError);
-  const inRange = rangeText(range);
+  const [frame, setFrame] = useState(() => frameOf("30d"));
+  const current = useStats(frame, refreshKey, onError);
+  const inRange = rangeText(frame);
 
   return (
+    <ChartContext.Provider value={{ frame, owner: true }}>
     <div className="mx-auto w-full max-w-6xl space-y-8 p-6">
-      <RangePicker range={range} onChange={setRange} />
+      <RangePicker frame={frame} onChange={setFrame} />
+
+      <section className="rounded-2xl border border-border bg-background p-5">
+        <h2 className="text-lg font-extrabold">📈 Graphs</h2>
+        <p className="mb-4 text-sm text-muted">
+          Any number over time. Pick what to graph, the time frame and hourly/daily/weekly/monthly; hover to see each
+          one. You can also click any number below with 📈.
+        </p>
+        <TrendPanel key={JSON.stringify(frame)} spec={{ metric: "optins" }} frame={frame} owner onError={onError} />
+      </section>
 
       {!current ? <p className="text-muted">Loading analytics…</p> : null}
 
@@ -89,16 +100,19 @@ export default function Analytics({
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               highlight
+              chart={{ metric: "revenue" }}
               label="Total cash collected"
               value={money(current.revenue.total)}
               detail={`From ${current.revenue.closes.total} closes`}
             />
             <StatCard
+              chart={{ metric: "closes" }}
               label="Monthly closes"
               value={String(current.revenue.closes.monthly)}
               detail={`${current.revenue.closes.monthly} × ${money(PRICE.monthly)} = ${money(current.revenue.monthlyAmount)}`}
             />
             <StatCard
+              chart={{ metric: "closes" }}
               label="Yearly closes"
               value={String(current.revenue.closes.yearly)}
               detail={`${current.revenue.closes.yearly} × ${money(PRICE.yearly)} = ${money(current.revenue.yearlyAmount)}`}
@@ -170,13 +184,14 @@ export default function Analytics({
           <h2 className="text-lg font-extrabold">Sales calls</h2>
           <p className="text-sm text-muted">Booked calls and how they went, {inRange}.</p>
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Booked appointments" value={String(current.team.booked)} detail={`${percent(current.team.bookRate)} of leads who picked up`} />
+            <StatCard chart={{ metric: "booked" }} label="Booked appointments" value={String(current.team.booked)} detail={`${percent(current.team.bookRate)} of leads who picked up`} />
             <StatCard
+              chart={{ metric: "show_rate" }}
               label="Show rate"
               value={percent(current.team.showRate)}
               detail={`${current.team.noShows} no-show${current.team.noShows === 1 ? "" : "s"}`}
             />
-            <StatCard label="Closes" value={String(current.team.closes.total)} detail={splitText(current.team.closes)} />
+            <StatCard chart={{ metric: "closes" }} label="Closes" value={String(current.team.closes.total)} detail={splitText(current.team.closes)} />
             <StatCard
               label="Close rate"
               value={percent(current.team.closeRate)}
@@ -206,6 +221,7 @@ export default function Analytics({
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               highlight
+              chart={{ metric: "speed" }}
               label="Avg speed to lead"
               value={
                 current.optIns.total.avgFirstContactSeconds === null
@@ -215,6 +231,7 @@ export default function Analytics({
               detail={`Across ${current.optIns.total.contacted} called opt-ins`}
             />
             <StatCard
+              chart={{ metric: "speed" }}
               label="Median"
               value={
                 current.optIns.total.medianFirstContactSeconds === null
@@ -224,6 +241,7 @@ export default function Analytics({
               detail="Half of opt-ins were called faster than this"
             />
             <StatCard
+              chart={{ metric: "within5" }}
               label="Called within 5 min"
               value={percent(
                 current.optIns.total.total > 0
@@ -250,11 +268,13 @@ export default function Analytics({
           </p>
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
+              chart={{ metric: "optins" }}
               label="Opt-ins"
               value={String(current.optIns.total.total)}
               detail={current.optIns.channels.map((c) => `${c.label}: ${c.total}`).join(" · ")}
             />
             <StatCard
+              chart={{ metric: "optin_rate" }}
               label="Opt-in rate"
               value={percent(current.optIns.total.optInRate)}
               detail={
@@ -269,6 +289,7 @@ export default function Analytics({
               detail={`${current.optIns.total.booked} of ${current.optIns.total.total} opt-ins`}
             />
             <StatCard
+              chart={{ metric: "optin_close_rate" }}
               label="Closed"
               value={percent(current.optIns.total.conversionRate)}
               detail={`${current.optIns.total.closed} of ${current.optIns.total.total} opt-ins`}
@@ -439,5 +460,6 @@ export default function Analytics({
         </section>
       ) : null}
     </div>
+    </ChartContext.Provider>
   );
 }

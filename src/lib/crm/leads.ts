@@ -877,7 +877,9 @@ export async function recordSiteEvent(
 export async function getStats(
   access: Access,
   range: StatRange,
-  owner: boolean
+  owner: boolean,
+  // Custom time frame (range "custom"): ISO start and end, either may be open.
+  custom: { from: string | null; to: string | null } = { from: null, to: null }
 ): Promise<Stats> {
   const days = STAT_RANGES.find((r) => r.id === range)!.days;
   const [{ since }] = await query<{ since: string | Date | null }>(
@@ -886,7 +888,11 @@ export async function getStats(
       : `SELECT now() - make_interval(days => $1) AS since`,
     days === null ? [] : [days]
   );
-  const sinceIso = since === null ? null : new Date(since).toISOString();
+  const sinceIso = range === "custom" ? custom.from : since === null ? null : new Date(since).toISOString();
+  const untilIso = range === "custom" ? custom.to : null;
+  // End of a custom time frame. untilIso comes from Date#toISOString (see
+  // parseWindow), so it is safe to put in the SQL text.
+  const upTo = (expr: string) => (untilIso ? ` AND ${expr} < '${untilIso}'::timestamptz` : "");
   const answeredIds = ANSWERED_STATUS_IDS as unknown as string[];
 
   let optIns: Stats["optIns"] = null;
@@ -920,7 +926,7 @@ export async function getStats(
            FILTER (WHERE first_contact_at >= opt_at)::float AS median_s
        FROM (SELECT *, coalesce(last_opt_in_at, created_at) AS opt_at FROM crm_leads) l
        WHERE source = ANY($3::text[])
-         AND ($1::timestamptz IS NULL OR opt_at >= $1::timestamptz)
+         AND ($1::timestamptz IS NULL OR opt_at >= $1::timestamptz)${upTo("opt_at")}
        GROUP BY source`,
       [sinceIso, answeredIds, OPT_IN_SOURCES]
     );
@@ -929,7 +935,7 @@ export async function getStats(
     const steps = await query<{ funnel: string; step: string; visitors: number }>(
       `SELECT funnel, step, count(DISTINCT visitor_id)::int AS visitors
        FROM site_events
-       WHERE ($1::timestamptz IS NULL OR created_at >= $1::timestamptz)
+       WHERE ($1::timestamptz IS NULL OR created_at >= $1::timestamptz)${upTo("created_at")}
        GROUP BY funnel, step`,
       [sinceIso]
     );
@@ -1023,7 +1029,7 @@ export async function getStats(
          coalesce(sum(close_amount) FILTER (WHERE status = 'closed'), 0)::int AS revenue
        FROM crm_leads l
        WHERE source = 'ad_free_course_application'
-         AND ($1::timestamptz IS NULL OR coalesce(last_opt_in_at, created_at) >= $1::timestamptz)
+         AND ($1::timestamptz IS NULL OR coalesce(last_opt_in_at, created_at) >= $1::timestamptz)${upTo("coalesce(last_opt_in_at, created_at)")}
        GROUP BY 1, 2, 3 ORDER BY opt_ins DESC LIMIT 50`,
       [sinceIso]
     );
@@ -1051,16 +1057,16 @@ export async function getStats(
       `WITH active AS (
          SELECT DISTINCT lead_id FROM crm_events
          WHERE type IN ('call', 'status', 'appointment')
-           AND ($1::timestamptz IS NULL OR created_at >= $1::timestamptz)
+           AND ($1::timestamptz IS NULL OR created_at >= $1::timestamptz)${upTo("created_at")}
        ), closes AS (
          SELECT DISTINCT lead_id FROM crm_events
          WHERE type = 'status' AND data->>'to' = 'closed'
-           AND ($1::timestamptz IS NULL OR created_at >= $1::timestamptz)
+           AND ($1::timestamptz IS NULL OR created_at >= $1::timestamptz)${upTo("created_at")}
        ), worked AS (
          SELECT l.*,
-           (a.lead_id IS NOT NULL OR ($1::timestamptz IS NULL
+           (a.lead_id IS NOT NULL OR ($1::timestamptz IS NULL AND ${untilIso ? "false" : "true"}
              AND (l.status <> 'new' OR l.call_count > 0))) AS was_dialed,
-           (c.lead_id IS NOT NULL OR ($1::timestamptz IS NULL
+           (c.lead_id IS NOT NULL OR ($1::timestamptz IS NULL AND ${untilIso ? "false" : "true"}
              AND l.status = 'closed')) AS was_closed
          FROM crm_leads l
          LEFT JOIN active a ON a.lead_id = l.id
@@ -1113,7 +1119,7 @@ export async function getStats(
        JOIN crm_leads l ON l.id = e.lead_id
        WHERE e.type IN ('call', 'status') AND e.actor_id IS NOT NULL AND e.actor_id NOT IN ('website', 'webhook', 'manual')
          AND l.source = ANY($2::text[])
-         AND ($1::timestamptz IS NULL OR e.created_at >= $1::timestamptz)
+         AND ($1::timestamptz IS NULL OR e.created_at >= $1::timestamptz)${upTo("e.created_at")}
      )
      SELECT actor_id, max(actor_name) AS name,
        count(*) FILTER (WHERE type = 'call')::int AS dials,
@@ -1155,7 +1161,7 @@ export async function getStats(
        ))::int AS from_booked
      FROM crm_leads
      WHERE status = 'closed' AND source = ANY($2::text[])
-       AND ($1::timestamptz IS NULL OR coalesce(closed_at, updated_at) >= $1::timestamptz)
+       AND ($1::timestamptz IS NULL OR coalesce(closed_at, updated_at) >= $1::timestamptz)${upTo("coalesce(closed_at, updated_at)")}
      GROUP BY GROUPING SETS ((closed_by_id), (source), ())`,
     [sinceIso, visible]
   );
@@ -1184,7 +1190,7 @@ export async function getStats(
        count(*) FILTER (WHERE status = 'closed')::int AS closed
      FROM crm_leads
      WHERE claimed_by_id IS NOT NULL AND source = ANY($2::text[])
-       AND ($1::timestamptz IS NULL OR claimed_at >= $1::timestamptz)
+       AND ($1::timestamptz IS NULL OR claimed_at >= $1::timestamptz)${upTo("claimed_at")}
      GROUP BY claimed_by_id`,
     [sinceIso, visible]
   );
@@ -1202,7 +1208,7 @@ export async function getStats(
            ORDER BY e.created_at LIMIT 1
          ) f ON true
          WHERE l.source = ANY($2::text[]) AND l.first_contact_at >= l.opt_at
-           AND ($1::timestamptz IS NULL OR l.opt_at >= $1::timestamptz)
+           AND ($1::timestamptz IS NULL OR l.opt_at >= $1::timestamptz)${upTo("l.opt_at")}
          GROUP BY f.actor_id`,
         [sinceIso, OPT_IN_SOURCES]
       )

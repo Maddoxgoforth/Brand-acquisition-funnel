@@ -285,12 +285,22 @@ export const STAT_RANGES = [
   { id: "180d", label: "6 months", days: 180 },
   { id: "365d", label: "1 year", days: 365 },
   { id: "all", label: "Lifetime", days: null },
+  // Dates picked by hand (sent as from / to, see parseWindow).
+  { id: "custom", label: "Custom", days: null },
 ] as const;
 
 export type StatRange = (typeof STAT_RANGES)[number]["id"];
 
 export function isStatRange(value: unknown): value is StatRange {
   return STAT_RANGES.some((r) => r.id === value);
+}
+
+// A `from` / `to` query value as a clean ISO time, or null if missing or
+// not a date. The result only ever holds Date#toISOString characters.
+export function parseWindowTime(value: string | null): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
 export type FunnelNumbers = {

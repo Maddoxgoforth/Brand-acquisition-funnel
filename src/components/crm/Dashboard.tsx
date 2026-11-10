@@ -8,10 +8,9 @@ import {
   formatDuration,
   type CloseSplit,
   type Lead,
-  type StatRange,
 } from "@/lib/crm/constants";
 import Bounties from "./Bounties";
-import { RangePicker, StatCard, percent, rangeText, useStats } from "./statsUi";
+import { ChartContext, RangePicker, StatCard, frameOf, percent, rangeText, useStats } from "./statsUi";
 
 const duration = (s: number | null) => (s === null ? "–" : formatDuration(s));
 
@@ -102,14 +101,14 @@ export default function Dashboard({
   refreshKey: number;
   onError: (error: unknown) => void;
 }) {
-  const [range, setRange] = useState<StatRange>("7d");
-  const stats = useStats(range, refreshKey, onError);
-  const inRange = rangeText(range);
+  const [frame, setFrame] = useState(() => frameOf("7d"));
+  const stats = useStats(frame, refreshKey, onError);
+  const inRange = rangeText(frame);
 
   if (!stats) {
     return (
       <div className="mx-auto w-full max-w-6xl space-y-8 p-6">
-        <RangePicker range={range} onChange={setRange} />
+        <RangePicker frame={frame} onChange={setFrame} />
         <p className="text-muted">Loading dashboard…</p>
       </div>
     );
@@ -120,8 +119,10 @@ export default function Dashboard({
   const mine = place >= 0 ? stats.leaderboard[place] : null;
 
   return (
+    <ChartContext.Provider value={{ frame, owner: me === "owner" }}>
     <div className="mx-auto w-full max-w-6xl space-y-8 p-6">
-      <RangePicker range={range} onChange={setRange} />
+      <RangePicker frame={frame} onChange={setFrame} />
+      <p className="-mt-5 text-xs text-muted">Click any number with 📈 to see it on a graph over time.</p>
 
       <Bounties owner={me === "owner"} onError={onError} />
 
@@ -132,25 +133,28 @@ export default function Dashboard({
         <p className="text-sm text-muted">Everyone&apos;s numbers combined, {inRange}.</p>
         <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {t.optIns !== null ? (
-            <StatCard label="Opt-ins" value={String(t.optIns)} detail="New free course opt-ins" />
+            <StatCard label="Opt-ins" value={String(t.optIns)} detail="New free course opt-ins" chart={{ metric: "optins" }} />
           ) : null}
-          <StatCard label="Dials" value={String(t.dials)} detail={`${t.leadsCalled} different leads called`} />
+          <StatCard chart={{ metric: "dials" }} label="Dials" value={String(t.dials)} detail={`${t.leadsCalled} different leads called`} />
           <StatCard
+            chart={{ metric: "answer_rate" }}
             label="Answer rate"
             value={percent(t.answerRate)}
             detail={`${t.answered} of ${t.leadsCalled} called leads picked up`}
           />
           <StatCard
+            chart={{ metric: "booked" }}
             label="Booked appointments"
             value={String(t.booked)}
             detail={`${percent(t.bookRate)} of leads who picked up`}
           />
           <StatCard
+            chart={{ metric: "show_rate" }}
             label="Show rate"
             value={percent(t.showRate)}
             detail={`${t.noShows} no-show${t.noShows === 1 ? "" : "s"} on booked calls`}
           />
-          <StatCard label="Closes" value={String(t.closes.total)} detail={splitText(t.closes)} />
+          <StatCard chart={{ metric: "closes" }} label="Closes" value={String(t.closes.total)} detail={splitText(t.closes)} />
           <StatCard
             label="Close rate"
             value={percent(t.closeRate)}
@@ -158,6 +162,7 @@ export default function Dashboard({
           />
           {t.optIns !== null ? (
             <StatCard
+              chart={{ metric: "optin_close_rate" }}
               label="Opt-in to close rate"
               value={percent(t.optInCloseRate)}
               detail={`${t.optInClosed ?? 0} closed of ${t.optIns} opt-ins from ${inRange}`}
@@ -166,6 +171,7 @@ export default function Dashboard({
           {t.optIns !== null ? (
             <>
               <StatCard
+                chart={{ metric: "speed" }}
                 label="Avg speed to lead"
                 value={duration(t.avgFirstContactSeconds)}
                 detail={`${percent(t.within5Rate)} called within 5 minutes`}
@@ -188,15 +194,17 @@ export default function Dashboard({
             : `Your numbers, ${inRange}.`}
         </p>
         <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <StatCard highlight label="Your dials" value={String(mine?.dials ?? 0)} detail={`${percent(mine?.answerRate ?? null)} answer rate`} />
+          <StatCard chart={{ metric: "dials", actor: me, actorName: "you" }} highlight label="Your dials" value={String(mine?.dials ?? 0)} detail={`${percent(mine?.answerRate ?? null)} answer rate`} />
           <StatCard
             highlight
+            chart={{ metric: "booked", actor: me, actorName: "you" }}
             label="Booked"
             value={String(mine?.booked ?? 0)}
             detail={`${percent(mine?.showRate ?? null)} show rate`}
           />
           <StatCard
             highlight
+            chart={{ metric: "closes", actor: me, actorName: "you" }}
             label="Closes"
             value={String(mine?.closes ?? 0)}
             detail={`${mine?.monthly ?? 0} monthly · ${mine?.yearly ?? 0} yearly`}
@@ -216,5 +224,6 @@ export default function Dashboard({
         </div>
       </section>
     </div>
+    </ChartContext.Provider>
   );
 }

@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 
-import { formatDuration, type LeaderboardRow, type StatRange } from "@/lib/crm/constants";
+import { formatDuration, type LeaderboardRow } from "@/lib/crm/constants";
+import type { TrendMetricId } from "@/lib/crm/trendMetrics";
 import Bounties from "./Bounties";
-import { RangePicker, percent, rangeText, useStats } from "./statsUi";
+import { RangePicker, frameOf, percent, rangeText, useStats } from "./statsUi";
+import TrendPanel from "./TrendPanel";
 
 // What the leaderboard can be ranked by. Speed to lead ranks lowest first.
 const METRICS = [
@@ -16,6 +18,17 @@ const METRICS = [
   { id: "speed", label: "Speed to lead" },
 ] as const;
 type Metric = (typeof METRICS)[number]["id"];
+
+// The graph under the leaderboard for each ranking (close rate has no
+// over-time version, so it graphs closes).
+const TREND_OF: Record<Metric, TrendMetricId> = {
+  closes: "closes",
+  booked: "booked",
+  dials: "dials",
+  closeRate: "closes",
+  showRate: "show_rate",
+  speed: "dials",
+};
 
 function metricValue(row: LeaderboardRow, metric: Metric): number | null {
   if (metric === "closeRate") return row.closeRate;
@@ -139,15 +152,15 @@ export default function Leaderboard({
   me: string;
   onError: (error: unknown) => void;
 }) {
-  const [range, setRange] = useState<StatRange>("7d");
+  const [frame, setFrame] = useState(() => frameOf("7d"));
   const [metric, setMetric] = useState<Metric>("closes");
-  const stats = useStats(range, 0, onError);
+  const stats = useStats(frame, 0, onError);
   const rows = useMemo(() => (stats ? rank(stats.leaderboard, metric) : []), [stats, metric]);
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 p-6">
       <div className="flex flex-wrap items-center gap-3">
-        <RangePicker range={range} onChange={setRange} />
+        <RangePicker frame={frame} onChange={setFrame} />
       </div>
 
       <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 px-6 pt-6 shadow-xl">
@@ -155,7 +168,7 @@ export default function Leaderboard({
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-300">Leaderboard</p>
             <h2 className="mt-1 text-3xl font-extrabold text-white">Who&apos;s on top</h2>
-            <p className="text-sm text-white/60">Ranked by {METRICS.find((m) => m.id === metric)!.label.toLowerCase()}, {rangeText(range)}.</p>
+            <p className="text-sm text-white/60">Ranked by {METRICS.find((m) => m.id === metric)!.label.toLowerCase()}, {rangeText(frame)}.</p>
           </div>
           <div className="flex flex-wrap gap-1 rounded-full bg-white/10 p-1">
             {METRICS.map((m) => (
@@ -256,6 +269,18 @@ export default function Leaderboard({
           </table>
         </section>
       ) : null}
+
+      <section className="rounded-2xl border border-border bg-background p-5">
+        <h2 className="text-lg font-extrabold">📈 Over time</h2>
+        <p className="mb-4 text-sm text-muted">One line per person. Hover to see each hour, day, week or month.</p>
+        <TrendPanel
+          key={`${metric}|${JSON.stringify(frame)}`}
+          spec={{ metric: TREND_OF[metric], byPerson: true }}
+          frame={frame}
+          owner={me === "owner"}
+          onError={onError}
+        />
+      </section>
 
       <p className="text-xs text-muted">
         Dials: calls placed from the CRM. Booked: leads they moved to Appointment scheduled. Closes:
