@@ -40,9 +40,7 @@ export default function AdFunnel() {
   const [stage, setStage] = useState<Stage>({ kind: "intro" });
   const [answers, setAnswers] = useState<Answers>({});
 
-  useEffect(() => {
-    trackStep("ads", "view");
-  }, []);
+  // "Landed on the quiz page" is counted on the server (free-training/page.tsx).
 
   const total = QUESTIONS.length;
   const progress =
