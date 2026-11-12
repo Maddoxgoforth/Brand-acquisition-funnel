@@ -734,6 +734,12 @@ Built for running Meta ads to the free course (owner's request, Oct 2026).
   first-party tracking: `src/lib/tracking.ts` `trackStep()` →
   `POST /api/track` → `site_events` (anonymous visitor id, funnel, step; one
   row per visitor per step per hour). Steps are listed in `FUNNEL_STEPS`.
+  Exception (Nov 12 2026): the ad funnel's first step ("Landed on the quiz
+  page", `ads`/`view`) is recorded on the server by
+  `src/app/free-training/page.tsx` when the page is requested (visitor id =
+  anonymous hash of IP + user agent; bots and prefetches skipped), because
+  the browser beacon missed most TikTok in-app-browser visitors. Later steps
+  still come from the browser, so they can undercount.
   Opt-in rate = tracked opt-ins ÷ tracked visitors, so leads from before
   tracking existed don't skew it.
 - **Meta Pixel** (`src/components/tracking/MetaPixel.tsx`, in the root
