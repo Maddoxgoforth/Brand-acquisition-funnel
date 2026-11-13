@@ -42,7 +42,7 @@ const SCHEMA = [
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS claimed_by_id text`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS claimed_by_name text`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS claimed_at timestamptz`,
-  // Closes: plan (monthly / yearly), what it's worth, when and by whom.
+  // Closes: plan (monthly / yearly / builder_yearly), what it's worth, when and by whom.
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS close_plan text`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS close_amount integer`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS closed_at timestamptz`,
@@ -130,6 +130,8 @@ const SCHEMA = [
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
   `CREATE INDEX IF NOT EXISTS crm_commission_rates_user_idx ON crm_commission_rates (user_id)`,
+  // Builder Yearly plan (added Nov 12 2026): $100 per close unless changed.
+  `ALTER TABLE crm_commission_rates ADD COLUMN IF NOT EXISTS builder_yearly integer NOT NULL DEFAULT 100`,
   // Bounties the owner posts for the team: the next `target` closes (of a
   // plan) by team members pay `amount` commission each, instead of
   // (mode 'replace') or on top of (mode 'extra') the normal rate.

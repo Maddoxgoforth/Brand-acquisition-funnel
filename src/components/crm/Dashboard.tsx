@@ -14,9 +14,10 @@ import { ChartContext, RangePicker, StatCard, frameOf, percent, rangeText, useSt
 
 const duration = (s: number | null) => (s === null ? "–" : formatDuration(s));
 
-// "3 monthly · 2 yearly" (+ closes from before plans were recorded)
+// "3 Builder Monthly · 2 Starter Yearly · 1 Builder Yearly" (+ closes from
+// before plans were recorded)
 export function splitText(c: CloseSplit) {
-  const parts = [`${c.monthly} monthly`, `${c.yearly} yearly`];
+  const parts = [`${c.monthly} Builder Monthly`, `${c.yearly} Starter Yearly`, `${c.builderYearly} Builder Yearly`];
   if (c.unknown > 0) parts.push(`${c.unknown} no plan`);
   return parts.join(" · ");
 }
@@ -207,7 +208,7 @@ export default function Dashboard({
             chart={{ metric: "closes", actor: me, actorName: "you" }}
             label="Closes"
             value={String(mine?.closes ?? 0)}
-            detail={`${mine?.monthly ?? 0} monthly · ${mine?.yearly ?? 0} yearly`}
+            detail={`${mine?.monthly ?? 0} B. Monthly · ${mine?.yearly ?? 0} S. Yearly · ${mine?.builderYearly ?? 0} B. Yearly`}
           />
           <StatCard
             highlight

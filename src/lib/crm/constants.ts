@@ -123,9 +123,13 @@ export const TIMED_STATUSES: readonly StatusId[] = ["appointment", "callback"];
 
 // What a close is worth to Maddox, by plan. Every close needs a plan and a
 // screenshot of the successful payment.
+// Ids are stored on each close, so they stay "monthly" / "yearly" even
+// though the plans' names changed (owner, Nov 12 2026): "yearly" is Base44's
+// Starter Yearly plan, "builder_yearly" the Builder Yearly plan added then.
 export const CLOSE_PLANS = [
-  { id: "monthly", label: "Monthly", amount: 225 },
-  { id: "yearly", label: "Yearly", amount: 250 },
+  { id: "monthly", label: "Builder Monthly", amount: 225 },
+  { id: "yearly", label: "Starter Yearly", amount: 250 },
+  { id: "builder_yearly", label: "Builder Yearly", amount: 475 },
 ] as const;
 export type ClosePlan = (typeof CLOSE_PLANS)[number]["id"];
 export function isClosePlan(value: unknown): value is ClosePlan {
@@ -134,9 +138,9 @@ export function isClosePlan(value: unknown): value is ClosePlan {
 export const planLabel = (plan: string | null) =>
   CLOSE_PLANS.find((p) => p.id === plan)?.label ?? "Plan not recorded";
 
-// Monthly / yearly split of a number of closes. `unknown` = closed before
-// plans were recorded.
-export type CloseSplit = { total: number; monthly: number; yearly: number; unknown: number };
+// Split of a number of closes by plan. `unknown` = closed before plans were
+// recorded.
+export type CloseSplit = { total: number; monthly: number; yearly: number; builderYearly: number; unknown: number };
 
 export const STATUS_IDS = STATUSES.map((s) => s.id) as readonly StatusId[];
 
@@ -225,6 +229,7 @@ export type LeaderboardRow = {
   closes: number;
   monthly: number;
   yearly: number;
+  builderYearly: number;
   // Leads they claimed during the range, how many of those are closed now,
   // and closed ÷ claimed.
   claimed: number;
@@ -242,6 +247,7 @@ export type Revenue = {
   closes: CloseSplit;
   monthlyAmount: number;
   yearlyAmount: number;
+  builderYearlyAmount: number;
   byCloser: { name: string; closes: CloseSplit; amount: number }[];
   bySource: { source: SourceId; label: string; closes: CloseSplit; amount: number }[];
 };
@@ -555,14 +561,16 @@ export function classifyField(header: string): ContactField | null {
 
 // Which closes a bounty or bonus rule counts.
 export const PAY_PLANS = [
-  { id: "yearly", label: "Yearly" },
-  { id: "monthly", label: "Monthly" },
+  { id: "yearly", label: "Starter Yearly" },
+  { id: "builder_yearly", label: "Builder Yearly" },
+  { id: "monthly", label: "Builder Monthly" },
   { id: "any", label: "Any plan" },
 ] as const;
 export type PayPlan = (typeof PAY_PLANS)[number]["id"];
 export const isPayPlan = (v: unknown): v is PayPlan => PAY_PLANS.some((p) => p.id === v);
-// "yearly close" / "monthly close" / "close"
-export const payPlanNoun = (plan: PayPlan) => (plan === "any" ? "close" : `${plan} close`);
+// "Starter Yearly close" / "Builder Monthly close" / "close"
+export const payPlanNoun = (plan: PayPlan) =>
+  plan === "any" ? "close" : `${PAY_PLANS.find((p) => p.id === plan)?.label ?? plan} close`;
 
 // replace = each counted close pays the bounty amount instead of the normal
 // commission; extra = the bounty amount is paid on top of it.
@@ -597,7 +605,8 @@ export type BonusRule = {
   endedAt: string | null;
 };
 
-export type CommissionRate = { monthly: number; yearly: number };
+// $ per close by plan. builderYearly defaults to $100 (owner, Nov 12 2026).
+export type CommissionRate = { monthly: number; yearly: number; builderYearly: number };
 
 // One line of what a team member earned (or was paid).
 export type PayLine = {
@@ -625,6 +634,7 @@ export type PayMemberRow = {
   // Closes in the range that are still Closed.
   monthly: number;
   yearly: number;
+  builderYearly: number;
   // Earnings in the range.
   base: number;
   bounty: number;

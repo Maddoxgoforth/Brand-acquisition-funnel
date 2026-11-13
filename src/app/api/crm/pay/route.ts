@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 }
 
 // Owner only. Actions:
-// { action: "rate", userId, monthly, yearly, applyToPast }
+// { action: "rate", userId, monthly, yearly, builderYearly, applyToPast }
 // { action: "rule", name, plan, everyN, amount } | { action: "rule-end" | "rule-reopen" | "rule-delete", id }
 // { action: "entry", userId, kind: "adjustment" | "payout", amount, note, at } | { action: "entry-delete", id }
 export async function POST(request: Request) {
@@ -45,10 +45,17 @@ export async function POST(request: Request) {
       switch (b.action) {
         case "rate":
           if (!userId) return bad("Invalid request");
-          if (!whole(b.monthly, 0, 100000) || !whole(b.yearly, 0, 100000)) {
-            return bad("Enter commissions in whole dollars.");
+          {
+            const builderYearly = b.builderYearly === undefined ? 100 : b.builderYearly;
+            if (!whole(b.monthly, 0, 100000) || !whole(b.yearly, 0, 100000) || !whole(builderYearly, 0, 100000)) {
+              return bad("Enter commissions in whole dollars.");
+            }
+            await setRate(
+              userId,
+              { monthly: b.monthly as number, yearly: b.yearly as number, builderYearly: builderYearly as number },
+              b.applyToPast === true
+            );
           }
-          await setRate(userId, { monthly: b.monthly as number, yearly: b.yearly as number }, b.applyToPast === true);
           break;
         case "rule": {
           const name = typeof b.name === "string" ? b.name.trim().slice(0, 120) : "";

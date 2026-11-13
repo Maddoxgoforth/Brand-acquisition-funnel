@@ -58,7 +58,7 @@ const closedLeads = `FROM crm_leads l
     AND ($6::text IS NULL OR l.closed_by_id = $6)
     AND ${inWindow("coalesce(l.closed_at, l.updated_at)")}`;
 
-const planName = `CASE l.close_plan WHEN 'monthly' THEN 'Monthly' WHEN 'yearly' THEN 'Yearly' ELSE 'No plan' END`;
+const planName = `CASE l.close_plan WHEN 'monthly' THEN 'Builder Monthly' WHEN 'yearly' THEN 'Starter Yearly' WHEN 'builder_yearly' THEN 'Builder Yearly' ELSE 'No plan' END`;
 
 // SQL per metric, returning b (bucket), s (series) and v (value, null = no data).
 function sqlFor(metric: TrendMetricId, byPerson: boolean): string {

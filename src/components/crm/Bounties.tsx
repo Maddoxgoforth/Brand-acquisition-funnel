@@ -141,7 +141,7 @@ function NewBounty({ onCreate, onCancel }: { onCreate: (body: Record<string, unk
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm font-semibold sm:col-span-2">
           Name
-          <input className={input} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Yearly close sprint" required />
+          <input className={input} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Starter Yearly close sprint" required />
         </label>
         <label className="text-sm font-semibold">
           Which closes count

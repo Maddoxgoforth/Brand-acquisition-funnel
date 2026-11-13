@@ -9,7 +9,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const IMAGE = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/;
 const MAX_BYTES = 3_000_000;
 
-// POST { plan: "monthly" | "yearly", screenshot: "data:image/jpeg;base64,…" }
+// POST { plan: "monthly" | "yearly" | "builder_yearly", screenshot: "data:image/jpeg;base64,…" }
 // moves the lead to Closed. Both are required.
 export async function POST(request: Request, { params }: Context) {
   return crmRoute(request, async (session) => {
@@ -20,7 +20,7 @@ export async function POST(request: Request, { params }: Context) {
     }
     const body = (await readJson(request)) as Record<string, unknown> | null;
     if (!body || !isClosePlan(body.plan)) {
-      return Response.json({ error: "Pick monthly or yearly." }, { status: 400 });
+      return Response.json({ error: "Pick the plan they bought." }, { status: 400 });
     }
     const match = typeof body.screenshot === "string" ? IMAGE.exec(body.screenshot) : null;
     if (!match) {

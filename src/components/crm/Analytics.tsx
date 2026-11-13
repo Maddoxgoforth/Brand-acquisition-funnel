@@ -6,6 +6,7 @@ import {
   CLOSE_PLANS,
   SOURCES,
   formatDuration,
+  type ClosePlan,
   type CloseSplit,
   type FunnelNumbers,
   type OptInChannel,
@@ -15,13 +16,14 @@ import { ChartContext, RangePicker, StatCard, frameOf, percent, rangeText, useSt
 import TrendPanel from "./TrendPanel";
 
 const money = (n: number) => `$${n.toLocaleString("en-US")}`;
-const PRICE = Object.fromEntries(CLOSE_PLANS.map((p) => [p.id, p.amount])) as Record<"monthly" | "yearly", number>;
+const PRICE = Object.fromEntries(CLOSE_PLANS.map((p) => [p.id, p.amount])) as Record<ClosePlan, number>;
 
 function SplitCells({ c, amount }: { c: CloseSplit; amount: number }) {
   return (
     <>
       <td className="px-5 py-3 text-right tabular-nums">{c.monthly}</td>
       <td className="px-5 py-3 text-right tabular-nums">{c.yearly}</td>
+      <td className="px-5 py-3 text-right tabular-nums">{c.builderYearly}</td>
       <td className="px-5 py-3 text-right font-bold tabular-nums">{c.total}</td>
       <td className="px-5 py-3 text-right font-extrabold tabular-nums text-emerald-700">{money(amount)}</td>
     </>
@@ -30,8 +32,9 @@ function SplitCells({ c, amount }: { c: CloseSplit; amount: number }) {
 
 const splitHead = (
   <>
-    <th className="px-5 py-3 text-right font-bold">Monthly</th>
-    <th className="px-5 py-3 text-right font-bold">Yearly</th>
+    <th className="px-5 py-3 text-right font-bold">Builder Monthly</th>
+    <th className="px-5 py-3 text-right font-bold">Starter Yearly</th>
+    <th className="px-5 py-3 text-right font-bold">Builder Yearly</th>
     <th className="px-5 py-3 text-right font-bold">Total closes</th>
     <th className="px-5 py-3 text-right font-bold">Cash collected</th>
   </>
@@ -94,10 +97,10 @@ export default function Analytics({
         <section>
           <h2 className="text-lg font-extrabold">💰 Cash collected</h2>
           <p className="text-sm text-muted">
-            What your closes made you during {inRange}: {money(PRICE.monthly)} per monthly close,{" "}
-            {money(PRICE.yearly)} per yearly close.
+            What your closes made you during {inRange}: {money(PRICE.monthly)} per Builder Monthly,{" "}
+            {money(PRICE.yearly)} per Starter Yearly, {money(PRICE.builder_yearly)} per Builder Yearly.
           </p>
-          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <StatCard
               highlight
               chart={{ metric: "revenue" }}
@@ -107,15 +110,21 @@ export default function Analytics({
             />
             <StatCard
               chart={{ metric: "closes" }}
-              label="Monthly closes"
+              label="Builder Monthly closes"
               value={String(current.revenue.closes.monthly)}
               detail={`${current.revenue.closes.monthly} × ${money(PRICE.monthly)} = ${money(current.revenue.monthlyAmount)}`}
             />
             <StatCard
               chart={{ metric: "closes" }}
-              label="Yearly closes"
+              label="Starter Yearly closes"
               value={String(current.revenue.closes.yearly)}
               detail={`${current.revenue.closes.yearly} × ${money(PRICE.yearly)} = ${money(current.revenue.yearlyAmount)}`}
+            />
+            <StatCard
+              chart={{ metric: "closes" }}
+              label="Builder Yearly closes"
+              value={String(current.revenue.closes.builderYearly)}
+              detail={`${current.revenue.closes.builderYearly} × ${money(PRICE.builder_yearly)} = ${money(current.revenue.builderYearlyAmount)}`}
             />
             <StatCard
               label="Avg per close"
@@ -127,7 +136,7 @@ export default function Analytics({
               detail={
                 current.revenue.closes.unknown > 0
                   ? `${current.revenue.closes.unknown} older close${current.revenue.closes.unknown === 1 ? "" : "s"} have no plan recorded`
-                  : "Across monthly and yearly"
+                  : "Across all plans"
               }
             />
           </div>

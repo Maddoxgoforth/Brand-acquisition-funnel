@@ -7,6 +7,7 @@ import {
   SOURCES,
   STATUSES,
   payPlanNoun,
+  planLabel,
   type ActivityItem,
   type PayLine,
   type PayMemberRow,
@@ -76,7 +77,7 @@ function describe(a: ActivityItem): { icon: string; text: string } {
       return { icon: "📞", text: `Called ${a.leadName}${d.notes ? ` · note: "${d.notes}"` : ""}` };
     case "status":
       return d.to === "closed"
-        ? { icon: "💰", text: `Closed ${a.leadName}${d.plan ? ` (${d.plan})` : ""}` }
+        ? { icon: "💰", text: `Closed ${a.leadName}${d.plan ? ` (${planLabel(d.plan)})` : ""}` }
         : { icon: "➡️", text: `Moved ${a.leadName}: ${statusLabel(d.from)} → ${statusLabel(d.to)}` };
     case "appointment":
       return {
@@ -88,7 +89,7 @@ function describe(a: ActivityItem): { icon: string; text: string } {
     case "claim":
       return { icon: "✋", text: `${d.action ? d.action[0].toUpperCase() + d.action.slice(1) : "Claimed"} ${a.leadName}${d.from ? ` (from ${d.from})` : ""}` };
     case "close":
-      return { icon: "💰", text: `Updated the close on ${a.leadName}${d.plan ? ` (${d.plan})` : ""}` };
+      return { icon: "💰", text: `Updated the close on ${a.leadName}${d.plan ? ` (${planLabel(d.plan)})` : ""}` };
     case "created":
       return { icon: "➕", text: `Added ${a.leadName}` };
     case "inbound":
@@ -311,7 +312,7 @@ function Lines({
 // ---- Bonus rules ---------------------------------------------------------------
 
 function BonusRules({ report, onPost }: { report: PayReport; onPost: (body: Record<string, unknown>) => Promise<boolean> }) {
-  const [name, setName] = useState("Every 5 yearly closes");
+  const [name, setName] = useState("Every 5 Starter Yearly closes");
   const [plan, setPlan] = useState<PayPlan>("yearly");
   const [everyN, setEveryN] = useState("5");
   const [amount, setAmount] = useState("50");
@@ -329,7 +330,7 @@ function BonusRules({ report, onPost }: { report: PayReport; onPost: (body: Reco
         <div>
           <h2 className="text-lg font-extrabold">Bonus rules</h2>
           <p className="text-sm text-muted">
-            Extra commission for hitting a number of closes, e.g. +$50 for every 5 yearly closes. Each rule counts closes from the
+            Extra commission for hitting a number of closes, e.g. +$50 for every 5 Starter Yearly closes. Each rule counts closes from the
             day it&apos;s turned on. To change an amount, turn the old rule off and add a new one, so past bonuses stay as they were.
           </p>
         </div>
@@ -507,8 +508,9 @@ export default function TeamPay({ onError }: { onError: (error: unknown) => void
                     <th className="px-4 py-3 font-bold">Name</th>
                     <th className="px-4 py-3 text-right font-bold">Dials</th>
                     <th className="px-4 py-3 text-right font-bold">Booked</th>
-                    <th className="px-4 py-3 text-right font-bold">Monthly</th>
-                    <th className="px-4 py-3 text-right font-bold">Yearly</th>
+                    <th className="px-4 py-3 text-right font-bold">Builder Monthly</th>
+                    <th className="px-4 py-3 text-right font-bold">Starter Yearly</th>
+                    <th className="px-4 py-3 text-right font-bold">Builder Yearly</th>
                     <th className="px-4 py-3 text-right font-bold">Closes $</th>
                     <th className="px-4 py-3 text-right font-bold">Bounties</th>
                     <th className="px-4 py-3 text-right font-bold">Bonuses</th>
@@ -571,7 +573,7 @@ function MemberRow({
           <span className="block text-xs text-muted">
             {m.status === "active" ? "" : m.status === "deleted" ? "Account deleted · " : "Access removed · "}
             {m.rate.monthly || m.rate.yearly
-              ? `${money(m.rate.monthly)} monthly / ${money(m.rate.yearly)} yearly`
+              ? `${money(m.rate.monthly)} B. Monthly / ${money(m.rate.yearly)} S. Yearly / ${money(m.rate.builderYearly)} B. Yearly`
               : "No commission rate set"}
             {m.lastActiveAt ? ` · active ${timeAgo(m.lastActiveAt)}` : " · no activity yet"}
           </span>
@@ -583,6 +585,7 @@ function MemberRow({
         <td className={cell}>{m.booked}</td>
         <td className={cell}>{m.monthly}</td>
         <td className={cell}>{m.yearly}</td>
+        <td className={cell}>{m.builderYearly}</td>
         <td className={cell}>{money(m.base)}</td>
         <td className={cell}>{money(m.bounty)}</td>
         <td className={cell}>{money(m.bonus)}</td>
@@ -599,7 +602,7 @@ function MemberRow({
               <span><b>{m.statusChanges}</b> column moves</span>
               <span><b>{m.booked}</b> booked</span>
               <span><b>{m.claimed}</b> leads claimed</span>
-              <span><b>{m.monthly + m.yearly}</b> closes</span>
+              <span><b>{m.monthly + m.yearly + m.builderYearly}</b> closes</span>
               <span><b>{money(m.paidInRange)}</b> paid out in this time frame</span>
             </div>
             <div className="grid gap-6 lg:grid-cols-2">

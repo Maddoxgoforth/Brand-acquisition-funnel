@@ -26,7 +26,7 @@ const STATUS_STYLE: Record<Member["status"], string> = {
   disabled: "bg-slate-200 text-slate-700",
 };
 
-type Rate = { monthly: number; yearly: number };
+type Rate = { monthly: number; yearly: number; builderYearly: number };
 
 // Commission per close for one person. A new rate counts from now on unless
 // "apply to past closes too" is ticked.
@@ -43,20 +43,24 @@ function CommissionRate({
 }) {
   const [monthly, setMonthly] = useState(String(rate?.monthly ?? 0));
   const [yearly, setYearly] = useState(String(rate?.yearly ?? 0));
+  const [builderYearly, setBuilderYearly] = useState(String(rate?.builderYearly ?? 100));
   const [past, setPast] = useState(false);
   const [saved, setSaved] = useState(false);
-  const changed = Number(monthly) !== (rate?.monthly ?? 0) || Number(yearly) !== (rate?.yearly ?? 0);
+  const changed =
+    Number(monthly) !== (rate?.monthly ?? 0) ||
+    Number(yearly) !== (rate?.yearly ?? 0) ||
+    Number(builderYearly) !== (rate?.builderYearly ?? 100);
   const first = !rate || (rate.monthly === 0 && rate.yearly === 0);
 
   async function save() {
-    const was = `$${rate?.monthly ?? 0} monthly / $${rate?.yearly ?? 0} yearly`;
-    const now = `$${Number(monthly)} monthly / $${Number(yearly)} yearly`;
+    const was = `$${rate?.monthly ?? 0} Builder Monthly / $${rate?.yearly ?? 0} Starter Yearly / $${rate?.builderYearly ?? 100} Builder Yearly`;
+    const now = `$${Number(monthly)} Builder Monthly / $${Number(yearly)} Starter Yearly / $${Number(builderYearly)} Builder Yearly`;
     const which = first || past ? "all of their closes, including past ones" : "their closes from now on";
     if (!window.confirm(`Change ${member.name}'s commission?\n\nFrom: ${was}\nTo: ${now}\n\nThis counts for ${which}.`)) return;
     try {
       await crmFetch("/api/crm/pay", {
         method: "POST",
-        body: { action: "rate", userId: member.id, monthly: Number(monthly), yearly: Number(yearly), applyToPast: past },
+        body: { action: "rate", userId: member.id, monthly: Number(monthly), yearly: Number(yearly), builderYearly: Number(builderYearly), applyToPast: past },
       });
       setSaved(true);
       setPast(false);
@@ -71,12 +75,16 @@ function CommissionRate({
     <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
       <span className="font-semibold">Commission per close:</span>
       <label className="flex items-center gap-1">
-        Monthly $
+        Builder Monthly $
         <input className={box} type="number" min={0} value={monthly} onChange={(e) => { setMonthly(e.target.value); setSaved(false); }} />
       </label>
       <label className="flex items-center gap-1">
-        Yearly $
+        Starter Yearly $
         <input className={box} type="number" min={0} value={yearly} onChange={(e) => { setYearly(e.target.value); setSaved(false); }} />
+      </label>
+      <label className="flex items-center gap-1">
+        Builder Yearly $
+        <input className={box} type="number" min={0} value={builderYearly} onChange={(e) => { setBuilderYearly(e.target.value); setSaved(false); }} />
       </label>
       {changed ? (
         <>
@@ -247,7 +255,7 @@ export default function Team({
                 </div>
                 {member.status !== "pending" && rates ? (
                   <CommissionRate
-                    key={`${member.id}-${rates[member.id]?.monthly ?? 0}-${rates[member.id]?.yearly ?? 0}`}
+                    key={`${member.id}-${rates[member.id]?.monthly ?? 0}-${rates[member.id]?.yearly ?? 0}-${rates[member.id]?.builderYearly ?? 100}`}
                     member={member}
                     rate={rates[member.id]}
                     onSaved={() => setRatesKey((k) => k + 1)}

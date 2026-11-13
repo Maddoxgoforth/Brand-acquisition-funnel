@@ -129,7 +129,7 @@ function PodiumSpot({
           <p className="text-xs text-white/60">{METRICS.find((m) => m.id === metric)!.label.toLowerCase()}</p>
           {metric === "closes" ? (
             <p className="mt-1 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-bold text-white/80">
-              {row.monthly} monthly · {row.yearly} yearly
+              {row.monthly} B. monthly · {row.yearly} S. yearly · {row.builderYearly} B. yearly
             </p>
           ) : null}
         </>
@@ -212,8 +212,9 @@ export default function Leaderboard({
                 <th className="px-4 py-3 text-right font-bold">Answer rate</th>
                 <th className="px-4 py-3 text-right font-bold">Booked</th>
                 <th className="px-4 py-3 text-right font-bold">Show rate</th>
-                <th className="px-4 py-3 text-right font-bold">Monthly</th>
-                <th className="px-4 py-3 text-right font-bold">Yearly</th>
+                <th className="px-4 py-3 text-right font-bold">Builder Monthly</th>
+                <th className="px-4 py-3 text-right font-bold">Starter Yearly</th>
+                <th className="px-4 py-3 text-right font-bold">Builder Yearly</th>
                 <th className="px-4 py-3 text-right font-bold">Total closes</th>
                 <th className="px-4 py-3 text-right font-bold">Close rate</th>
                 <th className="px-4 py-3 text-right font-bold">Speed to lead</th>
@@ -248,6 +249,7 @@ export default function Leaderboard({
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">{row.monthly}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{row.yearly}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{row.builderYearly}</td>
                   <td className="px-4 py-3 text-right font-extrabold tabular-nums">{row.closes}</td>
                   <td className="px-4 py-3 text-right tabular-nums" title={`${row.claimedClosed} closed of ${row.claimed} claimed`}>
                     {percent(row.closeRate)}
@@ -284,7 +286,7 @@ export default function Leaderboard({
 
       <p className="text-xs text-muted">
         Dials: calls placed from the CRM. Booked: leads they moved to Appointment scheduled. Closes:
-        leads they closed in this time frame (monthly and yearly). Show rate: of the calls they booked that
+        leads they closed in this time frame (Builder Monthly, Starter Yearly and Builder Yearly). Show rate: of the calls they booked that
         already happened, how many weren&apos;t no-shows. Close rate: of the leads they claimed in this time frame, how
         many are closed. Speed to lead: average time from opt-in to their first call, on the
         opt-ins they reached first.

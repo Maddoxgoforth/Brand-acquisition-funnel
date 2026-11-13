@@ -1145,6 +1145,7 @@ export async function getStats(
     total: number;
     monthly: number;
     yearly: number;
+    builder_yearly: number;
     amount: number;
     from_booked: number;
   }>(
@@ -1154,6 +1155,7 @@ export async function getStats(
        count(*)::int AS total,
        count(*) FILTER (WHERE close_plan = 'monthly')::int AS monthly,
        count(*) FILTER (WHERE close_plan = 'yearly')::int AS yearly,
+       count(*) FILTER (WHERE close_plan = 'builder_yearly')::int AS builder_yearly,
        coalesce(sum(close_amount), 0)::int AS amount,
        count(*) FILTER (WHERE EXISTS (
          SELECT 1 FROM crm_events e WHERE e.lead_id = crm_leads.id AND e.type = 'status'
@@ -1165,11 +1167,12 @@ export async function getStats(
      GROUP BY GROUPING SETS ((closed_by_id), (source), ())`,
     [sinceIso, visible]
   );
-  const split = (r?: { total: number; monthly: number; yearly: number }): CloseSplit => ({
+  const split = (r?: { total: number; monthly: number; yearly: number; builder_yearly: number }): CloseSplit => ({
     total: r?.total ?? 0,
     monthly: r?.monthly ?? 0,
     yearly: r?.yearly ?? 0,
-    unknown: (r?.total ?? 0) - (r?.monthly ?? 0) - (r?.yearly ?? 0),
+    builderYearly: r?.builder_yearly ?? 0,
+    unknown: (r?.total ?? 0) - (r?.monthly ?? 0) - (r?.yearly ?? 0) - (r?.builder_yearly ?? 0),
   });
   const closerRows = closeRows.filter((r) => !r.is_total && !r.by_source);
   const totalClose = closeRows.find((r) => r.is_total);
@@ -1226,7 +1229,7 @@ export async function getStats(
         actorId: id,
         name: name || (id === "owner" ? "Owner" : "Unknown"),
         dials: 0, leadsCalled: 0, answered: 0, answerRate: null,
-        booked: 0, noShows: 0, showRate: null, closes: 0, monthly: 0, yearly: 0,
+        booked: 0, noShows: 0, showRate: null, closes: 0, monthly: 0, yearly: 0, builderYearly: 0,
         claimed: 0, claimedClosed: 0, closeRate: null,
         avgSpeedSeconds: null, speedLeads: 0,
       };
@@ -1254,6 +1257,7 @@ export async function getStats(
     row.closes = c.total;
     row.monthly = c.monthly;
     row.yearly = c.yearly;
+    row.builderYearly = c.builder_yearly;
   }
   for (const c of claims) {
     const row = person(c.id, c.name);
@@ -1317,6 +1321,7 @@ export async function getStats(
     closes,
     monthlyAmount: closes.monthly * amountOf("monthly"),
     yearlyAmount: closes.yearly * amountOf("yearly"),
+    builderYearlyAmount: closes.builderYearly * amountOf("builder_yearly"),
     byCloser: closerRows
       .map((r) => ({ name: r.name || (r.id === "owner" ? "Owner" : "Unknown"), closes: split(r), amount: r.amount }))
       .sort((a, b) => b.amount - a.amount),

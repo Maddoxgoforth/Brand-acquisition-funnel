@@ -19,8 +19,8 @@ export const TREND_METRICS = [
   { id: "answer_rate", label: "Answer rate", kind: "percent", byPerson: true, lists: true },
   { id: "booked", label: "Booked appointments", kind: "count", byPerson: true, lists: true },
   { id: "show_rate", label: "Show rate", kind: "percent", byPerson: true, lists: true },
-  { id: "closes", label: "Closes", kind: "count", byPerson: true, lists: true, seriesOrder: ["Monthly", "Yearly", "No plan"] },
-  { id: "revenue", label: "Cash collected", kind: "money", ownerOnly: true, byPerson: true, lists: true, seriesOrder: ["Monthly", "Yearly", "No plan"] },
+  { id: "closes", label: "Closes", kind: "count", byPerson: true, lists: true, seriesOrder: ["Builder Monthly", "Starter Yearly", "Builder Yearly", "No plan"] },
+  { id: "revenue", label: "Cash collected", kind: "money", ownerOnly: true, byPerson: true, lists: true, seriesOrder: ["Builder Monthly", "Starter Yearly", "Builder Yearly", "No plan"] },
   { id: "inbound", label: "Calls from leads", kind: "count", seriesOrder: ["Answered", "Missed", "Other"] },
 ] as const satisfies readonly {
   id: string;

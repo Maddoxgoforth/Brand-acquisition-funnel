@@ -579,8 +579,14 @@ linked from any public page and is `noindex`.
   back out of Closed drops its commission, bounty spot and bonus by itself.
   Only team members' closes count (`closed_by_id`); the owner's own closes
   never earn commission or fill a bounty.
-  - *Rates* — set per person on the **Team** tab (monthly $ / yearly $ per
-    close), kept as history in `crm_commission_rates`: a new rate counts from
+  - *Plans* (`CLOSE_PLANS`, owner Nov 12 2026): Base44 plans. Stored ids
+    stay as they were: `monthly` = **Builder Monthly** ($225 to Maddox),
+    `yearly` = **Starter Yearly** ($250), `builder_yearly` = **Builder
+    Yearly** ($475, team commission $100 by default via the
+    `crm_commission_rates.builder_yearly` column). The close dialog asks
+    which of the three was sold; bounties/bonus rules can target any one.
+  - *Rates* — set per person on the **Team** tab ($ per close for each plan),
+    kept as history in `crm_commission_rates`: a new rate counts from
     now on; the first rate set (or "Also apply to their past closes") gets
     `effective_from NULL` and covers every earlier close.
   - *Bounties* (`crm_bounties`) — the owner posts them from the bounty board

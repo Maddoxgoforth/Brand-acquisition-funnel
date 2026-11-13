@@ -83,7 +83,7 @@ export default function CloseDialog({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!plan) return setError("Pick monthly or yearly.");
+    if (!plan) return setError("Pick the plan they bought.");
     if (!screenshot) return setError("Add a screenshot of the successful payment.");
     setBusy(true);
     setError(null);
@@ -108,7 +108,7 @@ export default function CloseDialog({
         </h2>
 
         <p className="mt-5 text-sm font-semibold">Which plan did they buy?</p>
-        <div className="mt-2 grid grid-cols-2 gap-2">
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
           {CLOSE_PLANS.map((p) => (
             <button
               key={p.id}

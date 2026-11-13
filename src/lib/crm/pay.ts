@@ -1,7 +1,10 @@
 import "server-only";
 
 import {
+  isClosePlan,
   isPayPlan,
+  planLabel,
+  type ClosePlan,
   payPlanNoun,
   type ActivityItem,
   type BonusRule,
@@ -37,13 +40,13 @@ const NOT_TEAM = ["owner", "website", "webhook", "manual"];
 type Close = {
   id: string;
   name: string;
-  plan: "monthly" | "yearly" | null;
+  plan: ClosePlan | null;
   at: Date;
   userId: string;
   userName: string;
 };
 
-type RateRow = { user_id: string; monthly: number; yearly: number; effective_from: string | Date | null; id: string | number };
+type RateRow = { user_id: string; monthly: number; yearly: number; builder_yearly: number | null; effective_from: string | Date | null; id: string | number };
 
 type BountyRow = {
   id: string;
@@ -92,7 +95,7 @@ async function loadCloses(): Promise<Close[]> {
   return rows.map((r) => ({
     id: r.id,
     name: r.name || "No name",
-    plan: r.close_plan === "monthly" || r.close_plan === "yearly" ? r.close_plan : null,
+    plan: isClosePlan(r.close_plan) ? r.close_plan : null,
     at: new Date(r.closed_at),
     userId: r.closed_by_id,
     userName: r.closed_by_name || "Unknown",
@@ -211,7 +214,9 @@ function rateAt(rows: RateRow[], userId: string, at: Date): CommissionRate {
       bestFrom = from;
     }
   }
-  return best ? { monthly: best.monthly, yearly: best.yearly } : { monthly: 0, yearly: 0 };
+  return best
+    ? { monthly: best.monthly, yearly: best.yearly, builderYearly: best.builder_yearly ?? 100 }
+    : { monthly: 0, yearly: 0, builderYearly: 0 };
 }
 
 export async function setRate(userId: string, rate: CommissionRate, applyToPast: boolean) {
@@ -220,13 +225,13 @@ export async function setRate(userId: string, rate: CommissionRate, applyToPast:
     // The first rate (or "apply to past closes too") covers every close.
     await query(`DELETE FROM crm_commission_rates WHERE user_id = $1`, [userId]);
     await query(
-      `INSERT INTO crm_commission_rates (user_id, monthly, yearly, effective_from) VALUES ($1, $2, $3, NULL)`,
-      [userId, rate.monthly, rate.yearly]
+      `INSERT INTO crm_commission_rates (user_id, monthly, yearly, builder_yearly, effective_from) VALUES ($1, $2, $3, $4, NULL)`,
+      [userId, rate.monthly, rate.yearly, rate.builderYearly]
     );
   } else {
     await query(
-      `INSERT INTO crm_commission_rates (user_id, monthly, yearly, effective_from) VALUES ($1, $2, $3, now())`,
-      [userId, rate.monthly, rate.yearly]
+      `INSERT INTO crm_commission_rates (user_id, monthly, yearly, builder_yearly, effective_from) VALUES ($1, $2, $3, $4, now())`,
+      [userId, rate.monthly, rate.yearly, rate.builderYearly]
     );
   }
 }
@@ -289,9 +294,9 @@ async function buildLedger() {
 
   for (const c of closes) {
     const rate = rateAt(rates, c.userId, c.at);
-    const base = c.plan ? rate[c.plan] : 0;
+    const base = c.plan ? rate[c.plan === "builder_yearly" ? "builderYearly" : c.plan] : 0;
     const bounty = byClose.get(c.id);
-    const what = c.plan ? `${c.plan} close` : "close (no plan recorded)";
+    const what = c.plan ? `${planLabel(c.plan)} close` : "close (no plan recorded)";
     const at = c.at.toISOString();
     if (!bounty || bounty.mode === "extra") {
       lines.push({ kind: "close", userId: c.userId, amount: base, at, label: `${c.name}: ${what}`, leadId: c.id, entryId: null });
@@ -410,6 +415,7 @@ export async function payReport(from: string | null, to: string): Promise<PayRep
       lastActiveAt: lastAt ? iso(lastAt) : null,
       monthly: myCloses.filter((c) => c.plan === "monthly").length,
       yearly: myCloses.filter((c) => c.plan === "yearly").length,
+      builderYearly: myCloses.filter((c) => c.plan === "builder_yearly").length,
       base: sum(ranged, ["close"]),
       bounty: sum(ranged, ["bounty"]),
       bonus: sum(ranged, ["bonus"]),
