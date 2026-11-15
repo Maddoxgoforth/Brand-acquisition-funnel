@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { CALL_QUESTION, type FunnelId } from "@/lib/crm/constants";
 import {
+  affiliateRef,
   attribution,
   identifyForAds,
   newEventId,
@@ -97,6 +98,7 @@ export default function FreeCourseCta({
             ...(askCall ? { [CALL_QUESTION]: callOk } : {}),
           },
           attribution: attribution(),
+          affiliate: affiliateRef(),
           eventId,
           visitor: visitorId(),
         }),

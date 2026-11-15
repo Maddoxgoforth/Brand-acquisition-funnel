@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { CALL_QUESTION } from "@/lib/crm/constants";
+import { attributeLeads } from "@/lib/crm/affiliates";
 import { addLeads, recordSiteEvent } from "@/lib/crm/leads";
 import { requestContext, sendMetaEvent } from "@/lib/meta";
 import { sendTikTokEvent } from "@/lib/tiktok";
@@ -134,14 +135,20 @@ async function saveToCrm(
   lead: LeadBody,
   funnel: Funnel,
   answers: Record<string, string>,
-  attribution: Record<string, string>
+  attribution: Record<string, string>,
+  affiliate = ""
 ) {
   try {
-    await addLeads(
+    const result = await addLeads(
       funnel === "ads" ? "ad_free_course_application" : "free_course_application",
       [{ name: lead.name, email: lead.email, phone: lead.phone, extra: answers, attribution }],
       funnel === "ads" ? "ad funnel form" : "free-course form"
     );
+    // Came through an affiliate's link: credit the new lead to them. Only the
+    // organic page counts, and leads already in the CRM are never re-assigned.
+    if (affiliate && funnel !== "ads") {
+      await attributeLeads(affiliate, result.leads.map((l) => l.id));
+    }
   } catch (error) {
     console.error("Saving free-course lead to CRM failed:", error);
   }
@@ -154,6 +161,7 @@ export async function POST(request: Request) {
     attribution?: unknown;
     eventId?: unknown;
     visitor?: unknown;
+    affiliate?: unknown;
   };
   try {
     body = await request.json();
@@ -171,6 +179,7 @@ export async function POST(request: Request) {
 
   const funnel: Funnel = body.funnel === "ads" ? "ads" : "organic";
   const answers = pickStrings(body.answers, undefined, 300);
+  const affiliate = typeof body.affiliate === "string" ? body.affiliate.trim().toLowerCase().slice(0, 40) : "";
   const { ip, userAgent } = requestContext(request);
   const attribution: Record<string, string> = {
     ...pickStrings(body.attribution, ATTRIBUTION_KEYS),
@@ -184,7 +193,7 @@ export async function POST(request: Request) {
   await Promise.all([
     sendToDiscord({ name, email, phone }, funnel, answers[CALL_QUESTION]),
     sendToSlack({ name, email, phone }, crmUrl, funnel),
-    saveToCrm({ name, email, phone }, funnel, answers, attribution),
+    saveToCrm({ name, email, phone }, funnel, answers, attribution, affiliate),
     // Same event id as the browser Pixel's Lead event, so Meta counts it once.
     sendMetaEvent({
       name: "Lead",

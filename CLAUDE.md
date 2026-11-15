@@ -708,6 +708,33 @@ header `x-crm-secret: <CRM_WEBHOOK_SECRET>` and a JSON lead (or
 `{ "leads": [...] }`) adds leads from outside tools. List ids:
 `free_course_application` (default), `dial_free_course`, `dial_high_ticket`.
 
+## Affiliates (UGC creators)
+
+Owner's request Nov 15 2026. Creators send people to the organic free-course
+page with their own link and see how many opt-ins and closes it produced.
+
+- **Accounts**: `/affiliates/signup` → pending → the owner approves on the
+  CRM's **🤝 Affiliates** tab (owner only, `Affiliates.tsx`,
+  `/api/crm/affiliates[/id]`), setting $ per close for each plan. Approval
+  gives them a code from their name; their link is `/?ref=CODE`. Separate
+  table (`crm_affiliates`) and cookie (`aff_session`, `affiliateAuth.ts`)
+  from the team, so an affiliate login can never open the CRM.
+- **Tracking**: `captureAttribution()` stores `?ref=` for 30 days (latest
+  link wins) and beacons `/api/affiliate-visit` (site_events funnel
+  `affiliate`, campaign = code). The organic opt-in sends the code;
+  `/api/free-course-lead` tags only leads that opt-in just created
+  (`attributeLeads`, `crm_leads.affiliate_id` / `affiliate_name`). Re-opt-ins
+  of people already in the CRM and the ad funnel are never credited.
+- **Money**: closes of their leads (status Closed, any closer) earn the rate
+  in `crm_affiliate_rates` that applied at `closed_at` (history like the
+  team's; NULL effective_from = covers all earlier closes). Payouts the
+  owner records go in `crm_affiliate_payouts`; owed = earned − paid. Team
+  commissions are unaffected.
+- **`/affiliates`** dashboard: link + copy, earned/paid/owed, visitors,
+  opt-ins, closes, close rate, closes and earnings by plan, latest sales
+  (plan, date, commission). Never lead names or contact details.
+- Leads show a purple "🤝 Name" badge in the CRM.
+
 ## Ad funnel and ad tracking
 
 Built for running Meta ads to the free course (owner's request, Oct 2026).

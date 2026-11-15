@@ -14,3 +14,13 @@ export default function CallNowBadge({ lead, className = "" }: { lead: Lead; cla
     </span>
   );
 }
+
+// Organic opt-ins that came through an affiliate's link.
+export function AffiliateBadge({ lead, className = "" }: { lead: Lead; className?: string }) {
+  if (!lead.affiliateName) return null;
+  return (
+    <span className={`inline-block rounded-md bg-violet-100 px-1.5 py-0.5 text-[11px] font-extrabold text-violet-800 ${className}`}>
+      🤝 {lead.affiliateName}
+    </span>
+  );
+}

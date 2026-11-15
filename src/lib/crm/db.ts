@@ -187,6 +187,45 @@ const SCHEMA = [
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS missed_call_at timestamptz`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS missed_call_sid text`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS missed_voicemail_sid text`,
+  // Affiliates (UGC creators who send people to the organic opt-in page with
+  // their own link, owner's request Nov 15 2026). Separate accounts from the
+  // team; see affiliates.ts. `code` is set when the owner approves them.
+  `CREATE TABLE IF NOT EXISTS crm_affiliates (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    email text NOT NULL UNIQUE,
+    name text NOT NULL,
+    password_hash text NOT NULL,
+    status text NOT NULL DEFAULT 'pending',
+    code text UNIQUE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    approved_at timestamptz,
+    last_login_at timestamptz
+  )`,
+  // Commission per close for each plan, kept as history like the team's:
+  // effective_from NULL covers every close before the next rate.
+  `CREATE TABLE IF NOT EXISTS crm_affiliate_rates (
+    id bigserial PRIMARY KEY,
+    affiliate_id uuid NOT NULL,
+    monthly integer NOT NULL DEFAULT 0,
+    yearly integer NOT NULL DEFAULT 0,
+    builder_yearly integer NOT NULL DEFAULT 0,
+    effective_from timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS crm_affiliate_rates_aff_idx ON crm_affiliate_rates (affiliate_id)`,
+  // Money the owner has paid an affiliate.
+  `CREATE TABLE IF NOT EXISTS crm_affiliate_payouts (
+    id bigserial PRIMARY KEY,
+    affiliate_id uuid NOT NULL,
+    amount integer NOT NULL,
+    note text NOT NULL DEFAULT '',
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  // Which affiliate sent a lead (set only when their link created the lead).
+  // The name is copied so it still shows if the affiliate is deleted.
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS affiliate_id uuid`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS affiliate_name text`,
+  `CREATE INDEX IF NOT EXISTS crm_leads_affiliate_idx ON crm_leads (affiliate_id)`,
 ];
 
 export class CrmDbNotConfiguredError extends Error {

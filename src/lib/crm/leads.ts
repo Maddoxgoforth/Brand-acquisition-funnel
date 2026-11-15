@@ -66,6 +66,7 @@ type LeadRow = {
   payment_proof_id: string | null;
   missed_call_at?: string | Date | null;
   missed_voicemail_sid?: string | null;
+  affiliate_name?: string | null;
   created_at: string | Date;
   updated_at: string | Date;
 };
@@ -127,6 +128,7 @@ function toLead(row: LeadRow): Lead {
     hasPaymentProof: Boolean(row.payment_proof_id),
     missedCallAt: iso(row.missed_call_at ?? null),
     hasVoicemail: Boolean(row.missed_voicemail_sid),
+    affiliateName: row.affiliate_name ?? null,
     createdAt: iso(row.created_at)!,
     updatedAt: iso(row.updated_at)!,
   };

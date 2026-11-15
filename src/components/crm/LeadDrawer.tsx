@@ -1,6 +1,6 @@
 "use client";
 
-import CallNowBadge from "./CallNowBadge";
+import CallNowBadge, { AffiliateBadge } from "./CallNowBadge";
 import { useEffect, useState } from "react";
 
 import {
@@ -154,6 +154,7 @@ export default function LeadDrawer({
               {lead.name || "No name"}
             </h2>
             <CallNowBadge lead={lead} className="mt-1 text-xs" />
+            <AffiliateBadge lead={lead} className="mt-1 ml-1 text-xs" />
             <p className="text-xs text-muted">
               Added {timeAgo(lead.createdAt)}
               {lead.optInCount > 1

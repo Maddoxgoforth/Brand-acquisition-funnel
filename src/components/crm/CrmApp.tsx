@@ -1,6 +1,6 @@
 "use client";
 
-import CallNowBadge from "./CallNowBadge";
+import CallNowBadge, { AffiliateBadge } from "./CallNowBadge";
 import {
   useCallback,
   useEffect,
@@ -29,6 +29,7 @@ import Analytics from "./Analytics";
 import Dashboard from "./Dashboard";
 import Leaderboard from "./Leaderboard";
 import LeadDrawer, { type LeadPatch } from "./LeadDrawer";
+import Affiliates from "./Affiliates";
 import Team from "./Team";
 import TeamPay from "./TeamPay";
 import { crmFetch } from "./api";
@@ -36,7 +37,7 @@ import { armChime, playChime, soundSetting } from "./chime";
 import { useDialer } from "./useDialer";
 
 // Screens that load their own data (everything except the lead boards).
-const PAGES = ["dashboard", "leaderboard", "analytics", "pay", "team"] as const;
+const PAGES = ["dashboard", "leaderboard", "analytics", "pay", "team", "affiliates"] as const;
 type Page = (typeof PAGES)[number];
 type View = Page | SourceId;
 const isPage = (view: View): view is Page => (PAGES as readonly string[]).includes(view);
@@ -88,6 +89,7 @@ export default function CrmApp({
   const [unseen, setUnseen] = useState<Partial<Record<SourceId, number>>>({});
   // Accounts waiting for the owner's approval (owner only).
   const [pendingAccounts, setPendingAccounts] = useState(0);
+  const [pendingAffiliates, setPendingAffiliates] = useState(0);
   const soundOn = useSyncExternalStore(
     soundSetting.subscribe,
     soundSetting.isOn,
@@ -447,6 +449,16 @@ export default function CrmApp({
               ) : null}
             </button>
           ) : null}
+          {user.role === "owner" ? (
+            <button type="button" className={tab(view === "affiliates")} onClick={() => go("affiliates")}>
+              🤝 Affiliates
+              {pendingAffiliates > 0 ? (
+                <span className="ml-2 rounded-full bg-danger px-2 py-0.5 text-xs text-white">
+                  {pendingAffiliates}
+                </span>
+              ) : null}
+            </button>
+          ) : null}
         </nav>
         <button
           type="button"
@@ -472,7 +484,11 @@ export default function CrmApp({
         </div>
       ) : null}
 
-      {view === "team" ? (
+      {view === "affiliates" && user.role === "owner" ? (
+        <main className="flex-1 overflow-y-auto bg-background-elevated/40">
+          <Affiliates onPendingChange={setPendingAffiliates} onError={report} />
+        </main>
+      ) : view === "team" ? (
         <main className="flex-1 overflow-y-auto bg-background-elevated/40">
           <Team onPendingChange={setPendingAccounts} onError={report} />
         </main>
@@ -684,6 +700,7 @@ export default function CrmApp({
                 </p>
                 <p className="mt-1 truncate font-bold">{lead.name || "No name"}</p>
                 <CallNowBadge lead={lead} />
+                <AffiliateBadge lead={lead} className="ml-1" />
                 <p className="truncate text-sm text-muted">
                   {lead.phone || lead.email}
                 </p>

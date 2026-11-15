@@ -50,6 +50,7 @@ export function visitorId(): string {
 export function captureAttribution() {
   if (typeof window === "undefined") return;
   const params = new URLSearchParams(window.location.search);
+  captureAffiliate(params);
   const found: Record<string, string> = {};
   for (const key of UTM) {
     const v = params.get(key);
@@ -60,6 +61,35 @@ export function captureAttribution() {
   found.landing_url = window.location.href.slice(0, 500);
   found.captured_at = String(Date.now());
   storage()?.setItem(ATTR_KEY, JSON.stringify(found));
+}
+
+// Affiliate links (/?ref=CODE): remember the code for 30 days (the latest
+// affiliate link clicked wins) and count the visit for their dashboard.
+const REF_KEY = "ba_ref";
+const REF_DAYS = 30;
+
+function captureAffiliate(params: URLSearchParams) {
+  const code = (params.get("ref") ?? "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 40);
+  if (!code) return;
+  storage()?.setItem(REF_KEY, JSON.stringify({ code, at: Date.now() }));
+  const body = JSON.stringify({ visitor: visitorId(), code });
+  try {
+    if (navigator.sendBeacon?.("/api/affiliate-visit", new Blob([body], { type: "text/plain" }))) return;
+  } catch {
+    // fall through to fetch
+  }
+  fetch("/api/affiliate-visit", { method: "POST", body, keepalive: true }).catch(() => {});
+}
+
+// The affiliate code to credit an opt-in to, if their link was used recently.
+export function affiliateRef(): string {
+  try {
+    const saved = JSON.parse(storage()?.getItem(REF_KEY) ?? "null") as { code?: string; at?: number } | null;
+    if (!saved?.code || !saved.at || Date.now() - saved.at > REF_DAYS * 86400000) return "";
+    return saved.code;
+  } catch {
+    return "";
+  }
 }
 
 function cookie(name: string) {

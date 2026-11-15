@@ -54,13 +54,13 @@ function toMember(row: UserRow): TeamMember {
 }
 
 // Passwords are stored as a salted scrypt hash, never as the password.
-async function hashPassword(password: string) {
+export async function hashPassword(password: string) {
   const salt = randomBytes(16);
   const hash = await scryptAsync(password, salt, 64);
   return `scrypt$${salt.toString("hex")}$${hash.toString("hex")}`;
 }
 
-async function passwordMatches(password: string, stored: string) {
+export async function passwordMatches(password: string, stored: string) {
   const [scheme, saltHex, hashHex] = stored.split("$");
   if (scheme !== "scrypt" || !saltHex || !hashHex) return false;
   const expected = Buffer.from(hashHex, "hex");

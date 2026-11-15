@@ -196,6 +196,8 @@ export type Lead = {
   // someone calls them or answers their next call. hasVoicemail = they left one.
   missedCallAt: string | null;
   hasVoicemail: boolean;
+  // The affiliate whose link brought this lead in (organic opt-ins only).
+  affiliateName: string | null;
   createdAt: string;
   updatedAt: string;
 };

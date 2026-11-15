@@ -1,6 +1,6 @@
 "use client";
 
-import CallNowBadge from "./CallNowBadge";
+import CallNowBadge, { AffiliateBadge } from "./CallNowBadge";
 import { useEffect, useMemo, useState, type DragEvent } from "react";
 
 import {
@@ -213,6 +213,7 @@ export default function Board({
                     </p>
                   ) : null}
                   <CallNowBadge lead={lead} className="mt-0.5 mr-1" />
+                  <AffiliateBadge lead={lead} className="mt-0.5 mr-1" />
                   <ClaimBadge lead={lead} me={me} />
                   {lead.optInCount > 1 ? (
                     <p className="mt-0.5 mr-1 inline-block rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-800">
