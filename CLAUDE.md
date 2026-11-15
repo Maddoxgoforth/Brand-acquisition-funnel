@@ -794,7 +794,9 @@ Built for running Meta ads to the free course (owner's request, Oct 2026).
   never on `/crm`) and `src/lib/tiktok.ts`
   (Events API v1.3, needs `TIKTOK_EVENTS_TOKEN`). TikTok standard event names:
   opt-in = Lead (TikTok labels it "Submit form"; browser + server, same
-  event id), closed = Purchase (no Schedule event), VSL page = ViewContent. `pixelEvent()` in
+  event id), except ad-funnel opt-ins who picked "Under 18" in the quiz
+  (`isUnder18`, owner Nov 15 2026: still saved and called, never reported as
+  a Lead to Meta or TikTok so the ads optimize toward 18+), closed = Purchase (no Schedule event), VSL page = ViewContent. `pixelEvent()` in
   `tracking.ts` fires both pixels. Attribution also keeps `ttclid` and the
   `_ttp` cookie. Ad links: `utm_source=tiktok&utm_medium=paid&utm_campaign=__CAMPAIGN_NAME__&utm_content=__CID_NAME__`.
   The dashboard's campaign table splits by `utm_source` (platform).

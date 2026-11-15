@@ -669,3 +669,10 @@ export type ActivityItem = {
 
 // Ads opt-in form question (answer "Yes" / "No", saved in lead.extra).
 export const CALL_QUESTION = "Can we call you in the next 5 minutes?";
+
+// Owner, Nov 15 2026: ad-funnel opt-ins who say they're under 18 still go to
+// the CRM and get called, but are not reported to Meta/TikTok as a Lead, so
+// the ads stop optimizing toward minors. (Quiz question "Age", crm key "Age".)
+export function isUnder18(answers: Record<string, string> | undefined) {
+  return answers?.["Age"] === "Under 18";
+}

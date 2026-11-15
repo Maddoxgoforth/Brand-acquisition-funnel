@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { CALL_QUESTION } from "@/lib/crm/constants";
+import { CALL_QUESTION, isUnder18 } from "@/lib/crm/constants";
 import { attributeLeads } from "@/lib/crm/affiliates";
 import { addLeads, recordSiteEvent } from "@/lib/crm/leads";
 import { requestContext, sendMetaEvent } from "@/lib/meta";
@@ -190,12 +190,15 @@ export async function POST(request: Request) {
     typeof body.eventId === "string" && body.eventId ? body.eventId.slice(0, 100) : crypto.randomUUID();
 
   const crmUrl = new URL("/crm", request.url).toString();
+  // Under-18 ad opt-ins: saved and called as normal, but not sent to Meta or
+  // TikTok as a Lead, so the ads optimize toward 18+ (owner, Nov 15 2026).
+  const reportLead = !(funnel === "ads" && isUnder18(answers));
   await Promise.all([
     sendToDiscord({ name, email, phone }, funnel, answers[CALL_QUESTION]),
     sendToSlack({ name, email, phone }, crmUrl, funnel),
     saveToCrm({ name, email, phone }, funnel, answers, attribution, affiliate),
     // Same event id as the browser Pixel's Lead event, so Meta counts it once.
-    sendMetaEvent({
+    !reportLead ? Promise.resolve() : sendMetaEvent({
       name: "Lead",
       eventId,
       url: attribution.landing_url || request.headers.get("referer") || undefined,
@@ -211,7 +214,7 @@ export async function POST(request: Request) {
       customData: { lead_source: funnel === "ads" ? "ad_funnel" : "organic" },
     }),
     // TikTok's version of the same opt-in, same event id as the browser pixel.
-    sendTikTokEvent({
+    !reportLead ? Promise.resolve() : sendTikTokEvent({
       name: "Lead", // TikTok's "Submit form" event
       eventId,
       url: attribution.landing_url || request.headers.get("referer") || undefined,
