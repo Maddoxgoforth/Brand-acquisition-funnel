@@ -1,5 +1,6 @@
 "use client";
 
+import CallNowBadge from "./CallNowBadge";
 import { useEffect, useState } from "react";
 
 import {
@@ -152,6 +153,7 @@ export default function LeadDrawer({
             <h2 className="mt-1 truncate text-xl font-extrabold">
               {lead.name || "No name"}
             </h2>
+            <CallNowBadge lead={lead} className="mt-1 text-xs" />
             <p className="text-xs text-muted">
               Added {timeAgo(lead.createdAt)}
               {lead.optInCount > 1

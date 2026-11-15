@@ -664,3 +664,6 @@ export type ActivityItem = {
   source: SourceId;
   createdAt: string;
 };
+
+// Ads opt-in form question (answer "Yes" / "No", saved in lead.extra).
+export const CALL_QUESTION = "Can we call you in the next 5 minutes?";

@@ -1,5 +1,6 @@
 "use client";
 
+import CallNowBadge from "./CallNowBadge";
 import {
   useCallback,
   useEffect,
@@ -682,6 +683,7 @@ export default function CrmApp({
                     : "New free course opt-in"}
                 </p>
                 <p className="mt-1 truncate font-bold">{lead.name || "No name"}</p>
+                <CallNowBadge lead={lead} />
                 <p className="truncate text-sm text-muted">
                   {lead.phone || lead.email}
                 </p>

@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-import type { FunnelId } from "@/lib/crm/constants";
+import { CALL_QUESTION, type FunnelId } from "@/lib/crm/constants";
 import {
   attribution,
   identifyForAds,
@@ -38,8 +38,6 @@ function withCountryCode(countryId: string, raw: string) {
   digits = digits.replace(/^0+/, "");
   return `+${country.code} ${digits}`;
 }
-
-export const CALL_QUESTION = "Can we call you in the next 5 minutes?";
 
 // `funnel` decides which CRM tab the lead lands in: "organic" (the main free
 // course page) or "ads" (the /free-training quiz funnel). `answers` (the quiz)

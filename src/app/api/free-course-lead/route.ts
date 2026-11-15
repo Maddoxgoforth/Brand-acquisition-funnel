@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CALL_QUESTION } from "@/lib/crm/constants";
 import { addLeads, recordSiteEvent } from "@/lib/crm/leads";
 import { requestContext, sendMetaEvent } from "@/lib/meta";
 import { sendTikTokEvent } from "@/lib/tiktok";
@@ -39,7 +40,7 @@ function pickStrings(input: unknown, keys?: string[], max = 500) {
   return out;
 }
 
-async function sendToDiscord(lead: LeadBody, funnel: Funnel) {
+async function sendToDiscord(lead: LeadBody, funnel: Funnel, callNow?: string) {
   const webhookUrl = process.env.DISCORD_FREE_COURSE_WEBHOOK_URL;
   if (!webhookUrl) return;
 
@@ -56,6 +57,7 @@ async function sendToDiscord(lead: LeadBody, funnel: Funnel) {
               { name: "Name", value: lead.name, inline: true },
               { name: "Email", value: lead.email, inline: true },
               { name: "Phone", value: lead.phone, inline: true },
+              ...(callNow ? [{ name: "Call now?", value: callNow === "Yes" ? "✅ YES" : "Not right now", inline: true }] : []),
             ],
             timestamp: new Date().toISOString(),
           },
@@ -180,7 +182,7 @@ export async function POST(request: Request) {
 
   const crmUrl = new URL("/crm", request.url).toString();
   await Promise.all([
-    sendToDiscord({ name, email, phone }, funnel),
+    sendToDiscord({ name, email, phone }, funnel, answers[CALL_QUESTION]),
     sendToSlack({ name, email, phone }, crmUrl, funnel),
     saveToCrm({ name, email, phone }, funnel, answers, attribution),
     // Same event id as the browser Pixel's Lead event, so Meta counts it once.
