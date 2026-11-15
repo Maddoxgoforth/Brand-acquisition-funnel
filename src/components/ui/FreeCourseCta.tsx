@@ -201,6 +201,10 @@ export default function FreeCourseCta({
                     <p className="text-sm font-bold">
                       Can we call you in the next 5 minutes?
                     </p>
+                    <p className="mt-0.5 text-xs text-muted">
+                      My team will call to give you access to everything and
+                      get you set up. It only takes a few minutes.
+                    </p>
                     <div className="mt-2 grid grid-cols-2 gap-2">
                       {(["Yes", "No"] as const).map((v) => (
                         <button
