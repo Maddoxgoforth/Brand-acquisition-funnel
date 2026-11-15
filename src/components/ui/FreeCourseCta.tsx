@@ -39,6 +39,8 @@ function withCountryCode(countryId: string, raw: string) {
   return `+${country.code} ${digits}`;
 }
 
+export const CALL_QUESTION = "Can we call you in the next 5 minutes?";
+
 // `funnel` decides which CRM tab the lead lands in: "organic" (the main free
 // course page) or "ads" (the /free-training quiz funnel). `answers` (the quiz)
 // are saved on the lead. `locked` greys the button out until the VSL unlocks it.
@@ -66,10 +68,19 @@ export default function FreeCourseCta({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [country, setCountry] = useState<string>("US");
+  // Ads funnel only: "Can we call you in the next 5 minutes?" Either answer
+  // opts them in as normal; the answer is saved on the lead.
+  const askCall = funnel === "ads";
+  const [callOk, setCallOk] = useState<"" | "Yes" | "No">("");
+  const [callMissing, setCallMissing] = useState(false);
   const countryInfo = COUNTRIES.find((c) => c.id === country) ?? COUNTRIES[0];
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (askCall && !callOk) {
+      setCallMissing(true);
+      return;
+    }
     setStatus("submitting");
     const eventId = newEventId();
     const fullPhone = withCountryCode(country, phone);
@@ -83,7 +94,10 @@ export default function FreeCourseCta({
           email,
           phone: fullPhone,
           funnel,
-          answers: getAnswers ? getAnswers() : answers,
+          answers: {
+            ...(getAnswers ? getAnswers() : answers),
+            ...(askCall ? { [CALL_QUESTION]: callOk } : {}),
+          },
           attribution: attribution(),
           eventId,
           visitor: visitorId(),
@@ -183,6 +197,36 @@ export default function FreeCourseCta({
                     className="w-full rounded-xl border border-border bg-background-elevated px-4 py-3 text-foreground placeholder:text-muted"
                   />
                 </div>
+
+                {askCall ? (
+                  <div className="mt-1">
+                    <p className="text-sm font-bold">
+                      Can we call you in the next 5 minutes?
+                    </p>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {(["Yes", "No"] as const).map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => {
+                            setCallOk(v);
+                            setCallMissing(false);
+                          }}
+                          className={`rounded-xl border-2 px-3 py-3 font-bold transition-colors ${
+                            callOk === v
+                              ? "border-accent bg-accent text-white"
+                              : "border-border bg-background-elevated text-foreground"
+                          }`}
+                        >
+                          {v === "Yes" ? "✅ Yes" : "Not right now"}
+                        </button>
+                      ))}
+                    </div>
+                    {callMissing ? (
+                      <p className="mt-1 text-sm text-danger">Pick yes or no.</p>
+                    ) : null}
+                  </div>
+                ) : null}
 
                 <button
                   type="submit"
