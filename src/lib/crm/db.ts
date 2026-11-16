@@ -268,6 +268,64 @@ const SCHEMA = [
   // assigned_manually keeps those assignments when their subid changes.
   `ALTER TABLE crm_partners ADD COLUMN IF NOT EXISTS link_subid text`,
   `ALTER TABLE crm_partner_events ADD COLUMN IF NOT EXISTS assigned_manually boolean NOT NULL DEFAULT false`,
+  // Content dashboard (Nov 16 2026): every post published through
+  // bundle.social with its latest stats per platform, daily snapshots, and
+  // account-level daily stats. Filled by syncContent() (lib/crm/content.ts).
+  `CREATE TABLE IF NOT EXISTS crm_content_posts (
+    post_id text NOT NULL,
+    platform text NOT NULL,
+    team_id text NOT NULL,
+    team_name text NOT NULL DEFAULT '',
+    account text NOT NULL DEFAULT '',
+    title text NOT NULL DEFAULT '',
+    caption text NOT NULL DEFAULT '',
+    format text NOT NULL DEFAULT 'Other',
+    trial boolean NOT NULL DEFAULT false,
+    posted_at timestamptz,
+    permalink text NOT NULL DEFAULT '',
+    thumb_url text NOT NULL DEFAULT '',
+    video_seconds integer,
+    views integer,
+    likes integer,
+    comments integer,
+    shares integer,
+    saves integer,
+    stats_at timestamptz,
+    synced_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (post_id, platform)
+  )`,
+  `CREATE TABLE IF NOT EXISTS crm_content_daily (
+    post_id text NOT NULL,
+    platform text NOT NULL,
+    day date NOT NULL,
+    views integer NOT NULL DEFAULT 0,
+    likes integer NOT NULL DEFAULT 0,
+    comments integer NOT NULL DEFAULT 0,
+    shares integer NOT NULL DEFAULT 0,
+    saves integer NOT NULL DEFAULT 0,
+    PRIMARY KEY (post_id, platform, day)
+  )`,
+  `CREATE TABLE IF NOT EXISTS crm_content_accounts (
+    account_id text NOT NULL,
+    day date NOT NULL,
+    platform text NOT NULL,
+    username text NOT NULL DEFAULT '',
+    team_name text NOT NULL DEFAULT '',
+    avatar_url text NOT NULL DEFAULT '',
+    followers integer NOT NULL DEFAULT 0,
+    views integer NOT NULL DEFAULT 0,
+    likes integer NOT NULL DEFAULT 0,
+    comments integer NOT NULL DEFAULT 0,
+    post_count integer NOT NULL DEFAULT 0,
+    PRIMARY KEY (account_id, day)
+  )`,
+  `CREATE TABLE IF NOT EXISTS crm_content_sync (
+    id integer PRIMARY KEY DEFAULT 1,
+    started_at timestamptz,
+    finished_at timestamptz,
+    remaining integer NOT NULL DEFAULT 0,
+    message text NOT NULL DEFAULT ''
+  )`,
   `CREATE TABLE IF NOT EXISTS crm_partner_payouts (
     id bigserial PRIMARY KEY,
     partner_id uuid NOT NULL,

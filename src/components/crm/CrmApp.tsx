@@ -30,6 +30,7 @@ import Dashboard from "./Dashboard";
 import Leaderboard from "./Leaderboard";
 import LeadDrawer, { type LeadPatch } from "./LeadDrawer";
 import Affiliates from "./Affiliates";
+import Content from "./Content";
 import Team from "./Team";
 import TeamPay from "./TeamPay";
 import { crmFetch } from "./api";
@@ -37,7 +38,7 @@ import { armChime, playChime, soundSetting } from "./chime";
 import { useDialer } from "./useDialer";
 
 // Screens that load their own data (everything except the lead boards).
-const PAGES = ["dashboard", "leaderboard", "analytics", "pay", "team", "affiliates"] as const;
+const PAGES = ["dashboard", "leaderboard", "analytics", "pay", "team", "affiliates", "content"] as const;
 type Page = (typeof PAGES)[number];
 type View = Page | SourceId;
 const isPage = (view: View): view is Page => (PAGES as readonly string[]).includes(view);
@@ -62,12 +63,22 @@ const tab = (active: boolean) =>
     active ? "bg-accent text-white" : "text-muted hover:bg-background-elevated hover:text-foreground"
   }`;
 
+// Owner-only pages live in the ☰ menu so the top bar stays short.
+const OWNER_MENU = [
+  { id: "analytics", label: "Analytics", icon: "📈", hint: "Funnel, cash, sales calls, speed to lead" },
+  { id: "content", label: "Content", icon: "📊", hint: "Views and engagement on every post" },
+  { id: "pay", label: "Team stats", icon: "💰", hint: "Commissions, bounties, payouts" },
+  { id: "team", label: "Team", icon: "👥", hint: "Accounts, access, rates" },
+  { id: "affiliates", label: "Affiliates", icon: "🤝", hint: "Creators and Mad Media partners" },
+] as const;
+
 export default function CrmApp({
   user,
 }: {
   user: { role: "owner" | "member"; id: string; name: string; access: Access };
 }) {
   const [view, setView] = useState<View>("dashboard");
+  const [menuOpen, setMenuOpen] = useState(false);
   const [cache, setCache] = useState<LeadCache>({});
   // Bumped when a new opt-in arrives so the dashboard reloads its numbers.
   const [statsKey, setStatsKey] = useState(0);
@@ -393,11 +404,61 @@ export default function CrmApp({
   }
 
   const inDialGroup = DIAL_LISTS.some((s) => s.id === view);
+  const ownerPage = user.role === "owner" ? OWNER_MENU.find((m) => m.id === view) : undefined;
   const activeList = SOURCES.find((s) => s.id === source);
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="flex flex-wrap items-center gap-2 border-b border-border px-6 py-3">
+      <header className="relative flex flex-wrap items-center gap-2 border-b border-border px-6 py-3">
+        {user.role === "owner" ? (
+          <button
+            type="button"
+            aria-label="Open menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
+            className={`relative -ml-2 mr-1 flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+              menuOpen || ownerPage ? "bg-accent/10 text-accent" : "text-foreground hover:bg-background-elevated"
+            }`}
+          >
+            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+            {pendingAccounts + pendingAffiliates > 0 ? (
+              <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-danger ring-2 ring-background" />
+            ) : null}
+          </button>
+        ) : null}
+        {menuOpen && user.role === "owner" ? (
+          <>
+            <button type="button" aria-label="Close menu" className="fixed inset-0 z-40 cursor-default" onClick={() => setMenuOpen(false)} />
+            <div className="absolute left-4 top-full z-50 mt-2 w-80 rounded-2xl border border-border bg-background p-2 shadow-xl">
+              <p className="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-widest text-muted">Owner only</p>
+              {OWNER_MENU.map((m) => {
+                const badge = m.id === "team" ? pendingAccounts : m.id === "affiliates" ? pendingAffiliates : 0;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      go(m.id);
+                      setMenuOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                      view === m.id ? "bg-accent/10" : "hover:bg-background-elevated"
+                    }`}
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-background-elevated text-lg">{m.icon}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className={`block text-sm font-bold ${view === m.id ? "text-accent" : ""}`}>{m.label}</span>
+                      <span className="block truncate text-xs text-muted">{m.hint}</span>
+                    </span>
+                    {badge > 0 ? <span className="rounded-full bg-danger px-2 py-0.5 text-xs font-bold text-white">{badge}</span> : null}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : null}
         <p className="mr-4 text-lg font-extrabold">
           Mad Media <span className="text-accent">CRM</span>
         </p>
@@ -429,35 +490,10 @@ export default function CrmApp({
               Leads to dial
             </button>
           ) : null}
-          {user.role === "owner" ? (
-            <button type="button" className={tab(view === "analytics")} onClick={() => go("analytics")}>
-              Analytics
-            </button>
-          ) : null}
-          {user.role === "owner" ? (
-            <button type="button" className={tab(view === "pay")} onClick={() => go("pay")}>
-              💰 Team stats
-            </button>
-          ) : null}
-          {user.role === "owner" ? (
-            <button type="button" className={tab(view === "team")} onClick={() => go("team")}>
-              Team
-              {pendingAccounts > 0 ? (
-                <span className="ml-2 rounded-full bg-danger px-2 py-0.5 text-xs text-white">
-                  {pendingAccounts}
-                </span>
-              ) : null}
-            </button>
-          ) : null}
-          {user.role === "owner" ? (
-            <button type="button" className={tab(view === "affiliates")} onClick={() => go("affiliates")}>
-              🤝 Affiliates
-              {pendingAffiliates > 0 ? (
-                <span className="ml-2 rounded-full bg-danger px-2 py-0.5 text-xs text-white">
-                  {pendingAffiliates}
-                </span>
-              ) : null}
-            </button>
+          {ownerPage ? (
+            <span className={`${tab(true)} cursor-default`}>
+              {ownerPage.icon} {ownerPage.label}
+            </span>
           ) : null}
         </nav>
         <button
@@ -484,7 +520,11 @@ export default function CrmApp({
         </div>
       ) : null}
 
-      {view === "affiliates" && user.role === "owner" ? (
+      {view === "content" && user.role === "owner" ? (
+        <main className="flex-1 overflow-y-auto bg-background-elevated/40">
+          <Content onError={report} />
+        </main>
+      ) : view === "affiliates" && user.role === "owner" ? (
         <main className="flex-1 overflow-y-auto bg-background-elevated/40">
           <Affiliates onPendingChange={setPendingAffiliates} onError={report} />
         </main>

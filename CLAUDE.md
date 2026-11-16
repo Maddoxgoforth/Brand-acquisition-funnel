@@ -785,6 +785,34 @@ Maddox, Brand Acquisition or this site.
   `/partner*` and the webhook and sends every other path to `/partner`. Add
   the domain to the Vercel project too. Ad pixels never load on `/partner`.
 
+## CRM navigation and 📊 Content (owner's request, Nov 16 2026)
+
+- **Header**: the top bar keeps Dashboard, 🏆 Leaderboard, Organic opt-ins,
+  Ad opt-ins, Leads to dial. Owner-only pages (Analytics, 📊 Content,
+  💰 Team stats, Team, 🤝 Affiliates) are in the **☰ menu** at the top left
+  (`OWNER_MENU` in `CrmApp.tsx`); the open one shows as a highlighted pill in
+  the top bar, and the ☰ gets a red dot when Team / Affiliates have pending
+  requests. Team members never see the ☰.
+- **📊 Content** (`Content.tsx`, `lib/crm/content.ts`): every post published
+  through bundle.social with views, likes, comments, shares, saves and
+  engagement per platform (Instagram + TikTok; Snapchat has no stats there),
+  plus followers per account. One filter bar (7/30/90 days, all time; account;
+  platform; trial vs normal reels) drives four views: Overview (KPIs, views
+  gained per day, top posts, best formats), Posts (sortable table, ↗ opens the
+  post), Formats (avg / median views per format, best post), Accounts
+  (followers, change, sparkline). Formats come from post titles
+  (`classifyTitle`: `main_list_0` → List, `Break Free v137`, `Trial reel:
+  d05.mp4` → Daily story reel, Broke to Rich…); name new formats there.
+- **Data**: `syncContent()` reads bundle.social (`BUNDLE_API_KEY`): `/team/`,
+  `/post/?status=POSTED`, `/analytics/post`, `/analytics/social-account`
+  (daily snapshots), into `crm_content_posts` / `crm_content_daily` /
+  `crm_content_accounts`. Posts from the last 30 days refresh every 6 h,
+  older ones every 3 days. Runs from "Refresh now" (`POST
+  /api/crm/content/sync`, ~45 s per call, the UI repeats while posts remain),
+  automatically on the first visit, and from a daily Vercel cron
+  (`vercel.json` → `/api/cron/content-sync`; with `CRON_SECRET` set only
+  Vercel's Bearer call runs it, otherwise at most hourly).
+
 ## Ad funnel and ad tracking
 
 Built for running Meta ads to the free course (owner's request, Oct 2026).
