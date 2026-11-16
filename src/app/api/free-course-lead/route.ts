@@ -56,7 +56,7 @@ async function sendToDiscord(lead: LeadBody, funnel: Funnel, callNow?: string) {
             color: 0x2563eb,
             fields: [
               { name: "Name", value: lead.name, inline: true },
-              { name: "Email", value: lead.email, inline: true },
+              ...(lead.email ? [{ name: "Email", value: lead.email, inline: true }] : []),
               { name: "Phone", value: lead.phone, inline: true },
               ...(callNow ? [{ name: "Call now?", value: callNow === "Yes" ? "✅ YES" : "Not right now", inline: true }] : []),
             ],
@@ -106,7 +106,7 @@ async function sendToSlack(lead: LeadBody, crmUrl: string, funnel: Funnel) {
             fields: [
               { type: "mrkdwn", text: `*Name*\n${slackText(lead.name)}` },
               { type: "mrkdwn", text: `*Phone*\n${slackText(lead.phone)}` },
-              { type: "mrkdwn", text: `*Email*\n${slackText(lead.email)}` },
+              ...(lead.email ? [{ type: "mrkdwn", text: `*Email*\n${slackText(lead.email)}` }] : []),
             ],
           },
           {
@@ -169,8 +169,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { name, email, phone } = body;
-  if (!name || !email || !phone) {
+  // Email was removed from the opt-in form (owner, Nov 15 2026): optional now.
+  const { name, phone } = body;
+  const email = typeof body.email === "string" ? body.email.trim() : "";
+  if (!name || !phone) {
     return NextResponse.json(
       { error: "Missing required fields" },
       { status: 400 }

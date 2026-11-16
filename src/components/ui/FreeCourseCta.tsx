@@ -64,7 +64,6 @@ export default function FreeCourseCta({
     "idle" | "submitting" | "success" | "error"
   >("idle");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [country, setCountry] = useState<string>("US");
   // Ads funnel only: "Can we call you in the next 5 minutes?" Either answer
@@ -97,7 +96,6 @@ export default function FreeCourseCta({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
-          email,
           phone: fullPhone,
           funnel,
           answers: sentAnswers,
@@ -111,7 +109,7 @@ export default function FreeCourseCta({
       if (!res.ok) throw new Error("Request failed");
       // Same event id as the server's Conversions API event: Meta keeps one.
       if (reportLead) {
-        await identifyForAds(email, fullPhone);
+        await identifyForAds("", fullPhone);
         pixelEvent("Lead", { content_name: funnel === "ads" ? "free_course_ad_funnel" : "free_course" }, eventId);
       }
       setStatus("success");
@@ -171,14 +169,6 @@ export default function FreeCourseCta({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="First name"
-                  className="rounded-xl border border-border bg-background-elevated px-4 py-3 text-foreground placeholder:text-muted"
-                />
-                <input
-                  required
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email"
                   className="rounded-xl border border-border bg-background-elevated px-4 py-3 text-foreground placeholder:text-muted"
                 />
                 <div className="flex gap-2">
@@ -255,8 +245,8 @@ export default function FreeCourseCta({
                 ) : null}
 
                 <p className="text-center text-[11px] leading-snug text-muted/80">
-                  By submitting, you agree to receive marketing texts and
-                  emails about your application and onboarding. Consent is
+                  By submitting, you agree to receive marketing texts
+                  about your application and onboarding. Consent is
                   not required to get the free course. Reply STOP to cancel
                   anytime, HELP for help.
                 </p>
