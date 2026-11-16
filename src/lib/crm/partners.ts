@@ -211,17 +211,22 @@ export function readEvent(body: Json, eventName = "") {
               : "unknown";
   // Sub-ids: subid, sub_id, subId1, SubId1, sub1 ... (every one, any of them can match)
   const subids = pairs
-    .filter(([k]) => /^(subid\d*|sub\d|subaffiliateid|trackingid|clickref)$/.test(k))
+    .filter(([k]) => /^(subid\d*|sub\d|sharedid|subaffiliateid|trackingid|clickref)$/.test(k))
     .map(([, v]) => cleanSubid(scalar(v)))
     .filter(Boolean);
   const planText = pick(pairs, (k) => ["plan", "planname", "product", "productname", "sku", "item", "itemname", "tier"].includes(k)).toLowerCase();
   const billingText = pick(pairs, (k) => /billing|interval|period|cycle/.test(k)).toLowerCase();
   const payout = Number(pick(pairs, (k) => ["commission", "payout", "earnings", "amount", "affiliatepayout", "yourearnings"].includes(k)).replace(/[^0-9.-]/g, "")) || 0;
+  // AffiliateConsulting's events have no plan name, only billing_period
+  // ("monthly"/"yearly") and the owner's commission, so the plan comes from
+  // those: the known payout amounts first, then the billing period.
   let planKey: PlanKey | "" = "";
   const tier = /builder/.test(planText) ? "builder" : /starter/.test(planText) ? "starter" : "";
   const yearly = /year|annual/.test(billingText || planText);
+  const amount = Math.abs(payout);
   if (tier) planKey = `${tier}_${yearly ? "yearly" : "monthly"}` as PlanKey;
-  else if (OWNER_PAYOUT[Math.abs(payout)]) planKey = OWNER_PAYOUT[Math.abs(payout)]!;
+  else if (OWNER_PAYOUT[amount]) planKey = OWNER_PAYOUT[amount]!;
+  else if (billingText) planKey = yearly ? (amount >= 400 ? "builder_yearly" : "starter_yearly") : amount > 0 ? "builder_monthly" : "starter_monthly";
   const country = pick(pairs, (k) => ["country", "countrycode", "customercountry"].includes(k)).slice(0, 60);
   const orderRef = pick(pairs, (k) => ["orderid", "oid", "transactionid", "actionid", "conversionid", "purchaseid", "originalid"].includes(k)).slice(0, 120);
   const extId = pick(pairs, (k) => ["id", "eventid", "webhookid", "deliveryid"].includes(k));
