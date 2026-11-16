@@ -253,7 +253,13 @@ export async function ingestEvent(body: Json, rawText: string, meta: { event?: s
       ? `${e.kind}:${e.extId}`
       : `hash:${createHash("sha256").update(rawText).digest("hex")}`;
   let partner: PartnerRow | undefined;
-  for (const s of e.subids) {
+  // The partner's tag usually rides on the end of the owner's sub-ID
+  // ("mad-media-henry"); if AffiliateConsulting ever reports the two parts
+  // as separate values (subid "mad-media", shared_id "henry"), try them
+  // joined too.
+  const candidates = [...e.subids];
+  for (const a of e.subids) for (const b of e.subids) if (a !== b) candidates.push(cleanSubid(`${a}-${b}`));
+  for (const s of candidates) {
     partner = (await query<PartnerRow>(`SELECT * FROM crm_partners WHERE subid = $1`, [s]))[0];
     if (partner) break;
   }
