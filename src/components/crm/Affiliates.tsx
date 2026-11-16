@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { crmFetch, timeAgo } from "./api";
+import Partners from "./Partners";
 
 type Rate = { monthly: number; yearly: number; builderYearly: number };
 type Plan = { plan: string; label: string; closes: number; earned: number };
@@ -359,6 +360,10 @@ export default function Affiliates({
           ))}
         </ul>
       )}
+
+      <div className="border-t border-border pt-6">
+        <Partners onError={onError} />
+      </div>
     </div>
   );
 }

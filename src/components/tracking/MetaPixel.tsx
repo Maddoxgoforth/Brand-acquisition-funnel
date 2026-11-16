@@ -14,7 +14,7 @@ const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 // the ad-parameter capture runs.
 export default function MetaPixel() {
   const pathname = usePathname();
-  const isPrivate = pathname?.startsWith("/crm");
+  const isPrivate = pathname?.startsWith("/crm") || pathname?.startsWith("/partner");
 
   // The Pixel snippet sends the first PageView itself; later client-side
   // page changes send their own.

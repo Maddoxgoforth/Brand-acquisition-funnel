@@ -735,6 +735,41 @@ page with their own link and see how many opt-ins and closes it produced.
   (plan, date, commission). Never lead names or contact details.
 - Leads show a purple "🤝 Name" badge in the CRM.
 
+## Mad Media partners (Base44 sub-affiliates)
+
+Owner's request Nov 16 2026. People with their own audience sell Base44 with
+the owner's AffiliateConsulting links plus their own subid
+(`https://re.aistorebuilder.com/base44?subid=THEIRS`, `LINK_BASES` in
+`partners.ts`). Branded **Mad Media** only: nothing in `/partner` mentions
+Maddox, Brand Acquisition or this site.
+
+- **Events**: AffiliateConsulting (Settings → Webhooks → JSON webhook) posts
+  sign-ups, purchases and reversals for the owner's whole account to
+  `/api/partner-webhook?key=<PARTNER_WEBHOOK_KEY>` (1.5–3 h after they
+  happen). Field names aren't documented, so `readEvent` finds them by name
+  anywhere in the body (any `subid`/`sub_id`/`subId1`… key, plan/billing,
+  commission, country, order id) and every raw body is kept in
+  `crm_partner_events.raw`. Events whose subid belongs to a partner get their
+  `partner_id` and a `commission` fixed at arrival (owner-set rate per plan;
+  a reversal takes back the matching order's commission). Everything else is
+  stored as the owner's. Duplicate deliveries are ignored (`ext_id`). Once a
+  real event arrives, check the CRM's "Show newest raw event" and adjust
+  `readEvent` if a field wasn't picked up.
+- **Accounts**: `/partner/signup` → pending → owner approves in the CRM's
+  🤝 Affiliates tab ("Mad Media partners" section, `Partners.tsx`,
+  `/api/crm/partners[/id]`) with a sub-ID and $ per plan (Builder/Starter ×
+  Monthly/Yearly). Own table `crm_partners` and cookie `mm_partner`
+  (`partnerAuth.ts`). Payouts: `crm_partner_payouts`; owed = earned − paid.
+- **Dashboard** (`/partner`, `/partner/links`, `/partner/payments`): laid
+  out like the AffiliateConsulting dashboard: earnings with 1D/1W/MTD/1Y/All
+  and a chart, signups, purchases, conversion, reversals, monthly/yearly $,
+  yearly plan ratio, plans/countries tables, links with copy buttons, payout
+  history. Eastern time. Only their own events.
+- **Own domain**: `PARTNER_HOSTS` (comma-separated hosts, e.g.
+  `partners.madmedia.co`). On those hosts `src/proxy.ts` serves only
+  `/partner*` and the webhook and sends every other path to `/partner`. Add
+  the domain to the Vercel project too. Ad pixels never load on `/partner`.
+
 ## Ad funnel and ad tracking
 
 Built for running Meta ads to the free course (owner's request, Oct 2026).

@@ -226,6 +226,49 @@ const SCHEMA = [
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS affiliate_id uuid`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS affiliate_name text`,
   `CREATE INDEX IF NOT EXISTS crm_leads_affiliate_idx ON crm_leads (affiliate_id)`,
+  // Mad Media partners (Nov 16 2026): people who sell Base44 with the owner's
+  // AffiliateConsulting link plus their own subid. Their sales arrive through
+  // the AffiliateConsulting webhook (/api/partner-webhook) and are matched on
+  // subid. rates = commission per plan key (builder_monthly, ...).
+  `CREATE TABLE IF NOT EXISTS crm_partners (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    email text NOT NULL UNIQUE,
+    name text NOT NULL,
+    password_hash text NOT NULL,
+    status text NOT NULL DEFAULT 'pending',
+    subid text UNIQUE,
+    rates jsonb NOT NULL DEFAULT '{}'::jsonb,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    approved_at timestamptz,
+    last_login_at timestamptz
+  )`,
+  // Every webhook event, the owner's own included (partner_id NULL). raw keeps
+  // the whole body so fields can be re-read if the format turns out different.
+  // commission = what the partner earns (negative for a reversal), fixed when
+  // the event arrives.
+  `CREATE TABLE IF NOT EXISTS crm_partner_events (
+    id bigserial PRIMARY KEY,
+    ext_id text NOT NULL UNIQUE,
+    kind text NOT NULL,
+    subid text NOT NULL DEFAULT '',
+    partner_id uuid,
+    plan_key text NOT NULL DEFAULT '',
+    country text NOT NULL DEFAULT '',
+    order_ref text NOT NULL DEFAULT '',
+    payout numeric NOT NULL DEFAULT 0,
+    commission numeric NOT NULL DEFAULT 0,
+    occurred_at timestamptz NOT NULL DEFAULT now(),
+    received_at timestamptz NOT NULL DEFAULT now(),
+    raw jsonb NOT NULL DEFAULT '{}'::jsonb
+  )`,
+  `CREATE INDEX IF NOT EXISTS crm_partner_events_partner_idx ON crm_partner_events (partner_id, occurred_at)`,
+  `CREATE TABLE IF NOT EXISTS crm_partner_payouts (
+    id bigserial PRIMARY KEY,
+    partner_id uuid NOT NULL,
+    amount numeric NOT NULL,
+    note text NOT NULL DEFAULT '',
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
 ];
 
 export class CrmDbNotConfiguredError extends Error {

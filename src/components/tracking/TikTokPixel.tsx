@@ -13,7 +13,7 @@ const PIXEL_ID = TIKTOK_PIXEL_ID;
 // sends a page view on every page change.
 export default function TikTokPixel() {
   const pathname = usePathname();
-  const isPrivate = pathname?.startsWith("/crm");
+  const isPrivate = pathname?.startsWith("/crm") || pathname?.startsWith("/partner");
 
   // The snippet sends the first page view itself.
   const first = useRef(true);
