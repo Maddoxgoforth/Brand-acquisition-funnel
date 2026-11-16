@@ -745,7 +745,7 @@ Maddox, Brand Acquisition or this site.
 
 - **Events**: AffiliateConsulting (Settings → Webhooks → JSON webhook) posts
   sign-ups, purchases and reversals for the owner's whole account to
-  `/api/partner-webhook?key=<PARTNER_WEBHOOK_KEY>` (1.5–3 h after they
+  `/api/partner-webhook` (signed; the `?key=<PARTNER_WEBHOOK_KEY>` URL key is only needed while `PARTNER_WEBHOOK_SECRET` isn't set) (1.5–3 h after they
   happen). Field names aren't documented, so `readEvent` finds them by name
   anywhere in the body (any `subid`/`sub_id`/`subId1`… key, plan/billing,
   commission, country, order id) and every raw body is kept in

@@ -3,17 +3,17 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { ingestEvent } from "@/lib/crm/partners";
 
 // AffiliateConsulting → Settings → Webhooks → "JSON webhook" endpoint:
-//   https://<site>/api/partner-webhook?key=<PARTNER_WEBHOOK_KEY>
+//   https://<site>/api/partner-webhook
 // Receives sign-ups, purchases and reversals for the owner's whole
 // AffiliateConsulting account. Events whose subid belongs to a Mad Media
 // partner go on that partner's dashboard; the rest are stored as the owner's.
 //
-// Two checks, so nobody can post fake sales:
-// 1. the key in the URL (PARTNER_WEBHOOK_KEY), and
-// 2. when PARTNER_WEBHOOK_SECRET is set (the endpoint's "whsec_..." signing
-//    secret), AffiliateConsulting's signature: header
+// Nobody can post fake sales: either
+// 1. PARTNER_WEBHOOK_SECRET is set and the request must carry (the endpoint's "whsec_..." signing
+//    AffiliateConsulting's signature (the endpoint's "whsec_..." secret): header
 //    X-AC-Signature: t=<unix seconds>,v1=<hex>, where
 //    v1 = HMAC-SHA256(secret, t + "." + raw body) and t is at most 5 minutes old.
+// or 2. no secret is set and the URL has ?key=<PARTNER_WEBHOOK_KEY>.
 // X-AC-Event names the event; X-AC-Delivery is the delivery id (retries reuse
 // it, so it is what de-duplicates).
 
@@ -52,10 +52,13 @@ function signatureValid(header: string | null, rawBody: string) {
 }
 
 export async function POST(request: Request) {
-  if (!process.env.PARTNER_WEBHOOK_KEY) {
+  // With the signing secret set, the signature alone proves the event is
+  // real, so the URL key is optional. Without it, the key is required.
+  const hasSecret = Boolean(process.env.PARTNER_WEBHOOK_SECRET);
+  if (!hasSecret && !process.env.PARTNER_WEBHOOK_KEY) {
     return Response.json({ error: "Not configured" }, { status: 503 });
   }
-  if (!keyMatches(new URL(request.url).searchParams.get("key") ?? "")) {
+  if (!hasSecret && !keyMatches(new URL(request.url).searchParams.get("key") ?? "")) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
   const text = await request.text();
