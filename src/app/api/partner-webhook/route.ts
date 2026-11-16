@@ -9,8 +9,8 @@ import { ingestEvent } from "@/lib/crm/partners";
 // partner go on that partner's dashboard; the rest are stored as the owner's.
 //
 // Nobody can post fake sales: either
-// 1. PARTNER_WEBHOOK_SECRET is set and the request must carry (the endpoint's "whsec_..." signing
-//    AffiliateConsulting's signature (the endpoint's "whsec_..." secret): header
+// 1. PARTNER_WEBHOOK_SECRET (the endpoint's "whsec_..." signing secret) is
+//    set and the request carries a valid AffiliateConsulting signature: header
 //    X-AC-Signature: t=<unix seconds>,v1=<hex>, where
 //    v1 = HMAC-SHA256(secret, t + "." + raw body) and t is at most 5 minutes old.
 // or 2. no secret is set and the URL has ?key=<PARTNER_WEBHOOK_KEY>.
