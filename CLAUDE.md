@@ -752,7 +752,7 @@ Maddox, Brand Acquisition or this site.
   `crm_partner_events.raw`. Events whose subid belongs to a partner get their
   `partner_id` and a `commission` fixed at arrival (owner-set rate per plan;
   a reversal takes back the matching order's commission). Everything else is
-  stored as the owner's. Duplicate deliveries are ignored (`ext_id`). Once a
+  stored as the owner's. With `PARTNER_WEBHOOK_SECRET` (the endpoint's `whsec_…` signing secret) set, every request must carry a valid `X-AC-Signature: t=…,v1=…` (HMAC-SHA256 of `t + "." + raw body`, t ≤ 5 min old). `X-AC-Event` gives the event type and `X-AC-Delivery` de-duplicates retries (`ext_id`). Once a
   real event arrives, check the CRM's "Show newest raw event" and adjust
   `readEvent` if a field wasn't picked up.
 - **Accounts**: `/partner/signup` → pending → owner approves in the CRM's

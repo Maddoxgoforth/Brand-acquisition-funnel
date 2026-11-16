@@ -192,9 +192,9 @@ function pick(pairs: [string, Json][], test: (key: string) => boolean): string {
   return "";
 }
 
-export function readEvent(body: Json) {
+export function readEvent(body: Json, eventName = "") {
   const pairs = flatten(body);
-  const typeText = pick(pairs, (k) => ["event", "type", "eventtype", "eventname", "kind", "action", "actiontype"].includes(k)).toLowerCase();
+  const typeText = eventName.toLowerCase() || pick(pairs, (k) => ["event", "type", "eventtype", "eventname", "kind", "action", "actiontype"].includes(k)).toLowerCase();
   const all = JSON.stringify(body).toLowerCase();
   const kind = /revers|refund|chargeback|reversed/.test(typeText)
     ? "reversal"
@@ -231,9 +231,15 @@ export function readEvent(body: Json) {
   return { kind, subids, planKey, payout, country, orderRef, extId, occurredAt };
 }
 
-export async function ingestEvent(body: Json, rawText: string) {
-  const e = readEvent(body);
-  const extId = e.extId ? `${e.kind}:${e.extId}` : `hash:${createHash("sha256").update(rawText).digest("hex")}`;
+// meta: AffiliateConsulting's X-AC-Event (event name) and X-AC-Delivery
+// (delivery id; retries reuse it) headers, when present.
+export async function ingestEvent(body: Json, rawText: string, meta: { event?: string; delivery?: string } = {}) {
+  const e = readEvent(body, meta.event ?? "");
+  const extId = meta.delivery
+    ? `delivery:${meta.delivery.slice(0, 200)}`
+    : e.extId
+      ? `${e.kind}:${e.extId}`
+      : `hash:${createHash("sha256").update(rawText).digest("hex")}`;
   let partner: PartnerRow | undefined;
   for (const s of e.subids) {
     partner = (await query<PartnerRow>(`SELECT * FROM crm_partners WHERE subid = $1`, [s]))[0];
