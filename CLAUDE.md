@@ -765,6 +765,20 @@ Maddox, Brand Acquisition or this site.
   and a chart, signups, purchases, conversion, reversals, monthly/yearly $,
   yearly plan ratio, plans/countries tables, links with copy buttons, payout
   history. Eastern time. Only their own events.
+- **Manual mode (temporary, Nov 16 2026)**: AffiliateConsulting puts the link's
+  `subid` into Impact's shared ID, and the owner's own subid (`mad-media`) is
+  what credits the account, so a partner can't use a made-up subid until
+  AffiliateConsulting sets one up (e.g. `mad-media-henry`). Until then the
+  partner's **Link sub-ID (temporary)** is set to `mad-media` (their links use
+  it; `linkSubid()`), and the owner gives each of their sales to them with the
+  **Assign to** dropdown in "Latest webhook events" (`assignEvent`,
+  `PATCH /api/crm/partners/events/[id]`, `assigned_manually`). Manual
+  assignments survive sub-ID changes. Once their own sub-ID works: set it as
+  their Sub-ID and clear Link sub-ID; matching is automatic again.
+  The real event body (AffiliateConsulting test event): `data.subid`,
+  `data.shared_id`, `data.commission`, `data.billing_period`, `data.action_id`,
+  `data.country`, `data.event_date`, `type` (`purchase.created` etc.), no plan
+  name (plan comes from billing period + commission).
 - **Own domain**: `PARTNER_HOSTS` (comma-separated hosts, e.g.
   `partners.madmedia.co`). On those hosts `src/proxy.ts` serves only
   `/partner*` and the webhook and sends every other path to `/partner`. Add

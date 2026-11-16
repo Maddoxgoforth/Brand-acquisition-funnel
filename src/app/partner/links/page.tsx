@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getPartnerSession } from "@/lib/crm/partnerAuth";
-import { partnerEvents, partnerLinks } from "@/lib/crm/partners";
+import { linkSubid, partnerEvents, partnerLinks } from "@/lib/crm/partners";
 import CopyButton from "../CopyButton";
 import Shell from "../Shell";
 import { buildDashboard } from "../stats";
@@ -56,11 +56,11 @@ export default async function PartnerLinksPage() {
         </p>
       ) : null}
 
-      {partner.subid ? (
+      {linkSubid(partner) ? (
         <div className="mt-3 rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">Sub-ID: {partner.subid}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">Sub-ID: {linkSubid(partner)}</p>
           <div className="mt-2 space-y-1">
-            {partnerLinks(partner.subid).map((l) => (
+            {partnerLinks(linkSubid(partner)!).map((l) => (
               <div key={l.url} className="flex items-center justify-between gap-3 py-2">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-950">{l.label}</p>

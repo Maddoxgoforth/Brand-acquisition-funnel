@@ -22,6 +22,7 @@ type PartnerRow = {
   email: string;
   status: "pending" | "active" | "disabled";
   subid: string | null;
+  linkSubid: string | null;
   rates: Rates;
   createdAt: string;
   lastLoginAt: string | null;
@@ -30,7 +31,19 @@ type PartnerRow = {
   totals: { earned: number; paid: number; owed: number };
   payouts: { amount: number; note: string; at: string }[];
 };
-type EventRow = { kind: string; subid: string; plan: string; payout: number; commission: number; at: string; partner: string | null };
+type EventRow = {
+  id: string;
+  partnerId: string | null;
+  manual: boolean;
+  test: boolean;
+  kind: string;
+  subid: string;
+  plan: string;
+  payout: number;
+  commission: number;
+  at: string;
+  partner: string | null;
+};
 type Data = { partners: PartnerRow[]; events: EventRow[]; latestRaw: unknown; webhookReady: boolean };
 
 const money = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
@@ -44,12 +57,13 @@ const STATUS: Record<PartnerRow["status"], [string, string]> = {
 
 function PartnerCard({ p, reload, onError }: { p: PartnerRow; reload: () => void; onError: (e: unknown) => void }) {
   const [subid, setSubid] = useState(p.subid ?? "");
+  const [linkSub, setLinkSub] = useState(p.linkSubid ?? "");
   const [rates, setRates] = useState<Rates>(p.rates);
   const [past, setPast] = useState(false);
   const [payout, setPayout] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const changed = subid !== (p.subid ?? "") || PLANS.some(([k]) => rates[k] !== p.rates[k]);
+  const changed = subid !== (p.subid ?? "") || linkSub !== (p.linkSubid ?? "") || PLANS.some(([k]) => rates[k] !== p.rates[k]);
 
   async function act(body: Record<string, unknown>, confirmText?: string) {
     if (confirmText && !window.confirm(confirmText)) return;
@@ -110,7 +124,11 @@ function PartnerCard({ p, reload, onError }: { p: PartnerRow; reload: () => void
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <label className="flex items-center gap-1">
           Sub-ID
-          <input className="w-36 rounded-lg border border-border bg-background px-2 py-1 font-mono text-sm" value={subid} onChange={(e) => setSubid(e.target.value)} placeholder="e.g. henry" />
+          <input className="w-40 rounded-lg border border-border bg-background px-2 py-1 font-mono text-sm" value={subid} onChange={(e) => setSubid(e.target.value)} placeholder="e.g. mad-media-henry" />
+        </label>
+        <label className="flex items-center gap-1" title="While AffiliateConsulting hasn't set up their own sub-ID: their links use this one (e.g. mad-media) and you assign their sales by hand below. Clear it once their sub-ID works.">
+          Link sub-ID (temporary)
+          <input className="w-32 rounded-lg border border-border bg-background px-2 py-1 font-mono text-sm" value={linkSub} onChange={(e) => setLinkSub(e.target.value)} placeholder="mad-media" />
         </label>
         {PLANS.map(([k, l]) => (
           <label key={k} className="flex items-center gap-1">
@@ -127,12 +145,12 @@ function PartnerCard({ p, reload, onError }: { p: PartnerRow; reload: () => void
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {p.status === "pending" ? (
-          <button type="button" disabled={busy || !subid.trim()} className={pill} onClick={() => act({ action: "save", subid, rates, approve: true })}>
+          <button type="button" disabled={busy || !subid.trim()} className={pill} onClick={() => act({ action: "save", subid, linkSubid: linkSub, rates, approve: true })}>
             ✅ Approve
           </button>
         ) : (
           <>
-            <button type="button" disabled={busy || !changed || !subid.trim()} className={pill} onClick={() => act({ action: "save", subid, rates, applyToPast: past })}>
+            <button type="button" disabled={busy || !changed || !subid.trim()} className={pill} onClick={() => act({ action: "save", subid, linkSubid: linkSub, rates, applyToPast: past })}>
               Save sub-ID and rates
             </button>
             <label className="flex items-center gap-1 text-xs text-muted">
@@ -154,6 +172,12 @@ function PartnerCard({ p, reload, onError }: { p: PartnerRow; reload: () => void
         </button>
       </div>
 
+      {p.linkSubid ? (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+          Manual mode: their links use your sub-ID ({p.linkSubid}), so their sales aren&apos;t tagged. Assign them by hand in
+          &quot;Latest webhook events&quot; below.
+        </p>
+      ) : null}
       {p.links.length ? (
         <div className="space-y-1 text-xs">
           {p.links.map((l) => (
@@ -193,6 +217,7 @@ function PartnerCard({ p, reload, onError }: { p: PartnerRow; reload: () => void
 
 export default function Partners({ onError }: { onError: (e: unknown) => void }) {
   const [data, setData] = useState<Data | null>(null);
+  const [assigning, setAssigning] = useState<string | null>(null);
   const [key, setKey] = useState(0);
   const [showRaw, setShowRaw] = useState(false);
   const reload = useCallback(() => setKey((k) => k + 1), []);
@@ -207,7 +232,20 @@ export default function Partners({ onError }: { onError: (e: unknown) => void })
     };
   }, [key, onError]);
 
+  async function assign(eventId: string, partnerId: string) {
+    setAssigning(eventId);
+    try {
+      await crmFetch(`/api/crm/partners/events/${eventId}`, { method: "PATCH", body: { partnerId: partnerId || null } });
+      reload();
+    } catch (e) {
+      onError(e);
+    } finally {
+      setAssigning(null);
+    }
+  }
+
   if (!data) return <p className="text-sm text-muted">Loading partners…</p>;
+  const assignable = data.partners.filter((p) => p.status === "active");
 
   return (
     <div className="space-y-4">
@@ -234,7 +272,7 @@ export default function Partners({ onError }: { onError: (e: unknown) => void })
       <div className="rounded-2xl border border-border bg-background p-4">
         <div className="flex items-center gap-2">
           <h3 className="font-bold">Latest webhook events</h3>
-          <span className="text-xs text-muted">all sub-IDs, yours included</span>
+          <span className="text-xs text-muted">all sub-IDs, yours included · use &quot;Assign to&quot; to give a sale to a partner</span>
           {data.latestRaw ? (
             <button type="button" className="ml-auto text-xs font-bold text-accent hover:underline" onClick={() => setShowRaw((s) => !s)}>
               {showRaw ? "Hide" : "Show"} newest raw event
@@ -254,7 +292,7 @@ export default function Partners({ onError }: { onError: (e: unknown) => void })
                   <th className="py-1 pr-3">When</th>
                   <th className="py-1 pr-3">Event</th>
                   <th className="py-1 pr-3">Sub-ID</th>
-                  <th className="py-1 pr-3">Partner</th>
+                  <th className="py-1 pr-3">Assign to</th>
                   <th className="py-1 pr-3">Plan</th>
                   <th className="py-1 pr-3 text-right">Your payout</th>
                   <th className="py-1 text-right">Partner earns</th>
@@ -264,9 +302,28 @@ export default function Partners({ onError }: { onError: (e: unknown) => void })
                 {data.events.map((e, i) => (
                   <tr key={i}>
                     <td className="py-1 pr-3 text-muted">{timeAgo(e.at)}</td>
-                    <td className="py-1 pr-3">{e.kind}</td>
+                    <td className="py-1 pr-3">
+                      {e.kind}
+                      {e.test ? <span className="ml-1 rounded bg-slate-200 px-1 text-[10px] font-bold text-slate-600">TEST</span> : null}
+                    </td>
                     <td className="py-1 pr-3 font-mono">{e.subid || "–"}</td>
-                    <td className="py-1 pr-3">{e.partner ?? "You"}</td>
+                    <td className="py-1 pr-3">
+                      <select
+                        className="rounded-md border border-border bg-background px-1.5 py-0.5 text-sm disabled:opacity-50"
+                        value={e.partnerId ?? ""}
+                        disabled={assigning === e.id || e.kind === "unknown"}
+                        onChange={(ev) => assign(e.id, ev.target.value)}
+                      >
+                        <option value="">You</option>
+                        {assignable.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                        {e.partnerId && !assignable.some((p) => p.id === e.partnerId) ? <option value={e.partnerId}>{e.partner ?? "Partner"}</option> : null}
+                      </select>
+                      {e.manual && e.partnerId ? <span className="ml-1 text-[10px] text-muted">by hand</span> : null}
+                    </td>
                     <td className="py-1 pr-3">{e.plan || "–"}</td>
                     <td className="py-1 pr-3 text-right tabular-nums">{e.payout ? money(e.payout) : "–"}</td>
                     <td className="py-1 text-right tabular-nums">{e.partner ? money(e.commission) : "–"}</td>

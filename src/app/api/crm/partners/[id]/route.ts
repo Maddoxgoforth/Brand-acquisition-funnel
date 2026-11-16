@@ -37,6 +37,7 @@ export async function PATCH(request: Request, { params }: Context) {
           if (typeof body.subid !== "string" || !body.subid.trim()) return bad("Set their sub-ID.");
           const result = await updatePartner(id, {
             subid: body.subid,
+            ...(typeof body.linkSubid === "string" ? { linkSubid: body.linkSubid } : {}),
             rates,
             applyToPast: body.applyToPast === true,
             ...(body.approve === true ? { status: "active" as const } : {}),

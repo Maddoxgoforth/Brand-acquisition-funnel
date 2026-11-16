@@ -262,6 +262,12 @@ const SCHEMA = [
     raw jsonb NOT NULL DEFAULT '{}'::jsonb
   )`,
   `CREATE INDEX IF NOT EXISTS crm_partner_events_partner_idx ON crm_partner_events (partner_id, occurred_at)`,
+  // Temporary manual mode (Nov 16 2026): link_subid = the subid their links
+  // use while AffiliateConsulting hasn't set up their own (e.g. the owner's
+  // "mad-media"); their sales are then assigned by hand in the CRM, and
+  // assigned_manually keeps those assignments when their subid changes.
+  `ALTER TABLE crm_partners ADD COLUMN IF NOT EXISTS link_subid text`,
+  `ALTER TABLE crm_partner_events ADD COLUMN IF NOT EXISTS assigned_manually boolean NOT NULL DEFAULT false`,
   `CREATE TABLE IF NOT EXISTS crm_partner_payouts (
     id bigserial PRIMARY KEY,
     partner_id uuid NOT NULL,

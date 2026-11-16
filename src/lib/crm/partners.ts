@@ -34,6 +34,9 @@ export const LINK_BASES = [
   { label: "Base44", url: "https://re.aistorebuilder.com/base44" },
   { label: "Base44 Pricing", url: "https://re.aistorebuilder.com/base44-pricing" },
 ];
+// The links a partner shares: their link_subid while in manual mode (sales
+// assigned by hand), otherwise their own subid.
+export const linkSubid = (p: { subid: string | null; linkSubid: string | null }) => p.linkSubid || p.subid;
 export const partnerLinks = (subid: string) =>
   LINK_BASES.map((l) => ({ label: l.label, url: `${l.url}?subid=${encodeURIComponent(subid)}` }));
 
@@ -44,6 +47,7 @@ type PartnerRow = {
   password_hash: string;
   status: PartnerStatus;
   subid: string | null;
+  link_subid: string | null;
   rates: Partial<Rates>;
   created_at: string | Date;
   approved_at: string | Date | null;
@@ -56,6 +60,7 @@ export type Partner = {
   name: string;
   status: PartnerStatus;
   subid: string | null;
+  linkSubid: string | null;
   rates: Rates;
   createdAt: string;
   lastLoginAt: string | null;
@@ -72,6 +77,7 @@ function toPartner(row: PartnerRow): Partner {
     name: row.name,
     status: row.status,
     subid: row.subid,
+    linkSubid: row.link_subid,
     rates: fullRates(row.rates),
     createdAt: iso(row.created_at)!,
     lastLoginAt: iso(row.last_login_at),
@@ -115,7 +121,7 @@ export async function getActivePartner(id: string): Promise<Partner | null> {
 // already received with it.
 export async function updatePartner(
   id: string,
-  change: { subid?: string; rates?: Rates; status?: PartnerStatus; applyToPast?: boolean }
+  change: { subid?: string; linkSubid?: string; rates?: Rates; status?: PartnerStatus; applyToPast?: boolean }
 ): Promise<Partner | "subid_taken" | null> {
   const current = (await query<PartnerRow>(`SELECT * FROM crm_partners WHERE id = $1`, [id]))[0];
   if (!current) return null;
@@ -124,17 +130,18 @@ export async function updatePartner(
     const taken = await query(`SELECT 1 FROM crm_partners WHERE subid = $1 AND id <> $2`, [subid, id]);
     if (taken.length) return "subid_taken";
   }
+  const linkSub = change.linkSubid !== undefined ? cleanSubid(change.linkSubid) || null : current.link_subid;
   const rates = change.rates ? fullRates(change.rates) : fullRates(current.rates);
   const status = change.status ?? current.status;
   const rows = await query<PartnerRow>(
-    `UPDATE crm_partners SET subid = $2, rates = $3::jsonb, status = $4,
+    `UPDATE crm_partners SET subid = $2, rates = $3::jsonb, status = $4, link_subid = $5,
        approved_at = CASE WHEN $4 = 'active' AND approved_at IS NULL THEN now() ELSE approved_at END
      WHERE id = $1 RETURNING *`,
-    [id, subid, JSON.stringify(rates), status]
+    [id, subid, JSON.stringify(rates), status, linkSub]
   );
   if (subid !== current.subid) {
-    await query(`UPDATE crm_partner_events SET partner_id = NULL WHERE partner_id = $1`, [id]);
-    if (subid) await query(`UPDATE crm_partner_events SET partner_id = $1 WHERE subid = $2`, [id, subid]);
+    await query(`UPDATE crm_partner_events SET partner_id = NULL WHERE partner_id = $1 AND NOT assigned_manually`, [id]);
+    if (subid) await query(`UPDATE crm_partner_events SET partner_id = $1 WHERE subid = $2 AND NOT assigned_manually`, [id, subid]);
     await recalcCommissions(id, rates, true);
   } else if (change.rates && change.applyToPast) {
     await recalcCommissions(id, rates, true);
@@ -321,20 +328,25 @@ export async function listPartnersForOwner() {
     );
     partners.push({
       ...p,
-      links: p.subid ? partnerLinks(p.subid) : [],
+      links: linkSubid(p) ? partnerLinks(linkSubid(p)!) : [],
       counts,
       totals: await partnerTotals(p.id),
       payouts: await partnerPayouts(p.id),
     });
   }
-  const events = await query<{ kind: string; subid: string; plan_key: string; payout: string; commission: string; occurred_at: string | Date; partner: string | null }>(
-    `SELECT e.kind, e.subid, e.plan_key, e.payout, e.commission, e.occurred_at, p.name AS partner
+  const events = await query<{ id: string; kind: string; subid: string; plan_key: string; payout: string; commission: string; occurred_at: string | Date; partner: string | null; partner_id: string | null; assigned_manually: boolean; test: boolean }>(
+    `SELECT e.id, e.kind, e.subid, e.plan_key, e.payout, e.commission, e.occurred_at, p.name AS partner, e.partner_id, e.assigned_manually,
+            coalesce((e.raw->>'test')::boolean, false) AS test
      FROM crm_partner_events e LEFT JOIN crm_partners p ON p.id = e.partner_id
-     ORDER BY e.received_at DESC LIMIT 50`
+     ORDER BY e.occurred_at DESC LIMIT 200`
   );
   return {
     partners,
     events: events.map((e) => ({
+      id: String(e.id),
+      partnerId: e.partner_id,
+      manual: e.assigned_manually,
+      test: e.test,
       kind: e.kind,
       subid: e.subid,
       plan: e.plan_key ? PLAN_LABEL[e.plan_key as PlanKey]?.join(" ") ?? e.plan_key : "",
@@ -344,6 +356,38 @@ export async function listPartnersForOwner() {
       partner: e.partner,
     })),
   };
+}
+
+// Owner: give an event to a partner (or back to the owner with null) by hand.
+// Commission follows the partner's current rates; a reversal takes back what
+// the matching sale earned when it can be found.
+export async function assignEvent(eventId: string, partnerId: string | null) {
+  const ev = (await query<{ id: string; kind: string; plan_key: string; order_ref: string }>(
+    `SELECT id, kind, plan_key, order_ref FROM crm_partner_events WHERE id = $1`,
+    [eventId]
+  ))[0];
+  if (!ev) return "not_found" as const;
+  if (!partnerId) {
+    await query(`UPDATE crm_partner_events SET partner_id = NULL, commission = 0, assigned_manually = true WHERE id = $1`, [eventId]);
+    return "ok" as const;
+  }
+  const partner = (await query<PartnerRow>(`SELECT * FROM crm_partners WHERE id = $1`, [partnerId]))[0];
+  if (!partner) return "no_partner" as const;
+  const rates = fullRates(partner.rates);
+  const rate = ev.plan_key ? rates[ev.plan_key as PlanKey] ?? 0 : 0;
+  let commission = 0;
+  if (ev.kind === "purchase") commission = rate;
+  if (ev.kind === "reversal") {
+    const original = ev.order_ref
+      ? (await query<{ commission: string }>(
+          `SELECT commission FROM crm_partner_events WHERE partner_id = $1 AND kind = 'purchase' AND order_ref = $2 LIMIT 1`,
+          [partnerId, ev.order_ref]
+        ))[0]
+      : undefined;
+    commission = original ? -Number(original.commission) : -rate;
+  }
+  await query(`UPDATE crm_partner_events SET partner_id = $2, commission = $3, assigned_manually = true WHERE id = $1`, [eventId, partnerId, commission]);
+  return "ok" as const;
 }
 
 // The raw body of the newest event, so the owner can check what fields
