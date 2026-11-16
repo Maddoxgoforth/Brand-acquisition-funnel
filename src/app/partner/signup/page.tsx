@@ -24,7 +24,7 @@ export default async function PartnerSignupPage({ searchParams }: { searchParams
         <label className="mt-4 block text-sm font-medium" htmlFor="password">Password</label>
         <input id="password" name="password" type="password" required minLength={8} autoComplete="new-password" className={field} />
         {error ? <p className="mt-3 text-sm font-medium text-red-600">{ERRORS[error] ?? ERRORS.invalid}</p> : null}
-        <button type="submit" className="mt-6 w-full rounded-lg bg-slate-900 px-6 py-3 font-semibold text-white hover:bg-slate-800">
+        <button type="submit" className="mt-6 w-full rounded-lg bg-slate-950 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
           Create account
         </button>
       </form>

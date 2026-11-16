@@ -17,5 +17,12 @@ export const metadata: Metadata = {
 };
 
 export default function PartnerLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <div className="min-h-screen bg-white text-slate-900">{children}</div>;
+  return (
+    <div
+      className="min-h-screen bg-white text-slate-950 antialiased"
+      style={{ fontFamily: '"Proxima Nova", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif' }}
+    >
+      {children}
+    </div>
+  );
 }
