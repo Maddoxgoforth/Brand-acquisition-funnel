@@ -551,8 +551,9 @@ linked from any public page and is `noindex`.
   `reOptIn` instead of skipping them: `opt_in_count` goes up,
   `last_opt_in_at` is set, and the lead moves back to To dial with its
   appointment and first-contact time cleared (so the speed timer restarts).
-  Leads in Closed or Do not call stay put but still get the count and a
-  `reoptin` history event. Cards show "Opted in 2×", the live notice says
+  Leads in Closed or Do not call stay put but still get the count, a
+  `reoptin` history event and a restarted speed-to-lead timer (every opt-in
+  clears `first_contact_at`, owner Nov 16 2026). Cards show "Opted in 2×", the live notice says
   "Opted in again", and the applications list / live poll / opt-in stats use
   `coalesce(last_opt_in_at, created_at)`. Dial-list imports still skip
   duplicates.

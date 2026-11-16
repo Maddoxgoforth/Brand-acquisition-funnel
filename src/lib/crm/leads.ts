@@ -405,7 +405,9 @@ async function reOptIn(
        status = CASE WHEN $2 THEN status ELSE 'new' END,
        appointment_at = CASE WHEN $2 THEN appointment_at ELSE NULL END,
        appointment_tz = CASE WHEN $2 THEN appointment_tz ELSE NULL END,
-       first_contact_at = CASE WHEN $2 THEN first_contact_at ELSE NULL END,
+       -- Every opt-in restarts the speed-to-lead timer, whatever column the
+       -- lead is in (owner, Nov 16 2026). Closed / Do not call keep their column.
+       first_contact_at = NULL,
        email = CASE WHEN email = '' THEN $3 ELSE email END,
        attribution = CASE WHEN $4::jsonb = '{}'::jsonb THEN attribution ELSE $4::jsonb END,
        extra = extra || $5::jsonb,
