@@ -19,6 +19,21 @@ const NAV = [
     label: "Payments",
     icon: "M3.5 6.5h17v11h-17zM3.5 10h17M7 14.5h3",
   },
+  {
+    href: "/partner/assets",
+    label: "Marketing assets",
+    icon: "M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8-4.3-4.1 5.9-.9z",
+  },
+  {
+    href: "/partner/knowledgebase",
+    label: "Knowledgebase",
+    icon: "M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z",
+  },
+  {
+    href: "/partner/settings",
+    label: "Settings",
+    icon: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.5A7.5 7.5 0 0 0 7 6.5l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 3l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.5 7.5 0 0 0 2.6-1.5l2.4 1 2-3.4z",
+  },
 ];
 
 const initials = (name: string) =>

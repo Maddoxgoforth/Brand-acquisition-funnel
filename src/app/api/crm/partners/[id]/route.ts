@@ -1,4 +1,5 @@
 import { crmRoute, readJson } from "@/lib/crm/api";
+import { approveBatch, markBatchPaid, unapproveBatch } from "@/lib/crm/partnerBatches";
 import { addPartnerPayout, deletePartner, PLAN_KEYS, updatePartner, type Rates } from "@/lib/crm/partners";
 
 type Context = { params: Promise<{ id: string }> };
@@ -22,7 +23,8 @@ function readRates(value: unknown): Rates | null {
 // Owner only.
 //   { action: "save", subid, rates, applyToPast }   approve / edit (approves a pending partner)
 //   { action: "status", status }                    "active" / "disabled"
-//   { action: "payout", amount, note }              record money paid to them
+//   { action: "payout", amount, note }              record a one-off payment to them
+//   { action: "batch", step, periodStart }          payout periods: step "approve" | "unapprove" | "paid" | "unpaid"
 export async function PATCH(request: Request, { params }: Context) {
   return crmRoute(
     request,
@@ -53,6 +55,17 @@ export async function PATCH(request: Request, { params }: Context) {
         case "payout": {
           const ok = await addPartnerPayout(id, Number(body.amount), typeof body.note === "string" ? body.note : "");
           return ok ? Response.json({ ok: true }) : bad("Enter an amount.");
+        }
+        case "batch": {
+          const period = typeof body.periodStart === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.periodStart) ? body.periodStart : null;
+          if (!period) return bad();
+          const ok =
+            body.step === "approve" ? await approveBatch(id, period)
+            : body.step === "unapprove" ? await unapproveBatch(id, period)
+            : body.step === "paid" ? await markBatchPaid(id, period, true)
+            : body.step === "unpaid" ? await markBatchPaid(id, period, false)
+            : false;
+          return ok ? Response.json({ ok: true }) : bad("That payout period can't do that right now. Refresh and try again.");
         }
         default:
           return bad();

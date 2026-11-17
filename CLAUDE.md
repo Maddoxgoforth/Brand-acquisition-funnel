@@ -783,6 +783,27 @@ Maddox, Brand Acquisition or this site.
   `data.action_id`, `data.country`, `data.event_date`, `type`
   (`purchase.created` etc.), no plan name (plan comes from billing period +
   commission).
+- **Payout details** (Nov 16 2026): the partner's Payments tab asks for
+  name on the account, bank name, checking/savings, routing number (9 digits,
+  ABA checksum) and account number (typed twice). Stored in
+  `crm_partner_payout_details` with the numbers AES-256-GCM encrypted
+  (`PARTNER_PAYOUT_KEY`, `lib/crm/payoutDetails.ts`; no key = nothing saved).
+  The partner only ever sees the last 4 digits; the owner's partner card has
+  "Show full numbers" (`GET /api/crm/partners/[id]/payout-details`).
+- **Payout periods** (`lib/crm/partnerBatches.ts`): sales grouped into 5-day
+  Eastern-time periods from Nov 1 2026; 14 days after a period ends it is
+  "Ready to approve" on the owner's card → Approve (amount frozen in
+  `crm_partner_payout_batches`, partner sees "Pending") → Mark paid (partner
+  sees "Paid out"); Undo for both. A reversal comes out of the original sale's
+  period if it isn't approved yet, else out of the period it happens in;
+  late events in approved periods and periods ≤ $0 carry into the next one.
+  `PARTNER_PAYOUT_PERIOD_DAYS` / `PARTNER_PAYOUT_HOLD_DAYS` change 5 / 14.
+  Totals: paid = paid periods + one-off payouts (`crm_partner_payouts`).
+- **Marketing assets** (`/partner/assets`, `crm_partner_assets`): the
+  partner's own links (VSL, webinar, ad, doc...), search + sort.
+  **Knowledgebase** (`/partner/knowledgebase`): how they earn (their rates),
+  getting credit (clean sign-up flow), which link, payouts, FAQ.
+  **Settings** (`/partner/settings`): name, password change, payout method.
 - **Own domain**: `PARTNER_HOSTS` (comma-separated hosts, e.g.
   `partners.madmedia.co`). On those hosts `src/proxy.ts` serves only
   `/partner*` and the webhook and sends every other path to `/partner`. Add

@@ -268,6 +268,46 @@ const SCHEMA = [
   // assigned_manually keeps those assignments when their subid changes.
   `ALTER TABLE crm_partners ADD COLUMN IF NOT EXISTS link_subid text`,
   `ALTER TABLE crm_partner_events ADD COLUMN IF NOT EXISTS assigned_manually boolean NOT NULL DEFAULT false`,
+  // Partner payout details (Nov 16 2026). Bank numbers are only ever stored
+  // encrypted (AES-256-GCM, PARTNER_PAYOUT_KEY; lib/crm/payoutDetails.ts);
+  // the last 4 digits are kept in the clear to show "•••• 1234".
+  // A partner's own marketing assets (links to their VSLs, webinars, ad
+  // campaigns, Drive docs), shown on /partner/assets.
+  // Partner payout batches (Nov 16 2026): sales are grouped into 5-day periods
+  // (lib/crm/partnerBatches.ts works them out from crm_partner_events). A row
+  // here exists once the owner approves a period: the amount is frozen then,
+  // and paid_at is set when the owner marks it paid.
+  `CREATE TABLE IF NOT EXISTS crm_partner_payout_batches (
+    partner_id uuid NOT NULL REFERENCES crm_partners(id) ON DELETE CASCADE,
+    period_start date NOT NULL,
+    period_end date NOT NULL,
+    amount numeric NOT NULL,
+    sales int NOT NULL DEFAULT 0,
+    status text NOT NULL DEFAULT 'approved',
+    approved_at timestamptz NOT NULL DEFAULT now(),
+    paid_at timestamptz,
+    PRIMARY KEY (partner_id, period_start)
+  )`,
+  `CREATE TABLE IF NOT EXISTS crm_partner_assets (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    partner_id uuid NOT NULL REFERENCES crm_partners(id) ON DELETE CASCADE,
+    kind text NOT NULL DEFAULT 'other',
+    title text NOT NULL,
+    url text NOT NULL,
+    notes text NOT NULL DEFAULT '',
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS crm_partner_payout_details (
+    partner_id uuid PRIMARY KEY REFERENCES crm_partners(id) ON DELETE CASCADE,
+    method text NOT NULL DEFAULT 'bank',
+    holder_name text NOT NULL,
+    bank_name text NOT NULL DEFAULT '',
+    account_type text NOT NULL DEFAULT 'checking',
+    routing_last4 text NOT NULL DEFAULT '',
+    account_last4 text NOT NULL DEFAULT '',
+    secret text NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT now()
+  )`,
   // Content dashboard (Nov 16 2026): every post published through
   // bundle.social with its latest stats per platform, daily snapshots, and
   // account-level daily stats. Filled by syncContent() (lib/crm/content.ts).

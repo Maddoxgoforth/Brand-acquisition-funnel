@@ -3,6 +3,8 @@ import "server-only";
 import { createHash } from "node:crypto";
 
 import { query } from "./db";
+import { partnerBatches } from "./partnerBatches";
+import { payoutSummary } from "./payoutDetails";
 import { hashPassword, MIN_PASSWORD_LENGTH, passwordMatches } from "./users";
 
 // Mad Media partners (Nov 16 2026). A partner sells Base44 with the owner's
@@ -322,13 +324,17 @@ export async function partnerPayouts(partnerId: string) {
 }
 
 export async function partnerTotals(partnerId: string) {
-  const [row] = await query<{ earned: string; paid: string }>(
+  // paid = batches marked paid + any one-off payouts the owner recorded;
+  // pending = batches approved but not paid yet.
+  const [row] = await query<{ earned: string; paid: string; pending: string }>(
     `SELECT (SELECT coalesce(sum(commission), 0) FROM crm_partner_events WHERE partner_id = $1) AS earned,
-            (SELECT coalesce(sum(amount), 0) FROM crm_partner_payouts WHERE partner_id = $1) AS paid`,
+            (SELECT coalesce(sum(amount), 0) FROM crm_partner_payouts WHERE partner_id = $1)
+              + (SELECT coalesce(sum(amount), 0) FROM crm_partner_payout_batches WHERE partner_id = $1 AND status = 'paid') AS paid,
+            (SELECT coalesce(sum(amount), 0) FROM crm_partner_payout_batches WHERE partner_id = $1 AND status = 'approved') AS pending`,
     [partnerId]
   );
-  const earned = Number(row.earned), paid = Number(row.paid);
-  return { earned, paid, owed: earned - paid };
+  const earned = Number(row.earned), paid = Number(row.paid), pending = Number(row.pending);
+  return { earned, paid, pending, owed: earned - paid };
 }
 
 // Owner view: every partner with totals, plus the latest events (all subids).
@@ -350,6 +356,8 @@ export async function listPartnersForOwner() {
       counts,
       totals: await partnerTotals(p.id),
       payouts: await partnerPayouts(p.id),
+      payoutMethod: await payoutSummary(p.id),
+      batches: (await partnerBatches(p.id)).filter((b) => b.status !== "carried").slice(0, 12),
     });
   }
   const events = await query<{ id: string; kind: string; subid: string; plan_key: string; payout: string; commission: string; occurred_at: string | Date; partner: string | null; partner_id: string | null; assigned_manually: boolean; test: boolean }>(

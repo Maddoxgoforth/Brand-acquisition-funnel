@@ -1,26 +1,135 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getPartnerSession } from "@/lib/crm/partnerAuth";
 import { partnerPayouts, partnerTotals } from "@/lib/crm/partners";
+import { HOLD_DAYS, PERIOD_DAYS, partnerBatches, type Batch } from "@/lib/crm/partnerBatches";
+import { payoutSummary, type PayoutSummary } from "@/lib/crm/payoutDetails";
+import { savePartnerPayoutDetails } from "../actions";
 import Shell from "../Shell";
 import { Segmented, StatRow, tableWrap, td, th } from "../ui";
 
 export const dynamic = "force-dynamic";
 
 const money = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+const day = (ymd: string) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const STATUS: Record<Batch["status"], [string, string]> = {
+  open: ["In progress", "text-slate-600"],
+  holding: ["On hold", "text-slate-600"],
+  ready: ["Awaiting approval", "text-amber-600"],
+  approved: ["Pending", "text-indigo-600"],
+  paid: ["Paid out", "text-green-600"],
+  carried: ["Carried over", "text-slate-600"],
+};
 const date = (iso: string) =>
   new Date(iso).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York" });
 
-export default async function PartnerPaymentsPage() {
+const ERRORS: Record<string, string> = {
+  missing_name: "Enter the name on the bank account.",
+  bad_routing: "That routing number isn't valid. It's the 9-digit number on the bottom left of a check.",
+  bad_account: "Enter your account number (4 to 17 digits).",
+  account_mismatch: "The two account numbers don't match.",
+  not_configured: "Payout setup isn't available right now. Please try again later.",
+};
+
+const input =
+  "mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
+const label = "block text-sm font-medium text-slate-950";
+
+function PayoutForm({ current, error }: { current: PayoutSummary | null; error?: string }) {
+  return (
+    <form action={savePartnerPayoutDetails} className="mt-4 grid gap-4 sm:grid-cols-2" autoComplete="off">
+      <div className="sm:col-span-2">
+        <label className={label} htmlFor="holderName">Name on the account</label>
+        <input id="holderName" name="holderName" required defaultValue={current?.holderName ?? ""} className={input} />
+      </div>
+      <div>
+        <label className={label} htmlFor="bankName">Bank name</label>
+        <input id="bankName" name="bankName" defaultValue={current?.bankName ?? ""} placeholder="e.g. Chase" className={input} />
+      </div>
+      <div>
+        <label className={label} htmlFor="accountType">Account type</label>
+        <select id="accountType" name="accountType" defaultValue={current?.accountType ?? "checking"} className={input}>
+          <option value="checking">Checking</option>
+          <option value="savings">Savings</option>
+        </select>
+      </div>
+      <div className="sm:col-span-2">
+        <label className={label} htmlFor="routing">Routing number</label>
+        <input id="routing" name="routing" required inputMode="numeric" maxLength={9} placeholder="9 digits" className={input} />
+      </div>
+      <div>
+        <label className={label} htmlFor="account">Account number</label>
+        <input id="account" name="account" required inputMode="numeric" maxLength={17} className={input} />
+      </div>
+      <div>
+        <label className={label} htmlFor="accountConfirm">Confirm account number</label>
+        <input id="accountConfirm" name="accountConfirm" required inputMode="numeric" maxLength={17} className={input} />
+      </div>
+      {error ? <p className="text-sm font-medium text-red-600 sm:col-span-2">{ERRORS[error] ?? ERRORS.not_configured}</p> : null}
+      <div className="flex items-center gap-3 sm:col-span-2">
+        <button type="submit" className="rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
+          Save payout details
+        </button>
+        {current ? (
+          <Link href="/partner/payments" className="text-sm font-medium text-slate-600 hover:text-slate-950">Cancel</Link>
+        ) : null}
+      </div>
+      <p className="flex items-center gap-1.5 text-[13px] text-slate-600 sm:col-span-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+        Encrypted and stored securely. Only used to send your payouts. US bank accounts only.
+      </p>
+    </form>
+  );
+}
+
+export default async function PartnerPaymentsPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string; edit?: string }> }) {
   const partner = await getPartnerSession();
   if (!partner) redirect("/partner/login");
-  const [totals, payouts] = await Promise.all([partnerTotals(partner.id), partnerPayouts(partner.id)]);
+  const { saved, error, edit } = await searchParams;
+  const [totals, payouts, method, allBatches] = await Promise.all([
+    partnerTotals(partner.id),
+    partnerPayouts(partner.id),
+    payoutSummary(partner.id),
+    partnerBatches(partner.id),
+  ]);
+  const batches = allBatches.filter((b) => b.status !== "carried");
+  const editing = !method || edit === "1";
 
   return (
     <Shell partner={partner} active="/partner/payments">
       <div className="border-b border-slate-200/80 pb-4">
         <h1 className="text-xl font-semibold text-slate-950">Payments</h1>
       </div>
+
+      {saved ? (
+        <p className="mt-6 rounded-lg bg-emerald-50 p-3 text-sm font-medium text-emerald-800">Payout details saved. You&apos;re all set to get paid.</p>
+      ) : null}
+
+      {editing ? (
+        <div className={`mt-6 rounded-xl border p-5 ${method ? "border-slate-200/80" : "border-indigo-200 bg-indigo-50/40"}`}>
+          <h2 className="text-[17px] font-semibold text-slate-950">{method ? "Update payout details" : "Set up payouts"}</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            {method
+              ? "Enter your bank details again to change where your payouts go."
+              : "Add the bank account you want your commissions sent to. You only need to do this once."}
+          </p>
+          <PayoutForm current={method} error={error} />
+        </div>
+      ) : (
+        <div className="mt-6 flex items-center justify-between gap-4 rounded-xl border border-slate-200/80 p-4">
+          <div>
+            <p className="text-[13px] font-medium uppercase tracking-wide text-slate-600">Payout method</p>
+            <p className="mt-1 text-sm font-semibold text-slate-950">
+              {method.bankName || "Bank account"} · {method.accountType === "savings" ? "Savings" : "Checking"} •••• {method.accountLast4}
+            </p>
+            <p className="text-sm text-slate-600">{method.holderName}</p>
+          </div>
+          <Link href="/partner/payments?edit=1" className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-950 hover:bg-slate-50">
+            Edit
+          </Link>
+        </div>
+      )}
 
       <div className="mt-6">
         <p className="text-[15px] text-slate-950">Balance owed to you</p>
@@ -32,37 +141,60 @@ export default async function PartnerPaymentsPage() {
         <StatRow
           stats={[
             { label: "Total earned", value: money(totals.earned) },
+            { label: "Pending payout", value: money(totals.pending) },
             { label: "Total paid", value: money(totals.paid) },
           ]}
         />
       </div>
 
       <div className="mt-8 flex items-center justify-between">
-        <h2 className="text-[22px] font-semibold text-slate-950">Payout history</h2>
+        <h2 className="text-[22px] font-semibold text-slate-950">Payouts</h2>
         <Segmented items={[{ label: "Base44", active: true }]} />
       </div>
-      {payouts.length === 0 ? (
-        <p className="py-12 text-center text-sm text-slate-600">No payouts yet.</p>
+      <p className="mt-1 text-sm text-slate-600">
+        Sales are grouped into {PERIOD_DAYS}-day periods. Each period is reviewed {HOLD_DAYS} days after it ends (refunds and
+        reversals come off first), then paid out.
+      </p>
+      {batches.length === 0 && payouts.length === 0 ? (
+        <p className="py-12 text-center text-sm text-slate-600">No payouts yet. Your first one shows up here after your first sale.</p>
       ) : (
         <div className={`mt-4 ${tableWrap}`}>
           <table className="w-full">
             <thead className="bg-slate-50">
               <tr>
-                <th className={th}>Brand</th>
-                <th className={th}>Payment date</th>
-                <th className={th}>Note</th>
+                <th className={th}>Period</th>
+                <th className={th}>Sales</th>
                 <th className={`${th} text-right`}>Amount</th>
                 <th className={`${th} text-right`}>Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200/80">
+              {batches.map((b) => {
+                const [label, color] = STATUS[b.status];
+                return (
+                  <tr key={b.periodStart}>
+                    <td className={td}>
+                      {day(b.periodStart)} – {day(b.periodEnd)}
+                    </td>
+                    <td className={`${td} text-slate-600`}>
+                      {b.sales}
+                      {b.reversals ? ` (${b.reversals} reversed)` : ""}
+                    </td>
+                    <td className={`${td} text-right tabular-nums`}>{money(b.amount)}</td>
+                    <td className={`${td} text-right font-medium ${color}`}>
+                      {label}
+                      {b.status === "holding" ? <span className="block text-xs font-normal text-slate-500">until {day(b.readyOn)}</span> : null}
+                      {b.status === "paid" && b.paidAt ? <span className="block text-xs font-normal text-slate-500">{date(b.paidAt)}</span> : null}
+                    </td>
+                  </tr>
+                );
+              })}
               {payouts.map((p, i) => (
-                <tr key={i}>
-                  <td className={td}>Base44</td>
+                <tr key={`one-off-${i}`}>
                   <td className={td}>{date(p.at)}</td>
-                  <td className={`${td} text-slate-600`}>{p.note || "–"}</td>
+                  <td className={`${td} text-slate-600`}>{p.note || "Payment"}</td>
                   <td className={`${td} text-right tabular-nums`}>{money(p.amount)}</td>
-                  <td className={`${td} text-right font-medium text-green-600`}>Paid</td>
+                  <td className={`${td} text-right font-medium text-green-600`}>Paid out</td>
                 </tr>
               ))}
             </tbody>

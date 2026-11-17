@@ -30,7 +30,84 @@ type PartnerRow = {
   counts: { signups: number; purchases: number; reversals: number };
   totals: { earned: number; paid: number; owed: number };
   payouts: { amount: number; note: string; at: string }[];
+  batches: Batch[];
+  payoutMethod: {
+    holderName: string;
+    bankName: string;
+    accountType: "checking" | "savings";
+    routingLast4: string;
+    accountLast4: string;
+    updatedAt: string;
+  } | null;
 };
+type Batch = {
+  periodStart: string;
+  periodEnd: string;
+  sales: number;
+  reversals: number;
+  amount: number;
+  status: "open" | "holding" | "ready" | "approved" | "paid" | "carried";
+  readyOn: string;
+  paidAt: string | null;
+};
+const day = (ymd: string) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const BATCH_LABEL: Record<Batch["status"], [string, string]> = {
+  open: ["Collecting sales", "text-muted"],
+  holding: ["On hold", "text-muted"],
+  ready: ["Ready to approve", "text-amber-700"],
+  approved: ["Approved: pay them", "text-indigo-700"],
+  paid: ["Paid", "text-emerald-700"],
+  carried: ["Carried over", "text-muted"],
+};
+type PayoutFull = NonNullable<PartnerRow["payoutMethod"]> & { routingNumber: string; accountNumber: string };
+
+// Their bank details: masked until the owner clicks Show (fetched on demand,
+// never kept in the list data).
+function PayoutMethod({ p, onError }: { p: PartnerRow; onError: (e: unknown) => void }) {
+  const [full, setFull] = useState<PayoutFull | null>(null);
+  const [busy, setBusy] = useState(false);
+  const m = p.payoutMethod;
+  if (!m) return <p className="text-xs text-muted">Payout details: not added yet (they add them on their Payments tab).</p>;
+  const show = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/crm/partners/${p.id}/payout-details`, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Couldn't load payout details");
+      setFull(data.details);
+    } catch (e) {
+      onError(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const copy = (v: string) => navigator.clipboard?.writeText(v);
+  return (
+    <div className="rounded-lg bg-background-elevated px-3 py-2 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p>
+          <span className="font-bold">Payout:</span> {m.bankName || "Bank"} · {m.accountType === "savings" ? "Savings" : "Checking"} ••••{" "}
+          {m.accountLast4} · {m.holderName}
+        </p>
+        <button type="button" className={pill} disabled={busy} onClick={() => (full ? setFull(null) : show())}>
+          {full ? "Hide" : "Show full numbers"}
+        </button>
+      </div>
+      {full ? (
+        <div className="mt-2 grid gap-1 font-mono text-sm sm:grid-cols-2">
+          <p>
+            Routing: {full.routingNumber}{" "}
+            <button type="button" className="text-xs font-bold text-accent" onClick={() => copy(full.routingNumber)}>copy</button>
+          </p>
+          <p>
+            Account: {full.accountNumber}{" "}
+            <button type="button" className="text-xs font-bold text-accent" onClick={() => copy(full.accountNumber)}>copy</button>
+          </p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 type EventRow = {
   id: string;
   partnerId: string | null;
@@ -178,6 +255,7 @@ function PartnerCard({ p, reload, onError }: { p: PartnerRow; reload: () => void
           &quot;Manual link sub-ID&quot; to switch them to their Shared ID link (sales then match automatically).
         </p>
       ) : null}
+      <PayoutMethod p={p} onError={onError} />
       {p.links.length ? (
         <div className="space-y-1 text-xs">
           {p.links.map((l) => (
@@ -188,8 +266,63 @@ function PartnerCard({ p, reload, onError }: { p: PartnerRow; reload: () => void
         </div>
       ) : null}
 
+      {p.batches.length ? (
+        <div className="overflow-x-auto">
+          <p className="mb-1 text-xs font-bold uppercase tracking-wide text-muted">Payout periods</p>
+          <table className="w-full text-sm">
+            <tbody>
+              {p.batches.map((b) => {
+                const [label, color] = BATCH_LABEL[b.status];
+                return (
+                  <tr key={b.periodStart} className="border-t border-border">
+                    <td className="py-1.5 pr-3 whitespace-nowrap">
+                      {day(b.periodStart)} – {day(b.periodEnd)}
+                    </td>
+                    <td className="py-1.5 pr-3 text-muted whitespace-nowrap">
+                      {b.sales} sale{b.sales === 1 ? "" : "s"}
+                      {b.reversals ? `, ${b.reversals} reversed` : ""}
+                    </td>
+                    <td className="py-1.5 pr-3 text-right font-bold tabular-nums">{money(b.amount)}</td>
+                    <td className={`py-1.5 pr-3 font-semibold whitespace-nowrap ${color}`}>
+                      {label}
+                      {b.status === "holding" ? ` until ${day(b.readyOn)}` : ""}
+                    </td>
+                    <td className="py-1.5 text-right whitespace-nowrap">
+                      {b.status === "ready" ? (
+                        <button type="button" disabled={busy} className={pill} onClick={() => act({ action: "batch", step: "approve", periodStart: b.periodStart })}>
+                          Approve
+                        </button>
+                      ) : b.status === "approved" ? (
+                        <span className="flex justify-end gap-2">
+                          <button type="button" disabled={busy} className="text-xs text-muted hover:text-foreground" onClick={() => act({ action: "batch", step: "unapprove", periodStart: b.periodStart })}>
+                            Undo
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            className={pill}
+                            onClick={() => act({ action: "batch", step: "paid", periodStart: b.periodStart }, `Mark ${money(b.amount)} as paid to ${p.name}?`)}
+                          >
+                            Mark paid
+                          </button>
+                        </span>
+                      ) : b.status === "paid" ? (
+                        <button type="button" disabled={busy} className="text-xs text-muted hover:text-foreground" onClick={() => act({ action: "batch", step: "unpaid", periodStart: b.periodStart }, "Undo 'paid' for this period?")}>
+                          Undo
+                        </button>
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+
       {p.status !== "pending" ? (
         <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-xs text-muted">One-off payment:</span>
           <input className={box} type="number" min={0} placeholder="$" value={payout} onChange={(e) => setPayout(e.target.value)} />
           <input className="w-48 rounded-lg border border-border bg-background px-2 py-1 text-sm" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
           <button
@@ -202,7 +335,7 @@ function PartnerCard({ p, reload, onError }: { p: PartnerRow; reload: () => void
               setNote("");
             }}
           >
-            Record payout
+            Record
           </button>
           {p.payouts.length ? (
             <span className="text-xs text-muted">
@@ -253,8 +386,9 @@ export default function Partners({ onError }: { onError: (e: unknown) => void })
         <h2 className="text-lg font-extrabold">Mad Media partners (Base44)</h2>
         <p className="mt-1 text-sm text-muted">
           Partners sign up at <span className="font-mono text-foreground">/partner/signup</span> (or on the Mad Media domain). Approve them with a
-          sub-ID: their links are your AffiliateConsulting links with that sub-ID. Sales from the AffiliateConsulting webhook that carry their
-          sub-ID go on their dashboard at the commission you set; everything else stays yours.
+          Shared ID: their links are your AffiliateConsulting links + &amp;sharedid=that ID, and sales carrying it go on their dashboard at
+          the commission you set (everything else stays yours). Sales are grouped into 5-day payout periods; 14 days after a period ends
+          it shows &quot;Ready to approve&quot; here. Approve it (they see Pending), pay them, then Mark paid (they see Paid out).
           {data.webhookReady ? null : <span className="font-bold text-danger"> Webhook not set up yet (PARTNER_WEBHOOK_KEY missing).</span>}
         </p>
       </div>
