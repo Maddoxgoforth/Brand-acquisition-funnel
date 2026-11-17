@@ -682,7 +682,8 @@ export function qualifiesForAds(answers: Record<string, string> | undefined) {
   const age = answers?.["Age"] ?? "";
   const now = answers?.["Right now"] ?? "";
   const committed = answers?.["Committed to the quiz"] === "Yes";
-  return committed && Boolean(age) && !TOO_YOUNG.includes(age) && JOB_ANSWERS.includes(now);
+  const callNow = answers?.[CALL_QUESTION] === "Yes";
+  return committed && callNow && Boolean(age) && !TOO_YOUNG.includes(age) && JOB_ANSWERS.includes(now);
 }
 
 // 16-17: still reported, but with no email/phone attached (minor's data).

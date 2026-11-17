@@ -904,7 +904,7 @@ Built for running Meta ads to the free course (owner's request, Oct 2026).
   (Events API v1.3, needs `TIKTOK_EVENTS_TOKEN`). TikTok standard event names:
   opt-in = Lead (TikTok labels it "Submit form"; browser + server, same
   event id), but ad-funnel opt-ins count only when 16+ AND
-  they have a job AND said Yes to committing to the quiz (`qualifiesForAds`, owner Nov 17 2026: buyers are mostly
+  they have a job AND said Yes to committing to the quiz AND Yes to the 5-minute call question (`qualifiesForAds`, owner Nov 17 2026: buyers are mostly
   16-20 with a job; others still saved and called, just not reported), and
   16-17s are reported without email/phone (`isMinor`), closed = Purchase (no Schedule event), VSL page = ViewContent. `pixelEvent()` in
   `tracking.ts` fires both pixels. Attribution also keeps `ttclid` and the
