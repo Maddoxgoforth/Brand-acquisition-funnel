@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { CALL_QUESTION, isUnder18 } from "@/lib/crm/constants";
+import { CALL_QUESTION, isMinor, qualifiesForAds } from "@/lib/crm/constants";
 import { attributeLeads } from "@/lib/crm/affiliates";
 import { addLeads, recordSiteEvent } from "@/lib/crm/leads";
 import { requestContext, sendMetaEvent } from "@/lib/meta";
@@ -192,9 +192,11 @@ export async function POST(request: Request) {
     typeof body.eventId === "string" && body.eventId ? body.eventId.slice(0, 100) : crypto.randomUUID();
 
   const crmUrl = new URL("/crm", request.url).toString();
-  // Under-18 ad opt-ins: saved and called as normal, but not sent to Meta or
-  // TikTok as a Lead, so the ads optimize toward 18+ (owner, Nov 15 2026).
-  const reportLead = !(funnel === "ads" && isUnder18(answers));
+  // Ad opt-ins are reported as a Lead only when 16+ with a job (see
+  // qualifiesForAds); everyone is still saved and called. 16-17s are reported
+  // without their email/phone.
+  const reportLead = funnel !== "ads" || qualifiesForAds(answers);
+  const shareContact = !(funnel === "ads" && isMinor(answers));
   await Promise.all([
     sendToDiscord({ name, email, phone }, funnel, answers[CALL_QUESTION]),
     sendToSlack({ name, email, phone }, crmUrl, funnel),
@@ -205,9 +207,7 @@ export async function POST(request: Request) {
       eventId,
       url: attribution.landing_url || request.headers.get("referer") || undefined,
       user: {
-        email,
-        phone,
-        firstName: name,
+        ...(shareContact ? { email, phone, firstName: name } : {}),
         ip,
         userAgent,
         fbc: attribution.fbc,
@@ -221,8 +221,7 @@ export async function POST(request: Request) {
       eventId,
       url: attribution.landing_url || request.headers.get("referer") || undefined,
       user: {
-        email,
-        phone,
+        ...(shareContact ? { email, phone } : {}),
         ip,
         userAgent,
         ttp: attribution.ttp,

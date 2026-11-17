@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-import { CALL_QUESTION, isUnder18, type FunnelId } from "@/lib/crm/constants";
+import { CALL_QUESTION, isMinor, qualifiesForAds, type FunnelId } from "@/lib/crm/constants";
 import {
   affiliateRef,
   attribution,
@@ -87,8 +87,10 @@ export default function FreeCourseCta({
       ...(getAnswers ? getAnswers() : answers),
       ...(askCall ? { [CALL_QUESTION]: callOk } : {}),
     };
-    // Under-18 ad opt-ins aren't reported to the ad platforms (see isUnder18).
-    const reportLead = !(funnel === "ads" && isUnder18(sentAnswers));
+    // Ad opt-ins are reported only when 16+ with a job (see qualifiesForAds);
+    // 16-17s without their email/phone.
+    const reportLead = funnel !== "ads" || qualifiesForAds(sentAnswers);
+    const shareContact = !(funnel === "ads" && isMinor(sentAnswers));
 
     try {
       const res = await fetch("/api/free-course-lead", {
@@ -109,7 +111,7 @@ export default function FreeCourseCta({
       if (!res.ok) throw new Error("Request failed");
       // Same event id as the server's Conversions API event: Meta keeps one.
       if (reportLead) {
-        await identifyForAds("", fullPhone);
+        if (shareContact) await identifyForAds("", fullPhone);
         pixelEvent("Lead", { content_name: funnel === "ads" ? "free_course_ad_funnel" : "free_course" }, eventId);
       }
       setStatus("success");

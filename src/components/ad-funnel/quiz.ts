@@ -34,7 +34,8 @@ export const QUESTIONS: Question[] = [
     title: "How old are you?",
     letters: true,
     options: [
-      { id: "u18", label: "Under 18" },
+      { id: "u16", label: "Under 16" },
+      { id: "16-17", label: "16 - 17" },
       { id: "18-24", label: "18 - 24" },
       { id: "25-34", label: "25 - 34" },
       { id: "35+", label: "35+" },
@@ -46,6 +47,7 @@ export const QUESTIONS: Question[] = [
     title: "What best describes you right now?",
     options: [
       { id: "school", label: "In school", emoji: "🎓" },
+      { id: "schooljob", label: "In school + working a job", emoji: "📚" },
       { id: "job", label: "Working a job I don't love", emoji: "💼" },
       { id: "between", label: "Between jobs", emoji: "🔁" },
       { id: "own", label: "Already doing my own thing", emoji: "🚀" },
