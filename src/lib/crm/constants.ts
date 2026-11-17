@@ -681,7 +681,8 @@ const TOO_YOUNG = ["Under 16", "Under 18"]; // "Under 18" = old quiz, can't tell
 export function qualifiesForAds(answers: Record<string, string> | undefined) {
   const age = answers?.["Age"] ?? "";
   const now = answers?.["Right now"] ?? "";
-  return Boolean(age) && !TOO_YOUNG.includes(age) && JOB_ANSWERS.includes(now);
+  const committed = answers?.["Committed to the quiz"] === "Yes";
+  return committed && Boolean(age) && !TOO_YOUNG.includes(age) && JOB_ANSWERS.includes(now);
 }
 
 // 16-17: still reported, but with no email/phone attached (minor's data).
