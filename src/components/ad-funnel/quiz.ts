@@ -116,16 +116,24 @@ export const QUESTIONS: Question[] = [
 
 export type Answers = Record<string, string[]>; // question id → option ids
 
+// Options that were renamed or split. Answers saved in a visitor's browser
+// before the change still carry the old id, so keep their label here
+// (Nov 17 2026: "Under 18" became "Under 16" + "16 - 17").
+const RETIRED: Record<string, Record<string, string>> = {
+  age: { u18: "Under 18" },
+};
+
 // Answers as CRM-readable text: { "Main goal": "Quit my 9-5", ... }
 export function answersForCrm(answers: Answers): Record<string, string> {
   const out: Record<string, string> = {};
   for (const q of QUESTIONS) {
     const picked = answers[q.id];
     if (!picked?.length) continue;
-    out[q.crm] = picked
-      .map((id) => q.options.find((o) => o.id === id)?.label)
+    const text = picked
+      .map((id) => q.options.find((o) => o.id === id)?.label ?? RETIRED[q.id]?.[id] ?? id)
       .filter(Boolean)
       .join(", ");
+    if (text) out[q.crm] = text;
   }
   return out;
 }
