@@ -34,11 +34,22 @@ export const LINK_BASES = [
   { label: "Base44", url: "https://re.aistorebuilder.com/base44" },
   { label: "Base44 Pricing", url: "https://re.aistorebuilder.com/base44-pricing" },
 ];
-// The links a partner shares: their link_subid while in manual mode (sales
-// assigned by hand), otherwise their own subid.
-export const linkSubid = (p: { subid: string | null; linkSubid: string | null }) => p.linkSubid || p.subid;
-export const partnerLinks = (subid: string) =>
-  LINK_BASES.map((l) => ({ label: l.label, url: `${l.url}?subid=${encodeURIComponent(subid)}` }));
+// The owner's own AffiliateConsulting sub-ID: it is what credits the owner's
+// account, so every partner link keeps it.
+export const OWNER_SUBID = process.env.PARTNER_OWNER_SUBID || "mad-media";
+// A partner's links (AffiliateConsulting's "Tracking Sales by Setter" format,
+// confirmed Nov 16 2026): the owner's link + &sharedid=<partner's Shared ID>.
+// AffiliateConsulting sends that back as the webhook's shared_id, which is
+// matched against crm_partners.subid. While link_subid is set (old manual
+// mode) the link is just ?subid=<link_subid> and sales are assigned by hand.
+export function partnerLinksFor(p: { subid: string | null; linkSubid: string | null }) {
+  const q = p.linkSubid
+    ? `subid=${encodeURIComponent(p.linkSubid)}`
+    : p.subid
+      ? `subid=${encodeURIComponent(OWNER_SUBID)}&sharedid=${encodeURIComponent(p.subid)}`
+      : null;
+  return q ? LINK_BASES.map((l) => ({ label: l.label, url: `${l.url}?${q}` })) : [];
+}
 
 type PartnerRow = {
   id: string;
@@ -126,6 +137,7 @@ export async function updatePartner(
   const current = (await query<PartnerRow>(`SELECT * FROM crm_partners WHERE id = $1`, [id]))[0];
   if (!current) return null;
   const subid = change.subid !== undefined ? cleanSubid(change.subid) || null : current.subid;
+  if (subid && subid === OWNER_SUBID) return "subid_taken"; // the owner's own sub-ID
   if (subid && subid !== current.subid) {
     const taken = await query(`SELECT 1 FROM crm_partners WHERE subid = $1 AND id <> $2`, [subid, id]);
     if (taken.length) return "subid_taken";
@@ -334,7 +346,7 @@ export async function listPartnersForOwner() {
     );
     partners.push({
       ...p,
-      links: linkSubid(p) ? partnerLinks(linkSubid(p)!) : [],
+      links: partnerLinksFor(p),
       counts,
       totals: await partnerTotals(p.id),
       payouts: await partnerPayouts(p.id),

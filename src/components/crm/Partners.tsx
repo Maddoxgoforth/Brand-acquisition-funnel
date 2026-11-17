@@ -122,12 +122,12 @@ function PartnerCard({ p, reload, onError }: { p: PartnerRow; reload: () => void
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3 text-sm">
-        <label className="flex items-center gap-1">
-          Sub-ID
-          <input className="w-40 rounded-lg border border-border bg-background px-2 py-1 font-mono text-sm" value={subid} onChange={(e) => setSubid(e.target.value)} placeholder="e.g. mad-media-henry" />
+        <label className="flex items-center gap-1" title="Their Shared ID: their links are your link + &sharedid=THIS, and AffiliateConsulting sends it back on every sale (shared_id), so their sales match automatically.">
+          Shared ID
+          <input className="w-40 rounded-lg border border-border bg-background px-2 py-1 font-mono text-sm" value={subid} onChange={(e) => setSubid(e.target.value)} placeholder="e.g. henry" />
         </label>
-        <label className="flex items-center gap-1" title="While AffiliateConsulting hasn't set up their own sub-ID: their links use this one (e.g. mad-media) and you assign their sales by hand below. Clear it once their sub-ID works.">
-          Link sub-ID (temporary)
+        <label className="flex items-center gap-1" title="Old manual mode: their links become ?subid=THIS with no shared ID, and you assign their sales by hand below. Leave empty to use the Shared ID.">
+          Manual link sub-ID
           <input className="w-32 rounded-lg border border-border bg-background px-2 py-1 font-mono text-sm" value={linkSub} onChange={(e) => setLinkSub(e.target.value)} placeholder="mad-media" />
         </label>
         {PLANS.map(([k, l]) => (
@@ -174,8 +174,8 @@ function PartnerCard({ p, reload, onError }: { p: PartnerRow; reload: () => void
 
       {p.linkSubid ? (
         <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-          Manual mode: their links use your sub-ID ({p.linkSubid}), so their sales aren&apos;t tagged. Assign them by hand in
-          &quot;Latest webhook events&quot; below.
+          Manual mode: their links use ?subid={p.linkSubid} with no shared ID, so their sales aren&apos;t tagged. Clear
+          &quot;Manual link sub-ID&quot; to switch them to their Shared ID link (sales then match automatically).
         </p>
       ) : null}
       {p.links.length ? (

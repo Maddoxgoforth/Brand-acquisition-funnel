@@ -42,7 +42,7 @@ export async function PATCH(request: Request, { params }: Context) {
             applyToPast: body.applyToPast === true,
             ...(body.approve === true ? { status: "active" as const } : {}),
           });
-          if (result === "subid_taken") return bad("Another partner already uses that sub-ID.");
+          if (result === "subid_taken") return bad("That ID is taken (another partner, or your own sub-ID).");
           return result ? Response.json({ partner: result }) : notFound();
         }
         case "status": {
