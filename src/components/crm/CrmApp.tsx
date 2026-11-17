@@ -33,12 +33,13 @@ import Affiliates from "./Affiliates";
 import Content from "./Content";
 import Team from "./Team";
 import TeamPay from "./TeamPay";
+import MyPay from "./MyPay";
 import { crmFetch } from "./api";
 import { armChime, playChime, soundSetting } from "./chime";
 import { useDialer } from "./useDialer";
 
 // Screens that load their own data (everything except the lead boards).
-const PAGES = ["dashboard", "leaderboard", "analytics", "pay", "team", "affiliates", "content"] as const;
+const PAGES = ["dashboard", "leaderboard", "analytics", "pay", "team", "affiliates", "content", "mypay"] as const;
 type Page = (typeof PAGES)[number];
 type View = Page | SourceId;
 const isPage = (view: View): view is Page => (PAGES as readonly string[]).includes(view);
@@ -490,6 +491,11 @@ export default function CrmApp({
               Leads to dial
             </button>
           ) : null}
+          {user.role === "member" ? (
+            <button type="button" className={tab(view === "mypay")} onClick={() => go("mypay")}>
+              💵 My pay
+            </button>
+          ) : null}
           {ownerPage ? (
             <span className={`${tab(true)} cursor-default`}>
               {ownerPage.icon} {ownerPage.label}
@@ -539,6 +545,10 @@ export default function CrmApp({
       ) : view === "leaderboard" ? (
         <main className="flex-1 overflow-y-auto bg-background-elevated/40">
           <Leaderboard me={user.id} onError={report} />
+        </main>
+      ) : view === "mypay" && user.role === "member" ? (
+        <main className="flex-1 overflow-y-auto bg-background-elevated/40">
+          <MyPay onError={report} />
         </main>
       ) : view === "pay" && user.role === "owner" ? (
         <main className="flex-1 overflow-y-auto bg-background-elevated/40">

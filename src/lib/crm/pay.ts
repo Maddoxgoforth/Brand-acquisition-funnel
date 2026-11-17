@@ -478,3 +478,37 @@ export async function memberActivity(userId: string, from: string | null, to: st
     createdAt: iso(r.created_at),
   }));
 }
+
+// A team member's own pay (their "💵 My pay" page, owner's request Nov 16
+// 2026): what they've earned, what's been paid, what's still owed, and every
+// line of their own ledger. Only ever their own lines.
+export type MyPay = {
+  rate: CommissionRate;
+  earned: number;
+  paid: number;
+  owed: number;
+  thisMonth: number;
+  lastPayout: { amount: number; at: string } | null;
+  lines: PayLine[];
+};
+
+export async function myPay(userId: string): Promise<MyPay> {
+  const { lines, rates } = await buildLedger();
+  const mine = lines.filter((l) => l.userId === userId);
+  const sum = (kinds: PayLine["kind"][], ls = mine) => ls.filter((l) => kinds.includes(l.kind)).reduce((n, l) => n + l.amount, 0);
+  const earnedKinds: PayLine["kind"][] = ["close", "bounty", "bonus", "adjustment"];
+  const monthKey = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit" }).format(d);
+  const now = monthKey(new Date());
+  const earned = sum(earnedKinds);
+  const paid = sum(["payout"]);
+  const payouts = mine.filter((l) => l.kind === "payout");
+  return {
+    rate: rateAt(rates, userId, new Date()),
+    earned,
+    paid,
+    owed: earned - paid,
+    thisMonth: sum(earnedKinds, mine.filter((l) => monthKey(new Date(l.at)) === now)),
+    lastPayout: payouts.length ? { amount: payouts[0].amount, at: payouts[0].at } : null,
+    lines: mine.slice(0, 300),
+  };
+}

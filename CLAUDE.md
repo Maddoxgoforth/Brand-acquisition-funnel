@@ -607,6 +607,13 @@ linked from any public page and is `noindex`.
     commission by type, paid out, owed (all time); click a person for every
     commission line and their full activity feed from `crm_events`.
 
+- **💵 My pay** (team members only, owner's request Nov 16 2026): a top-bar
+  tab (`MyPay.tsx`, `GET /api/crm/pay/me` → `myPay()` in `pay.ts`) showing
+  what they're owed (earned − paid, all time), earned this month, total
+  earned/paid, last payout, their current rates, and their own ledger lines
+  (commissions, bounties, bonuses, adjustments, payouts) from the same
+  `buildLedger()` the owner's Team stats use. Only their own lines.
+
 **Code map**
 
 - `src/app/crm/` — the page, login page and `login`/`logout` server actions.
