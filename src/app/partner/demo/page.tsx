@@ -15,7 +15,7 @@ export default async function PartnerDemoPage({ searchParams }: { searchParams: 
   const session = await getSession();
   if (!session || session.role !== "owner") redirect("/crm");
   const { range: r } = await searchParams;
-  const range: RangeId = RANGES.some((x) => x.id === r) ? (r as RangeId) : "all";
+  const range: RangeId = RANGES.some((x) => x.id === r) ? (r as RangeId) : "mtd";
   const partner: Partner = {
     id: "demo",
     email: "",

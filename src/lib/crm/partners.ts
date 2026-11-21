@@ -316,13 +316,14 @@ export async function partnerEvents(partnerId: string): Promise<PartnerEvent[]> 
 }
 
 // Owner's demo (Nov 21 2026): his own sales (events no partner brought in) with
-// the commission each would earn at example partner rates. Read-only.
+// the commission each would earn at example partner rates. Read-only. Sales
+// with no plan (the $120 webhook test on Nov 16) are left out.
 export const DEMO_PARTNER_RATES: Rates = { builder_monthly: 125, builder_yearly: 350, starter_monthly: 0, starter_yearly: 150 };
 
 export async function ownerDemoEvents(rates: Rates): Promise<PartnerEvent[]> {
   const rows = await query<{ kind: string; plan_key: string; country: string; occurred_at: string | Date }>(
     `SELECT kind, plan_key, country, occurred_at FROM crm_partner_events
-     WHERE partner_id IS NULL ORDER BY occurred_at`
+     WHERE partner_id IS NULL AND (kind = 'signup' OR plan_key <> '') ORDER BY occurred_at`
   );
   return rows.map((r) => {
     const rate = rates[r.plan_key as PlanKey] ?? 0;
