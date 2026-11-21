@@ -2,17 +2,19 @@ import { query } from "./db";
 import { demoEventRows, isDemoId } from "./partnerDemo";
 
 // Partner payouts in batches (owner's request, Nov 16 2026).
-// - Every sale (and reversal) falls in a PERIOD_DAYS-day period of Eastern-time
-//   calendar days, counted from EPOCH (Nov 1 2026 → Nov 1-5, Nov 6-10, ...).
+// - Every sale (and reversal) falls in a Monday–Sunday week of Eastern-time
+//   calendar days (EPOCH is a Monday).
 // - HOLD_DAYS after a period ends it becomes "ready"; the owner approves it
 //   (amount frozen, partner sees "Pending"), then marks it paid ("Paid").
 // - Reversals: if the original sale's period isn't approved yet, the reversal
 //   comes out of that period; otherwise out of the period it happened in.
 // - Anything that lands in an already approved period (a late event) and any
 //   period that nets to $0 or less is carried into the next open period.
-export const PERIOD_DAYS = Math.max(1, Number(process.env.PARTNER_PAYOUT_PERIOD_DAYS) || 5);
+// Nov 21 2026 (owner): weekly Monday–Sunday periods paid 15 days after the
+// week ends, like AffiliateConsulting's own payouts (Nov 16–22 → paid Dec 7).
+export const PERIOD_DAYS = 7;
 export const HOLD_DAYS = Math.max(0, Number(process.env.PARTNER_PAYOUT_HOLD_DAYS) || 14);
-const EPOCH = Date.UTC(2026, 10, 1); // Nov 1 2026, as a calendar day
+const EPOCH = Date.UTC(2026, 10, 2); // Monday Nov 2 2026, as a calendar day
 const DAY = 86_400_000;
 
 export type BatchStatus = "open" | "holding" | "ready" | "approved" | "paid" | "carried";

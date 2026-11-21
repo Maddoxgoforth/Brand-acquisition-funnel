@@ -284,14 +284,17 @@ export async function ingestEvent(body: Json, rawText: string, meta: { event?: s
     const rates = fullRates(partner.rates);
     if (e.kind === "purchase") commission = e.planKey ? rates[e.planKey] : 0;
     if (e.kind === "reversal") {
-      // Take back what the original sale earned when it can be found.
+      // Take back what the original sale earned when it can be found, but only
+      // if the cancel/refund came within REVERSAL_WINDOW_DAYS of that sale.
       const original = e.orderRef
-        ? (await query<{ commission: string }>(
-            `SELECT commission FROM crm_partner_events WHERE partner_id = $1 AND kind = 'purchase' AND order_ref = $2 LIMIT 1`,
+        ? (await query<{ commission: string; occurred_at: string | Date }>(
+            `SELECT commission, occurred_at FROM crm_partner_events WHERE partner_id = $1 AND kind = 'purchase' AND order_ref = $2 LIMIT 1`,
             [partner.id, e.orderRef]
           ))[0]
         : undefined;
-      commission = original ? -Number(original.commission) : e.planKey ? -rates[e.planKey] : 0;
+      commission = original
+        ? withinWindow(original.occurred_at, e.occurredAt) ? -Number(original.commission) : 0
+        : e.planKey ? -rates[e.planKey] : 0;
     }
   }
   const rows = await query(
@@ -304,6 +307,12 @@ export async function ingestEvent(body: Json, rawText: string, meta: { event?: s
 }
 
 // ---- dashboards -------------------------------------------------------------
+
+// Owner's rule (Nov 21 2026): a cancel or refund only takes the commission back
+// when it happens within 14 days of the sale; after that the affiliate keeps it.
+export const REVERSAL_WINDOW_DAYS = 14;
+const withinWindow = (sale: string | Date, reversal: string | Date) =>
+  new Date(reversal).getTime() - new Date(sale).getTime() <= REVERSAL_WINDOW_DAYS * 86_400_000;
 
 export type PartnerEvent = { kind: string; planKey: string; country: string; commission: number; at: string };
 
@@ -399,8 +408,8 @@ export async function listPartnersForOwner() {
 // Commission follows the partner's current rates; a reversal takes back what
 // the matching sale earned when it can be found.
 export async function assignEvent(eventId: string, partnerId: string | null) {
-  const ev = (await query<{ id: string; kind: string; plan_key: string; order_ref: string }>(
-    `SELECT id, kind, plan_key, order_ref FROM crm_partner_events WHERE id = $1`,
+  const ev = (await query<{ id: string; kind: string; plan_key: string; order_ref: string; occurred_at: string | Date }>(
+    `SELECT id, kind, plan_key, order_ref, occurred_at FROM crm_partner_events WHERE id = $1`,
     [eventId]
   ))[0];
   if (!ev) return "not_found" as const;
@@ -416,12 +425,12 @@ export async function assignEvent(eventId: string, partnerId: string | null) {
   if (ev.kind === "purchase") commission = rate;
   if (ev.kind === "reversal") {
     const original = ev.order_ref
-      ? (await query<{ commission: string }>(
-          `SELECT commission FROM crm_partner_events WHERE partner_id = $1 AND kind = 'purchase' AND order_ref = $2 LIMIT 1`,
+      ? (await query<{ commission: string; occurred_at: string | Date }>(
+          `SELECT commission, occurred_at FROM crm_partner_events WHERE partner_id = $1 AND kind = 'purchase' AND order_ref = $2 LIMIT 1`,
           [partnerId, ev.order_ref]
         ))[0]
       : undefined;
-    commission = original ? -Number(original.commission) : -rate;
+    commission = original ? (withinWindow(original.occurred_at, ev.occurred_at) ? -Number(original.commission) : 0) : -rate;
   }
   await query(`UPDATE crm_partner_events SET partner_id = $2, commission = $3, assigned_manually = true WHERE id = $1`, [eventId, partnerId, commission]);
   return "ok" as const;

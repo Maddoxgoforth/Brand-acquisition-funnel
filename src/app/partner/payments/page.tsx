@@ -3,26 +3,30 @@ import { redirect } from "next/navigation";
 
 import { getPartnerSession } from "@/lib/crm/partnerAuth";
 import { partnerPayouts, partnerTotals } from "@/lib/crm/partners";
-import { HOLD_DAYS, PERIOD_DAYS, partnerBatches, type Batch } from "@/lib/crm/partnerBatches";
+import { partnerBatches, type Batch } from "@/lib/crm/partnerBatches";
 import { payoutSummary, type PayoutSummary } from "@/lib/crm/payoutDetails";
 import { savePartnerPayoutDetails } from "../actions";
 import Shell from "../Shell";
-import { Segmented, StatRow, tableWrap, td, th } from "../ui";
+import { Segmented, tableWrap, td, th } from "../ui";
 
 export const dynamic = "force-dynamic";
 
 const money = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+// Laid out like AffiliateConsulting's Payments tab (owner, Nov 21 2026).
 const day = (ymd: string) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-const STATUS: Record<Batch["status"], [string, string]> = {
-  open: ["In progress", "text-slate-600"],
-  holding: ["On hold", "text-slate-600"],
-  ready: ["Awaiting approval", "text-amber-600"],
-  approved: ["Pending", "text-indigo-600"],
-  paid: ["Paid out", "text-green-600"],
-  carried: ["Carried over", "text-slate-600"],
-};
+const dayYear = (ymd: string) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+const longDay = (ymd: string) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
+const shortIso = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" });
 const date = (iso: string) =>
   new Date(iso).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York" });
+const STATUS: Record<Batch["status"], [string, string]> = {
+  open: ["Upcoming", "text-amber-600"],
+  holding: ["Upcoming", "text-amber-600"],
+  ready: ["Upcoming", "text-amber-600"],
+  approved: ["Processing", "text-indigo-600"],
+  paid: ["Paid", "text-green-600"],
+  carried: ["Carried over", "text-slate-600"],
+};
 
 const ERRORS: Record<string, string> = {
   missing_name: "Enter the name on the bank account.",
@@ -95,6 +99,9 @@ export default async function PartnerPaymentsPage({ searchParams }: { searchPara
   ]);
   const batches = allBatches.filter((b) => b.status !== "carried");
   const editing = !method || edit === "1";
+  const unpaid = batches.filter((b) => b.status !== "paid");
+  const totalPending = Math.max(0, unpaid.reduce((s, b) => s + b.amount, 0));
+  const next = [...unpaid].reverse().find((b) => b.amount > 0);
 
   return (
     <Shell partner={partner} active="/partner/payments">
@@ -117,84 +124,98 @@ export default async function PartnerPaymentsPage({ searchParams }: { searchPara
           <PayoutForm current={method} error={error} />
         </div>
       ) : (
-        <div className="mt-6 flex items-center justify-between gap-4 rounded-xl border border-slate-200/80 p-4">
-          <div>
-            <p className="text-[13px] font-medium uppercase tracking-wide text-slate-600">Payout method</p>
-            <p className="mt-1 text-sm font-semibold text-slate-950">
-              {method.bankName || "Bank account"} · {method.accountType === "savings" ? "Savings" : "Checking"} •••• {method.accountLast4}
-            </p>
-            <p className="text-sm text-slate-600">{method.holderName}</p>
+        <div className="mt-6 flex max-w-[810px] flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/80 p-4">
+          <div className="flex min-w-0 items-center gap-3.5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18M12 3l9 5H3z" />
+              </svg>
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-[15px] text-slate-950">
+                Your next payout will be sent to {method.holderName} · Bank Transfer ·{" "}
+                {method.bankName || "Bank account"} •••• {method.accountLast4}
+                {next ? ` · Next payout ${longDay(next.readyOn)}` : ""}
+              </p>
+              <p className="text-sm text-slate-600">Saved securely for your payouts</p>
+            </div>
           </div>
-          <Link href="/partner/payments?edit=1" className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-950 hover:bg-slate-50">
-            Edit
+          <Link href="/partner/payments?edit=1" className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-950 shadow-[0_1px_2px_rgba(11,19,36,0.06)] hover:bg-slate-50">
+            Manage payout setup
           </Link>
         </div>
       )}
 
-      <div className="mt-6">
-        <p className="text-[15px] text-slate-950">Balance owed to you</p>
-        <p className="mt-1.5 text-[28px] font-semibold leading-none tracking-tight text-slate-950 tabular-nums">{money(Math.max(0, totals.owed))}</p>
-        <p className="mt-2.5 text-sm text-slate-600">Earned from sales on your links, minus what&apos;s already been paid</p>
+      <div className="mt-6 grid grid-cols-2 border-t border-slate-200/80 pt-6">
+        <div>
+          <p className="text-[15px] text-slate-600">Total Pending</p>
+          <p className="mt-1.5 text-[24px] font-semibold leading-none tracking-tight text-slate-950 tabular-nums">{money(totalPending)}</p>
+        </div>
+        <div className="border-l border-slate-200/80 pl-6">
+          <p className="text-[15px] text-slate-600">Total Paid</p>
+          <p className="mt-1.5 text-[24px] font-semibold leading-none tracking-tight text-slate-950 tabular-nums">{money(totals.paid)}</p>
+        </div>
       </div>
 
-      <div className="mt-6 border-b border-slate-200/80 pb-6">
-        <StatRow
-          stats={[
-            { label: "Total earned", value: money(totals.earned) },
-            { label: "Pending payout", value: money(totals.pending) },
-            { label: "Total paid", value: money(totals.paid) },
-          ]}
-        />
+      <div className="mt-12 flex items-center justify-between">
+        <h2 className="text-[26px] font-semibold text-slate-950">Payout history</h2>
+        <Segmented items={[{ label: "Base44", active: true }, { label: "All brands", active: false }]} />
       </div>
-
-      <div className="mt-8 flex items-center justify-between">
-        <h2 className="text-[22px] font-semibold text-slate-950">Payouts</h2>
-        <Segmented items={[{ label: "Base44", active: true }]} />
-      </div>
-      <p className="mt-1 text-sm text-slate-600">
-        Sales are grouped into {PERIOD_DAYS}-day periods. Each period is reviewed {HOLD_DAYS} days after it ends (refunds and
-        reversals come off first), then paid out.
-      </p>
       {batches.length === 0 && payouts.length === 0 ? (
         <p className="py-12 text-center text-sm text-slate-600">No payouts yet. Your first one shows up here after your first sale.</p>
       ) : (
-        <div className={`mt-4 ${tableWrap}`}>
+        <div className={`mt-5 ${tableWrap}`}>
           <table className="w-full">
             <thead className="bg-slate-50">
               <tr>
-                <th className={th}>Period</th>
-                <th className={th}>Sales</th>
+                <th className={th}>Brand</th>
+                <th className={th}>Earning period</th>
+                <th className={th}>Payment date</th>
                 <th className={`${th} text-right`}>Amount</th>
+                <th className={`${th} text-right`}>Invoice</th>
                 <th className={`${th} text-right`}>Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200/80">
               {batches.map((b) => {
                 const [label, color] = STATUS[b.status];
+                const done = b.status === "paid" || b.status === "approved";
                 return (
                   <tr key={b.periodStart}>
-                    <td className={td}>
-                      {day(b.periodStart)} – {day(b.periodEnd)}
+                    <td className={`${td} py-5`}>Base44</td>
+                    <td className={`${td} py-5`}>
+                      {day(b.periodStart)} – {dayYear(b.periodEnd)}
                     </td>
-                    <td className={`${td} text-slate-600`}>
-                      {b.sales}
-                      {b.reversals ? ` (${b.reversals} reversed)` : ""}
+                    <td className={`${td} py-5`}>
+                      {longDay(b.readyOn)}
+                      {b.status === "paid" && b.paidAt ? (
+                        <span className="block text-slate-500">
+                          Paid {shortIso(b.paidAt)} · Expected {day(b.readyOn)}
+                        </span>
+                      ) : null}
                     </td>
-                    <td className={`${td} text-right tabular-nums`}>{money(b.amount)}</td>
-                    <td className={`${td} text-right font-medium ${color}`}>
-                      {label}
-                      {b.status === "holding" ? <span className="block text-xs font-normal text-slate-500">until {day(b.readyOn)}</span> : null}
-                      {b.status === "paid" && b.paidAt ? <span className="block text-xs font-normal text-slate-500">{date(b.paidAt)}</span> : null}
+                    <td className={`${td} py-5 text-right tabular-nums`}>{money(b.amount)}</td>
+                    <td className={`${td} py-5 text-right`}>
+                      {done ? (
+                        <span className="rounded bg-emerald-50 px-2 py-0.5 text-[13px] font-medium text-emerald-700">Approved</span>
+                      ) : (
+                        <span className="text-slate-400">–</span>
+                      )}
                     </td>
+                    <td className={`${td} py-5 text-right font-medium ${color}`}>{label}</td>
                   </tr>
                 );
               })}
               {payouts.map((p, i) => (
                 <tr key={`one-off-${i}`}>
-                  <td className={td}>{date(p.at)}</td>
-                  <td className={`${td} text-slate-600`}>{p.note || "Payment"}</td>
-                  <td className={`${td} text-right tabular-nums`}>{money(p.amount)}</td>
-                  <td className={`${td} text-right font-medium text-green-600`}>Paid out</td>
+                  <td className={`${td} py-5`}>Base44</td>
+                  <td className={`${td} py-5 text-slate-600`}>{p.note || "Payment"}</td>
+                  <td className={`${td} py-5`}>{date(p.at)}</td>
+                  <td className={`${td} py-5 text-right tabular-nums`}>{money(p.amount)}</td>
+                  <td className={`${td} py-5 text-right`}>
+                    <span className="rounded bg-emerald-50 px-2 py-0.5 text-[13px] font-medium text-emerald-700">Approved</span>
+                  </td>
+                  <td className={`${td} py-5 text-right font-medium text-green-600`}>Paid</td>
                 </tr>
               ))}
             </tbody>

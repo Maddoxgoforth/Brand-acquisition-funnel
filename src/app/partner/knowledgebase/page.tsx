@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getPartnerSession } from "@/lib/crm/partnerAuth";
-import { HOLD_DAYS, PERIOD_DAYS } from "@/lib/crm/partnerBatches";
+import { HOLD_DAYS } from "@/lib/crm/partnerBatches";
 import { PLAN_KEYS, PLAN_LABEL } from "@/lib/crm/partners";
 import Shell from "../Shell";
 import { money } from "../ui";
@@ -59,8 +59,8 @@ function articles(rates: Record<string, number>): Article[] {
           <P>Sign-ups and purchases appear on your dashboard about 2 to 3 hours after they happen. Times are shown in Eastern time.</P>
           <H>Refunds and reversals</H>
           <P>
-            If a customer cancels or is refunded, the sale is reversed. The commission comes off your dashboard and off your next
-            payout automatically.
+            If a customer cancels or is refunded within 14 days of signing up and paying, the sale is reversed: the commission comes
+            off your dashboard and off your next payout automatically. If they cancel after those 14 days, you keep the commission.
           </P>
         </>
       ),
@@ -120,12 +120,12 @@ function articles(rates: Record<string, number>): Article[] {
       slug: "payouts",
       group: "Payments",
       title: "How payouts work",
-      summary: `${PERIOD_DAYS}-day periods, a ${HOLD_DAYS}-day review, then paid.`,
+      summary: `Weekly periods, paid ${HOLD_DAYS + 1} days after each week ends.`,
       body: (
         <>
           <Steps
             items={[
-              <>Your sales are grouped into <strong>{PERIOD_DAYS}-day periods</strong> (for example Nov 1–5, Nov 6–10).</>,
+              <>Your sales are grouped into <strong>weekly periods</strong>, Monday to Sunday (for example Nov 16–22).</>,
               <>Each period is held for <strong>{HOLD_DAYS} days</strong> after it ends, so refunds and reversals can come off first.</>,
               <>After that it&apos;s reviewed and approved. It shows as <strong>Pending</strong> on your Payments page.</>,
               <>Once it&apos;s sent to your bank, it shows as <strong>Paid out</strong>.</>,
