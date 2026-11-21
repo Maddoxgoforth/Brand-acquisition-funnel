@@ -315,6 +315,22 @@ export async function partnerEvents(partnerId: string): Promise<PartnerEvent[]> 
   return rows.map((r) => ({ kind: r.kind, planKey: r.plan_key, country: r.country, commission: Number(r.commission), at: iso(r.occurred_at)! }));
 }
 
+// Owner's demo (Nov 21 2026): his own sales (events no partner brought in) with
+// the commission each would earn at example partner rates. Read-only.
+export const DEMO_PARTNER_RATES: Rates = { builder_monthly: 125, builder_yearly: 350, starter_monthly: 0, starter_yearly: 150 };
+
+export async function ownerDemoEvents(rates: Rates): Promise<PartnerEvent[]> {
+  const rows = await query<{ kind: string; plan_key: string; country: string; occurred_at: string | Date }>(
+    `SELECT kind, plan_key, country, occurred_at FROM crm_partner_events
+     WHERE partner_id IS NULL ORDER BY occurred_at`
+  );
+  return rows.map((r) => {
+    const rate = rates[r.plan_key as PlanKey] ?? 0;
+    const commission = r.kind === "purchase" ? rate : r.kind === "reversal" ? -rate : 0;
+    return { kind: r.kind, planKey: r.plan_key, country: r.country, commission, at: iso(r.occurred_at)! };
+  });
+}
+
 export async function partnerPayouts(partnerId: string) {
   const rows = await query<{ amount: string; note: string; created_at: string | Date }>(
     `SELECT amount, note, created_at FROM crm_partner_payouts WHERE partner_id = $1 ORDER BY created_at DESC`,
