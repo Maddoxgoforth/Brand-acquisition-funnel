@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   title: "Maddox: No Audience. No Experience Needed.",
   description:
     "The exact 90-day system Maddox used to make real money selling his own digital products using AI before he turned 18. No audience, no experience, no guessing.",
+  // Set here (file moved to public/) rather than as app/favicon.ico, which
+  // Next adds to every page: this way the partner portal's own icon replaces it.
+  icons: { icon: "/favicon.ico" },
   // Meta domain verification (Business settings → Brand safety → Domains →
   // meta-tag method): set NEXT_PUBLIC_META_DOMAIN_VERIFICATION to the code.
   ...(process.env.NEXT_PUBLIC_META_DOMAIN_VERIFICATION
