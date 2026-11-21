@@ -124,7 +124,7 @@ export default async function PartnerPaymentsPage({ searchParams }: { searchPara
           <PayoutForm current={method} error={error} />
         </div>
       ) : (
-        <div className="mt-6 flex max-w-[810px] flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/80 p-4">
+        <div className="mt-6 flex max-w-[810px] items-center justify-between gap-4 rounded-xl border border-slate-200/80 p-4">
           <div className="flex min-w-0 items-center gap-3.5">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -140,7 +140,7 @@ export default async function PartnerPaymentsPage({ searchParams }: { searchPara
               <p className="text-sm text-slate-600">Saved securely for your payouts</p>
             </div>
           </div>
-          <Link href="/partner/payments?edit=1" className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-950 shadow-[0_1px_2px_rgba(11,19,36,0.06)] hover:bg-slate-50">
+          <Link href="/partner/payments?edit=1" className="shrink-0 whitespace-nowrap rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-950 shadow-[0_1px_2px_rgba(11,19,36,0.06)] hover:bg-slate-50">
             Manage payout setup
           </Link>
         </div>
@@ -189,7 +189,7 @@ export default async function PartnerPaymentsPage({ searchParams }: { searchPara
                     <td className={`${td} py-5`}>
                       {longDay(b.readyOn)}
                       {b.status === "paid" && b.paidAt ? (
-                        <span className="block text-slate-500">
+                        <span className="block text-[13px] text-slate-500">
                           Paid {shortIso(b.paidAt)} · Expected {day(b.readyOn)}
                         </span>
                       ) : null}
@@ -202,20 +202,20 @@ export default async function PartnerPaymentsPage({ searchParams }: { searchPara
                         <span className="text-slate-400">–</span>
                       )}
                     </td>
-                    <td className={`${td} py-5 text-right font-medium ${color}`}>{label}</td>
+                    <td className={`px-3 py-5 text-right text-sm font-medium ${color}`}>{label}</td>
                   </tr>
                 );
               })}
               {payouts.map((p, i) => (
                 <tr key={`one-off-${i}`}>
                   <td className={`${td} py-5`}>Base44</td>
-                  <td className={`${td} py-5 text-slate-600`}>{p.note || "Payment"}</td>
+                  <td className="px-3 py-5 text-sm text-slate-600">{p.note || "Payment"}</td>
                   <td className={`${td} py-5`}>{date(p.at)}</td>
                   <td className={`${td} py-5 text-right tabular-nums`}>{money(p.amount)}</td>
                   <td className={`${td} py-5 text-right`}>
                     <span className="rounded bg-emerald-50 px-2 py-0.5 text-[13px] font-medium text-emerald-700">Approved</span>
                   </td>
-                  <td className={`${td} py-5 text-right font-medium text-green-600`}>Paid</td>
+                  <td className="px-3 py-5 text-right text-sm font-medium text-green-600">Paid</td>
                 </tr>
               ))}
             </tbody>
