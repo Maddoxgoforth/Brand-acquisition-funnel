@@ -1,4 +1,5 @@
 import { query } from "./db";
+import { demoEventRows, isDemoId } from "./partnerDemo";
 
 // Partner payouts in batches (owner's request, Nov 16 2026).
 // - Every sale (and reversal) falls in a PERIOD_DAYS-day period of Eastern-time
@@ -43,6 +44,7 @@ type EventRow = { kind: string; commission: string; occurred_at: string | Date; 
 type StoredRow = { period_start: string; amount: string; sales: number; status: string; approved_at: string | Date; paid_at: string | Date | null };
 
 export async function partnerBatches(partnerId: string, now = new Date()): Promise<Batch[]> {
+  if (isDemoId(partnerId)) return demoBatches(now);
   const [events, stored] = await Promise.all([
     query<EventRow>(
       `SELECT kind, commission, occurred_at, order_ref FROM crm_partner_events
@@ -117,6 +119,31 @@ export async function partnerBatches(partnerId: string, now = new Date()): Promi
     }
   }
   return out.reverse(); // newest first
+}
+
+// Owner's demo: the owner's own sales, and every period whose hold has ended
+// shown as paid out on the day it became ready (nothing is stored).
+async function demoBatches(now: Date): Promise<Batch[]> {
+  const today = etDay(now);
+  const sums = new Map<number, { amount: number; sales: number; reversals: number }>();
+  for (const e of await demoEventRows()) {
+    if (e.kind !== "purchase" && e.kind !== "reversal") continue;
+    const p = periodOf(etDay(e.occurred_at));
+    const b = sums.get(p) ?? { amount: 0, sales: 0, reversals: 0 };
+    b.amount += e.commission;
+    if (e.kind === "purchase") b.sales++;
+    else b.reversals++;
+    sums.set(p, b);
+  }
+  const out: Batch[] = [...sums.keys()].sort((a, b) => a - b).map((p) => {
+    const r = sums.get(p)!;
+    const end = p + (PERIOD_DAYS - 1) * DAY;
+    const readyOn = end + (HOLD_DAYS + 1) * DAY;
+    const paidOn = today >= readyOn ? new Date(readyOn + 17 * 3600_000).toISOString() : null;
+    const status: BatchStatus = paidOn ? "paid" : today <= end ? "open" : "holding";
+    return { periodStart: ymd(p), periodEnd: ymd(end), sales: r.sales, reversals: r.reversals, amount: round2(r.amount), status, readyOn: ymd(readyOn), approvedAt: paidOn, paidAt: paidOn };
+  });
+  return out.reverse();
 }
 
 export function batchTotals(batches: Batch[]) {

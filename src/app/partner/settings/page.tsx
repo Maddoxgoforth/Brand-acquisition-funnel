@@ -49,7 +49,7 @@ export default async function PartnerSettingsPage({ searchParams }: { searchPara
               <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-600 text-lg font-semibold text-white">{initials(partner.name)}</span>
               <div className="text-sm text-slate-600">
                 <p className="font-semibold text-slate-950">{partner.name}</p>
-                <p>Partner since {new Date(partner.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</p>
+                <p>Affiliate since {new Date(partner.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</p>
               </div>
             </div>
             <div className="mt-5 grid gap-4 sm:grid-cols-2">

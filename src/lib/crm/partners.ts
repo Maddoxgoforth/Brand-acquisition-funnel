@@ -3,7 +3,8 @@ import "server-only";
 import { createHash } from "node:crypto";
 
 import { query } from "./db";
-import { partnerBatches } from "./partnerBatches";
+import { batchTotals, partnerBatches } from "./partnerBatches";
+import { demoEventRows, isDemoId } from "./partnerDemo";
 import { payoutSummary } from "./payoutDetails";
 import { hashPassword, MIN_PASSWORD_LENGTH, passwordMatches } from "./users";
 
@@ -307,6 +308,9 @@ export async function ingestEvent(body: Json, rawText: string, meta: { event?: s
 export type PartnerEvent = { kind: string; planKey: string; country: string; commission: number; at: string };
 
 export async function partnerEvents(partnerId: string): Promise<PartnerEvent[]> {
+  if (isDemoId(partnerId)) {
+    return (await demoEventRows()).map((r) => ({ kind: r.kind, planKey: r.plan_key, country: r.country, commission: r.commission, at: r.occurred_at.toISOString() }));
+  }
   const rows = await query<{ kind: string; plan_key: string; country: string; commission: string; occurred_at: string | Date }>(
     `SELECT kind, plan_key, country, commission, occurred_at FROM crm_partner_events
      WHERE partner_id = $1 ORDER BY occurred_at`,
@@ -315,24 +319,8 @@ export async function partnerEvents(partnerId: string): Promise<PartnerEvent[]> 
   return rows.map((r) => ({ kind: r.kind, planKey: r.plan_key, country: r.country, commission: Number(r.commission), at: iso(r.occurred_at)! }));
 }
 
-// Owner's demo (Nov 21 2026): his own sales (events no partner brought in) with
-// the commission each would earn at example partner rates. Read-only. Sales
-// with no plan (the $120 webhook test on Nov 16) are left out.
-export const DEMO_PARTNER_RATES: Rates = { builder_monthly: 125, builder_yearly: 350, starter_monthly: 0, starter_yearly: 150 };
-
-export async function ownerDemoEvents(rates: Rates): Promise<PartnerEvent[]> {
-  const rows = await query<{ kind: string; plan_key: string; country: string; occurred_at: string | Date }>(
-    `SELECT kind, plan_key, country, occurred_at FROM crm_partner_events
-     WHERE partner_id IS NULL AND (kind = 'signup' OR plan_key <> '') ORDER BY occurred_at`
-  );
-  return rows.map((r) => {
-    const rate = rates[r.plan_key as PlanKey] ?? 0;
-    const commission = r.kind === "purchase" ? rate : r.kind === "reversal" ? -rate : 0;
-    return { kind: r.kind, planKey: r.plan_key, country: r.country, commission, at: iso(r.occurred_at)! };
-  });
-}
-
 export async function partnerPayouts(partnerId: string) {
+  if (isDemoId(partnerId)) return [];
   const rows = await query<{ amount: string; note: string; created_at: string | Date }>(
     `SELECT amount, note, created_at FROM crm_partner_payouts WHERE partner_id = $1 ORDER BY created_at DESC`,
     [partnerId]
@@ -341,6 +329,12 @@ export async function partnerPayouts(partnerId: string) {
 }
 
 export async function partnerTotals(partnerId: string) {
+  if (isDemoId(partnerId)) {
+    const events = await partnerEvents(partnerId);
+    const earned = Math.round(events.reduce((s, e) => s + e.commission, 0) * 100) / 100;
+    const { paid } = batchTotals(await partnerBatches(partnerId));
+    return { earned, paid, pending: 0, owed: Math.round((earned - paid) * 100) / 100 };
+  }
   // paid = batches marked paid + any one-off payouts the owner recorded;
   // pending = batches approved but not paid yet.
   const [row] = await query<{ earned: string; paid: string; pending: string }>(

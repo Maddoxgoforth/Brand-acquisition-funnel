@@ -6,6 +6,7 @@ import { createPartnerSession, destroyPartnerSession, getPartnerSession } from "
 import { checkPartnerLogin, createPartner } from "@/lib/crm/partners";
 import { addPartnerAsset, changePartnerPassword, deletePartnerAsset, updatePartnerName } from "@/lib/crm/partnerAccount";
 import { savePayoutDetails } from "@/lib/crm/payoutDetails";
+import { isDemoId } from "@/lib/crm/partnerDemo";
 
 const pause = () => new Promise((resolve) => setTimeout(resolve, 800));
 const text = (formData: FormData, key: string) => {
@@ -38,6 +39,7 @@ export async function partnerLogout() {
 export async function savePartnerPayoutDetails(formData: FormData) {
   const partner = await getPartnerSession();
   if (!partner) redirect("/partner/login");
+  if (isDemoId(partner.id)) redirect("/partner/payments"); // demo: nothing is saved
   const result = await savePayoutDetails(partner.id, {
     holderName: text(formData, "holderName"),
     bankName: text(formData, "bankName"),
@@ -57,6 +59,7 @@ async function signedIn() {
 
 export async function addPartnerAssetAction(formData: FormData) {
   const partner = await signedIn();
+  if (isDemoId(partner.id)) redirect("/partner/assets");
   const result = await addPartnerAsset(partner.id, {
     kind: text(formData, "kind"),
     title: text(formData, "title"),
@@ -68,18 +71,21 @@ export async function addPartnerAssetAction(formData: FormData) {
 
 export async function deletePartnerAssetAction(formData: FormData) {
   const partner = await signedIn();
+  if (isDemoId(partner.id)) redirect("/partner/assets");
   await deletePartnerAsset(partner.id, text(formData, "id"));
   redirect("/partner/assets");
 }
 
 export async function savePartnerProfileAction(formData: FormData) {
   const partner = await signedIn();
+  if (isDemoId(partner.id)) redirect("/partner/settings");
   const result = await updatePartnerName(partner.id, text(formData, "name"));
   redirect(result === "saved" ? "/partner/settings?saved=profile" : `/partner/settings?error=${result}`);
 }
 
 export async function changePartnerPasswordAction(formData: FormData) {
   const partner = await signedIn();
+  if (isDemoId(partner.id)) redirect("/partner/settings");
   const result = await changePartnerPassword(partner.id, text(formData, "current"), text(formData, "next"), text(formData, "confirm"));
   if (result !== "changed") await pause();
   redirect(result === "changed" ? "/partner/settings?saved=password" : `/partner/settings?error=${result}`);

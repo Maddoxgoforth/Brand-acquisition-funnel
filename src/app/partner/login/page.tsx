@@ -8,7 +8,7 @@ import AuthCard, { field } from "../AuthCard";
 const ERRORS: Record<string, string> = {
   wrong: "That email or password isn't right. Try again.",
   pending: "Your account is waiting for approval. You'll be able to sign in once it's approved.",
-  disabled: "Your partner access has been removed.",
+  disabled: "Your affiliate access has been removed.",
 };
 
 export default async function PartnerLoginPage({ searchParams }: { searchParams: Promise<{ error?: string; notice?: string }> }) {
@@ -32,7 +32,7 @@ export default async function PartnerLoginPage({ searchParams }: { searchParams:
         </button>
       </form>
       <p className="mt-6 text-sm">
-        <Link href="/partner/signup" className="font-medium text-indigo-600 hover:underline">New partner? Create an account</Link>
+        <Link href="/partner/signup" className="font-medium text-indigo-600 hover:underline">New affiliate? Create an account</Link>
       </p>
     </AuthCard>
   );

@@ -1,6 +1,7 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
 import { query } from "./db";
+import { DEMO_PAYOUT_METHOD, isDemoId } from "./partnerDemo";
 
 // Where a Mad Media partner wants to be paid (owner's request, Nov 16 2026).
 // The partner enters it on /partner/payments; the owner sees it on the
@@ -110,6 +111,7 @@ const summary = (r: Row): PayoutSummary => ({
 
 // Masked: safe to show the partner and the owner's partner list.
 export async function payoutSummary(partnerId: string): Promise<PayoutSummary | null> {
+  if (isDemoId(partnerId)) return DEMO_PAYOUT_METHOD;
   const [row] = await query<Row>(`SELECT * FROM crm_partner_payout_details WHERE partner_id = $1`, [partnerId]);
   return row ? summary(row) : null;
 }

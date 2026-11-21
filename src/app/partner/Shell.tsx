@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import type { Partner } from "@/lib/crm/partners";
+import { isDemoId } from "@/lib/crm/partnerDemo";
 import { partnerLogout } from "./actions";
 
 const NAV = [
@@ -47,21 +48,23 @@ function Icon({ d }: { d: string }) {
   );
 }
 
-// Sidebar + page frame for the signed-in partner pages.
+// Sidebar + page frame for the signed-in affiliate pages (Nov 21 2026: the
+// portal says "Affiliate", top left "Mad Media Affiliate", then the person's
+// name with "Affiliate" under it).
 export default function Shell({ partner, active, children }: { partner: Partner; active: string; children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-white">
       <aside className="sticky top-0 hidden h-screen w-[232px] shrink-0 flex-col border-r border-slate-200/70 bg-white px-3 pb-4 pt-5 md:flex">
         <div className="flex items-center gap-2 px-2">
           <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-slate-950 text-[10px] font-bold text-white">M</span>
-          <span className="text-[17px] font-semibold tracking-tight text-slate-950">Mad Media</span>
+          <span className="text-[17px] font-semibold tracking-tight text-slate-950">Mad Media Affiliate</span>
         </div>
 
         <div className="mt-6 flex items-center gap-2.5 rounded-lg px-2 py-1.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-indigo-600 text-xs font-semibold text-white">MM</span>
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-indigo-600 text-xs font-semibold text-white">{initials(partner.name)}</span>
           <div className="min-w-0 leading-tight">
-            <p className="truncate text-[15px] font-semibold text-slate-900">Mad Media</p>
-            <p className="text-[13px] text-slate-600">Partner</p>
+            <p className="truncate text-[15px] font-semibold text-slate-900">{partner.name}</p>
+            <p className="text-[13px] text-slate-600">Affiliate</p>
           </div>
         </div>
 
@@ -110,6 +113,11 @@ export default function Shell({ partner, active, children }: { partner: Partner;
             <button type="submit" className="whitespace-nowrap px-2 py-1.5 text-sm text-slate-500">Sign out</button>
           </form>
         </div>
+        {isDemoId(partner.id) ? (
+          <div className="border-b border-amber-200 bg-amber-50 px-5 py-2 text-center text-[13px] text-amber-900">
+            Demo preview: your own sales shown as an affiliate would see them. Nothing you change here is saved.
+          </div>
+        ) : null}
         <main className="mx-auto w-full max-w-[1060px] px-5 py-6 md:px-10 md:py-7">{children}</main>
       </div>
     </div>

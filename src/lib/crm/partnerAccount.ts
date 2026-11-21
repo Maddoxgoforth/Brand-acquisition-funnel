@@ -1,4 +1,5 @@
 import { query } from "./db";
+import { isDemoId } from "./partnerDemo";
 import { hashPassword, MIN_PASSWORD_LENGTH, passwordMatches } from "./users";
 
 // Partner self-service: their marketing assets and account settings
@@ -19,6 +20,7 @@ export const assetKindLabel = (k: string) => ASSET_KINDS.find(([v]) => v === k)?
 export type PartnerAsset = { id: string; kind: AssetKind; title: string; url: string; notes: string; createdAt: string };
 
 export async function listPartnerAssets(partnerId: string, sort: "recent" | "oldest" | "name" = "recent", q = "") {
+  if (isDemoId(partnerId)) return [];
   const order = sort === "name" ? "lower(title) ASC" : sort === "oldest" ? "created_at ASC" : "created_at DESC";
   const rows = await query<{ id: string; kind: AssetKind; title: string; url: string; notes: string; created_at: string | Date }>(
     `SELECT id, kind, title, url, notes, created_at FROM crm_partner_assets
