@@ -39,7 +39,8 @@ function articles(rates: Record<string, number>): Article[] {
         <>
           <P>
             You earn a commission every time someone buys a Base44 plan through one of your links. Your links are on the{" "}
-            <Link href="/partner/links" className="font-medium text-indigo-600 hover:underline">Your links</Link> page.
+            <Link href="/partner/links" className="font-medium text-indigo-600 hover:underline">Your links</Link>{" "}
+            page.
           </P>
           {paid.length ? (
             <div className="mt-4 overflow-hidden rounded-xl border border-slate-200/80">
@@ -134,7 +135,8 @@ function articles(rates: Record<string, number>): Article[] {
           <H>Before your first payout</H>
           <P>
             Add your bank details on the{" "}
-            <Link href="/partner/payments" className="font-medium text-indigo-600 hover:underline">Payments</Link> page. They&apos;re
+            <Link href="/partner/payments" className="font-medium text-indigo-600 hover:underline">Payments</Link>{" "}
+            page. They&apos;re
             encrypted, and only the last 4 digits are ever shown.
           </P>
           <H>If a period has a reversal</H>
@@ -155,7 +157,8 @@ function articles(rates: Record<string, number>): Article[] {
           <P>Yes. On the Payments page, click Edit next to your payout method and enter the new details.</P>
           <H>Can I change my name or password?</H>
           <P>
-            Yes, on the <Link href="/partner/settings" className="font-medium text-indigo-600 hover:underline">Settings</Link> page.
+            Yes, on the <Link href="/partner/settings" className="font-medium text-indigo-600 hover:underline">Settings</Link>{" "}
+            page.
           </P>
           <H>Why is a payout smaller than the sales I made?</H>
           <P>A sale in that period (or an earlier one that was already paid) was refunded or reversed, so its commission came off.</P>

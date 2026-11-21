@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import type { Partner } from "@/lib/crm/partners";
-import { isDemoId } from "@/lib/crm/partnerDemo";
 import { partnerLogout } from "./actions";
 
 const NAV = [
@@ -113,11 +112,6 @@ export default function Shell({ partner, active, children }: { partner: Partner;
             <button type="submit" className="whitespace-nowrap px-2 py-1.5 text-sm text-slate-500">Sign out</button>
           </form>
         </div>
-        {isDemoId(partner.id) ? (
-          <div className="border-b border-amber-200 bg-amber-50 px-5 py-2 text-center text-[13px] text-amber-900">
-            Demo preview: your own sales shown as an affiliate would see them. Nothing you change here is saved.
-          </div>
-        ) : null}
         <main className="mx-auto w-full max-w-[1060px] px-5 py-6 md:px-10 md:py-7">{children}</main>
       </div>
     </div>
