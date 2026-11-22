@@ -670,20 +670,18 @@ export type ActivityItem = {
 // Ads opt-in form question (answer "Yes" / "No", saved in lead.extra).
 export const CALL_QUESTION = "Can we call you in the next 5 minutes?";
 
-// Owner, Nov 17 2026: most buyers are 16-20 with a job, so an ad-funnel
-// opt-in is reported to Meta/TikTok as a Lead only when they're 16+ AND say
-// they have a job (quiz "Age" + "Right now"). Everyone else is still saved
-// and called, just not reported, so the ads optimize toward people with
-// income. Replaces the Nov 15 "never report under 18" rule.
-const JOB_ANSWERS = ["Working a job I don't love", "In school + working a job"];
+// Owner, Nov 22 2026: an ad-funnel opt-in is reported to Meta/TikTok as a
+// Lead when they're 16+ (job or not: 16-17s in school were buying too) AND
+// said Yes to committing to the quiz AND Yes to the 5-minute call question.
+// Under-16s and everyone else are still saved and called, just not reported.
+// Replaces the Nov 17 "16+ with a job" rule.
 const TOO_YOUNG = ["Under 16", "Under 18"]; // "Under 18" = old quiz, can't tell 16-17 apart
 
 export function qualifiesForAds(answers: Record<string, string> | undefined) {
   const age = answers?.["Age"] ?? "";
-  const now = answers?.["Right now"] ?? "";
   const committed = answers?.["Committed to the quiz"] === "Yes";
   const callNow = answers?.[CALL_QUESTION] === "Yes";
-  return committed && callNow && Boolean(age) && !TOO_YOUNG.includes(age) && JOB_ANSWERS.includes(now);
+  return committed && callNow && Boolean(age) && !TOO_YOUNG.includes(age);
 }
 
 // 16-17: still reported, but with no email/phone attached (minor's data).

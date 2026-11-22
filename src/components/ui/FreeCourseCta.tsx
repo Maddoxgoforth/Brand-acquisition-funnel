@@ -87,7 +87,7 @@ export default function FreeCourseCta({
       ...(getAnswers ? getAnswers() : answers),
       ...(askCall ? { [CALL_QUESTION]: callOk } : {}),
     };
-    // Ad opt-ins are reported only when 16+ with a job (see qualifiesForAds);
+    // Ad opt-ins are reported only when 16+ (see qualifiesForAds);
     // 16-17s without their email/phone.
     const reportLead = funnel !== "ads" || qualifiesForAds(sentAnswers);
     const shareContact = !(funnel === "ads" && isMinor(sentAnswers));
