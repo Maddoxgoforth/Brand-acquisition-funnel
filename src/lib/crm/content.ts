@@ -418,7 +418,50 @@ export async function contentReport(f: ContentFilters) {
     [[...STATS_PLATFORMS]]
   );
 
+  // By day (owner, Nov 22 2026): organic opt-ins next to what was posted
+  // that day, and how many of that day's opt-ins booked a call or bought.
+  // Organic = the main free course page (source free_course_application);
+  // ad-funnel opt-ins are left out. Day = Eastern time, same as Analytics.
+  const optRows = await query<{ day: string; opt_ins: number; booked: number; closed: number }>(
+    `SELECT to_char(opt_at AT TIME ZONE '${TZ}', 'YYYY-MM-DD') AS day,
+       count(*)::int AS opt_ins,
+       count(*) FILTER (WHERE status IN ('appointment', 'closed')
+         OR EXISTS (SELECT 1 FROM crm_events e WHERE e.lead_id = l.id AND e.type = 'appointment'))::int AS booked,
+       count(*) FILTER (WHERE status = 'closed')::int AS closed
+     FROM (SELECT *, coalesce(last_opt_in_at, created_at) AS opt_at FROM crm_leads) l
+     WHERE source = 'free_course_application' AND ($1::timestamptz IS NULL OR opt_at >= $1::timestamptz)
+     GROUP BY 1`,
+    [since]
+  );
+  const dayMap = new Map<string, { day: string; optIns: number; booked: number; closed: number; posts: ContentPost[] }>();
+  const dayEntry = (day: string) => {
+    let e = dayMap.get(day);
+    if (!e) dayMap.set(day, (e = { day, optIns: 0, booked: 0, closed: 0, posts: [] }));
+    return e;
+  };
+  for (const r of optRows) Object.assign(dayEntry(r.day), { optIns: r.opt_ins, booked: r.booked, closed: r.closed });
+  for (const p of posts) if (p.postedAt) dayEntry(dayOf(p.postedAt)).posts.push(p);
+  const byDay = [...dayMap.values()]
+    .sort((a, b) => b.day.localeCompare(a.day))
+    .map((d) => {
+      const formats = new Map<string, number>();
+      for (const p of d.posts) formats.set(p.format, (formats.get(p.format) ?? 0) + 1);
+      return {
+        day: d.day,
+        optIns: d.optIns,
+        booked: d.booked,
+        closed: d.closed,
+        bookRate: d.optIns ? d.booked / d.optIns : null,
+        closeRate: d.optIns ? d.closed / d.optIns : null,
+        posts: d.posts.length,
+        views: d.posts.reduce((s, p) => s + (p.views ?? 0), 0),
+        formats: [...formats.entries()].sort((a, b) => b[1] - a[1]).map(([format, count]) => ({ format, count })),
+        items: [...d.posts].sort((a, b) => (b.views ?? -1) - (a.views ?? -1)),
+      };
+    });
+
   return {
+    byDay,
     kpis: {
       posts: posts.length,
       measured: measured.length,

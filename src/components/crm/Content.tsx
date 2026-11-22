@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { crmFetch, timeAgo } from "./api";
 
@@ -55,7 +55,20 @@ type Account = {
   views: number;
   series: { day: string; followers: number }[];
 };
+type Day = {
+  day: string;
+  optIns: number;
+  booked: number;
+  closed: number;
+  bookRate: number | null;
+  closeRate: number | null;
+  posts: number;
+  views: number;
+  formats: { format: string; count: number }[];
+  items: Post[];
+};
 type Report = {
+  byDay: Day[];
   kpis: { posts: number; measured: number; totalViews: number; avgViews: number; medianViews: number; engagement: number | null; likes: number; shares: number };
   posts: Post[];
   formats: Format[];
@@ -68,6 +81,7 @@ type Report = {
 
 const VIEWS = [
   { id: "overview", label: "Overview", hint: "The headline numbers, views per day, your top posts and best formats." },
+  { id: "byday", label: "By day", hint: "Organic opt-ins each day, how many booked or bought, and what you posted that day. Click a day to see its posts." },
   { id: "posts", label: "Posts", hint: "Every post with its numbers. Click a column to sort, open a post with ↗." },
   { id: "formats", label: "Formats", hint: "Which kinds of video get the most views, on average." },
   { id: "accounts", label: "Accounts", hint: "Followers and growth for each account." },
@@ -310,6 +324,88 @@ function PostsTable({ posts }: { posts: Post[] }) {
         </div>
       ) : null}
       {rows.length === 0 ? <p className="p-10 text-center text-sm text-muted">No posts match.</p> : null}
+    </div>
+  );
+}
+
+// By day: organic opt-ins vs what went out that day. Opt-ins come from the
+// main free course page only; the account / platform filters change the posts.
+function DaysTable({ days }: { days: Day[] }) {
+  const [open, setOpen] = useState<string | null>(null);
+  if (days.length === 0) return <p className={`${card} p-10 text-center text-sm text-muted`}>No opt-ins or posts in this range.</p>;
+  const rate = (n: number, r: number | null) => (
+    <>
+      <span className="font-bold">{n}</span>
+      <span className="text-muted"> · {pct(r)}</span>
+    </>
+  );
+  return (
+    <div className={card}>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-background-elevated/60 text-xs font-bold uppercase tracking-wider text-muted">
+            <tr>
+              <th className="px-4 py-3 text-left">Day</th>
+              <th className="px-3 py-3 text-right">Organic opt-ins</th>
+              <th className="px-3 py-3 text-right">Booked a call</th>
+              <th className="px-3 py-3 text-right">Bought</th>
+              <th className="px-3 py-3 text-right">Posts</th>
+              <th className="px-3 py-3 text-right">Views on those posts</th>
+              <th className="px-4 py-3 text-left">Formats posted</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {days.map((d) => (
+              <Fragment key={d.day}>
+                <tr
+                  onClick={() => setOpen((o) => (o === d.day ? null : d.day))}
+                  className={`cursor-pointer hover:bg-background-elevated/40 ${open === d.day ? "bg-background-elevated/40" : ""}`}
+                >
+                  <td className="whitespace-nowrap px-4 py-3 font-bold">
+                    <span className="mr-1.5 text-muted">{open === d.day ? "▾" : "▸"}</span>
+                    {new Date(`${d.day}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                  </td>
+                  <td className="px-3 py-3 text-right text-base font-extrabold tabular-nums">{d.optIns}</td>
+                  <td className="px-3 py-3 text-right tabular-nums">{rate(d.booked, d.bookRate)}</td>
+                  <td className="px-3 py-3 text-right tabular-nums">{rate(d.closed, d.closeRate)}</td>
+                  <td className="px-3 py-3 text-right tabular-nums">{d.posts}</td>
+                  <td className="px-3 py-3 text-right font-bold tabular-nums">{d.posts ? compact(d.views) : "–"}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {d.formats.map((f) => (
+                        <span key={f.format} className="rounded-full bg-background-elevated px-2 py-0.5 text-xs font-semibold">
+                          {f.format}
+                          {f.count > 1 ? ` ×${f.count}` : ""}
+                        </span>
+                      ))}
+                      {d.formats.length === 0 ? <span className="text-xs text-muted">Nothing posted</span> : null}
+                    </div>
+                  </td>
+                </tr>
+                {open === d.day ? (
+                  <tr>
+                    <td colSpan={7} className="bg-background-elevated/20 px-6 py-2">
+                      {d.items.length ? (
+                        <div className="divide-y divide-border">
+                          {d.items.map((p) => (
+                            <PostLine key={`${p.id}-${p.platform}`} p={p} />
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="py-3 text-sm text-muted">No posts went out this day.</p>
+                      )}
+                    </td>
+                  </tr>
+                ) : null}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="border-t border-border p-3 text-xs text-muted">
+        Opt-ins are from the main free course page (ad-funnel opt-ins left out), by Eastern time. Booked and Bought count that day&apos;s
+        opt-ins that went on to book a call or buy, so recent days keep going up. Views are each post&apos;s total so far.
+      </p>
     </div>
   );
 }
@@ -621,6 +717,8 @@ export default function Content({ onError }: { onError: (e: unknown) => void }) 
             </div>
           </div>
         </div>
+      ) : view === "byday" ? (
+        <DaysTable days={data.byDay} />
       ) : view === "posts" ? (
         <PostsTable posts={data.posts} />
       ) : view === "formats" ? (
