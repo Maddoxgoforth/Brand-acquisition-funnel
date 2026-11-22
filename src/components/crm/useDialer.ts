@@ -5,6 +5,17 @@ import type { Call, Device } from "@twilio/voice-sdk";
 
 import type { Lead } from "@/lib/crm/constants";
 import { crmFetch } from "./api";
+import { playHangupTone } from "./chime";
+
+// Cut the other side's audio right away so the tear-down of the call can't
+// spit out a burst of noise, then play a clean hang-up tone.
+function silence(c: Call) {
+  c.getRemoteStream()?.getAudioTracks().forEach((t) => (t.enabled = false));
+}
+function endTone(c: Call) {
+  silence(c);
+  playHangupTone();
+}
 
 type TokenResponse =
   | { configured: true; token: string }
@@ -96,6 +107,9 @@ export function useDialer(onCallEnded: (lead: Lead) => void, onAnswered?: (lead:
 
     const { Device } = await import("@twilio/voice-sdk");
     const device = new Device(response.token, { closeProtection: true });
+    // Twilio's own hang-up sound was followed by a burst of noise; we play
+    // our own tone instead (see silence/endCall below).
+    device.audio?.disconnect(false);
     device.on("error", (error: unknown) => {
       // Start from a clean device next time (e.g. after fixing credentials).
       if (deviceRef.current === device) deviceRef.current = null;
@@ -173,6 +187,7 @@ export function useDialer(onCallEnded: (lead: Lead) => void, onAnswered?: (lead:
 
     const finish = () => {
       if (callRef.current !== incoming) return;
+      endTone(incoming);
       callRef.current = null;
       setState(IDLE);
       if (lead) onCallEndedRef.current(lead);
@@ -227,6 +242,7 @@ export function useDialer(onCallEnded: (lead: Lead) => void, onAnswered?: (lead:
 
         const finish = () => {
           if (callRef.current !== active) return;
+          endTone(active);
           callRef.current = null;
           setState(IDLE);
           onCallEndedRef.current(lead);
@@ -253,7 +269,9 @@ export function useDialer(onCallEnded: (lead: Lead) => void, onAnswered?: (lead:
   );
 
   const hangUp = useCallback(() => {
-    callRef.current?.disconnect();
+    const active = callRef.current;
+    if (active) silence(active);
+    active?.disconnect();
   }, []);
 
   const toggleMute = useCallback(() => {

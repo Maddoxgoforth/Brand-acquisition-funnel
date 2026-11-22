@@ -33,6 +33,26 @@ export function playChime() {
   }
 }
 
+// The hang-up tone: one soft falling note. Replaces Twilio's built-in
+// disconnect sound, which was followed by a burst of noise as the call's
+// audio was torn down. Plays even when new-lead Sound is off.
+export function playHangupTone() {
+  armChime();
+  if (!context || context.state !== "running") return;
+  const at = context.currentTime + 0.05;
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.type = "sine";
+  oscillator.frequency.setValueAtTime(620, at);
+  oscillator.frequency.exponentialRampToValueAtTime(420, at + 0.35);
+  gain.gain.setValueAtTime(0.0001, at);
+  gain.gain.exponentialRampToValueAtTime(0.18, at + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.4);
+  oscillator.connect(gain).connect(context.destination);
+  oscillator.start(at);
+  oscillator.stop(at + 0.45);
+}
+
 // The Sound on/off choice, remembered on this computer. Shaped for React's
 // useSyncExternalStore so the header button and the poller agree.
 const SOUND_KEY = "crm-sound";
