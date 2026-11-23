@@ -199,6 +199,9 @@ export type Lead = {
   // A teammate is calling ("dialing") or talking to ("live") this lead right
   // now. since = when it started ringing / was picked up.
   liveCall: LiveCall | null;
+  // Number blocked: no calls in or out. blockedByName = who blocked it.
+  blockedAt: string | null;
+  blockedByName: string | null;
   // The affiliate whose link brought this lead in (organic opt-ins only).
   affiliateName: string | null;
   createdAt: string;
@@ -211,7 +214,7 @@ export type Actor = { id: string; name: string };
 
 export type LeadEvent = {
   id: number;
-  type: "status" | "call" | "created" | "appointment" | "reoptin" | "claim" | "close" | "inbound";
+  type: "status" | "call" | "created" | "appointment" | "reoptin" | "claim" | "close" | "inbound" | "block";
   // For calls: callSid and, once added, notes.
   data: Record<string, string>;
   actorName: string | null;

@@ -51,6 +51,9 @@ export async function POST(request: Request) {
     } else if (!canAccess(caller.access, lead.source)) {
       return say("That lead could not be found.");
     }
+    if (lead.blockedAt) {
+      return say("This number is blocked.");
+    }
     if (lead.status === "do_not_call") {
       return say("This lead is marked do not call.");
     }

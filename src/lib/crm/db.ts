@@ -195,6 +195,10 @@ const SCHEMA = [
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS live_call_by_name text`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS live_call_state text`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS live_call_at timestamptz`,
+  // Blocked number (owner, Nov 22 2026): set on every lead with this phone.
+  // Their calls to the Twilio number are rejected and the CRM won't dial them.
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS blocked_at timestamptz`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS blocked_by_name text`,
   // Affiliates (UGC creators who send people to the organic opt-in page with
   // their own link, owner's request Nov 15 2026). Separate accounts from the
   // team; see affiliates.ts. `code` is set when the owner approves them.

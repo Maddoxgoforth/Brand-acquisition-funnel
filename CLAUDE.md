@@ -712,6 +712,13 @@ it. Stale rows expire (3 min dialing, 3 h live). `LiveCallBadge` shows
 "🔴 On a call with NAME · m:ss" on the card and in the lead panel; cards can't
 be dragged and PATCH refuses status moves (409) while someone else is on the
 call. Lists refresh every 10 s.
+
+**Blocked numbers (owner, Nov 22 2026):** "🚫 Block this number" in the lead
+panel (PATCH `{ blocked }` → `setBlocked`) sets `crm_leads.blocked_at` /
+`blocked_by_name` on every lead with that `phone_e164`. Incoming calls from a
+blocked number get `<Reject reason="busy"/>` (no ring, alert or voicemail);
+the voice route, dialer and Call buttons refuse to dial them. Card shows
+"🚫 Blocked"; Unblock in the same spot.
 Alerts (`src/lib/crm/notify.ts`): "📞 We have a missed call from "Name"
 (phone)" and, if they leave one, a voicemail alert, posted to
 `SLACK_MISSED_CALL_WEBHOOK_URL` (Slack incoming webhook) and

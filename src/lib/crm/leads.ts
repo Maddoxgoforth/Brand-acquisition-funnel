@@ -71,6 +71,8 @@ type LeadRow = {
   live_call_by_name?: string | null;
   live_call_state?: string | null;
   live_call_at?: string | Date | null;
+  blocked_at?: string | Date | null;
+  blocked_by_name?: string | null;
   affiliate_name?: string | null;
   created_at: string | Date;
   updated_at: string | Date;
@@ -149,6 +151,8 @@ function toLead(row: LeadRow): Lead {
     missedCallAt: iso(row.missed_call_at ?? null),
     hasVoicemail: Boolean(row.missed_voicemail_sid),
     liveCall: liveCallOf(row),
+    blockedAt: iso(row.blocked_at ?? null),
+    blockedByName: row.blocked_by_name ?? null,
     affiliateName: row.affiliate_name ?? null,
     createdAt: iso(row.created_at)!,
     updatedAt: iso(row.updated_at)!,
@@ -1531,4 +1535,30 @@ export async function endLiveCall(sid: string) {
      WHERE live_call_sid = $1`,
     [sid]
   );
+}
+
+// Block or unblock a lead's phone number. Applies to every lead with the same
+// number, so a duplicate lead can't get through either.
+export async function setBlocked(id: string, blocked: boolean, actor: Actor): Promise<Lead | null> {
+  const lead = await getLead(id);
+  if (!lead) return null;
+  if (Boolean(lead.blockedAt) === blocked) return lead;
+  const sameNumber = lead.phoneE164
+    ? `(id = $1 OR phone_e164 = $4)`
+    : `id = $1`;
+  await query(
+    `UPDATE crm_leads SET blocked_at = CASE WHEN $2 THEN now() ELSE NULL END,
+       blocked_by_name = CASE WHEN $2 THEN $3 ELSE NULL END, updated_at = now()
+     WHERE ${sameNumber}`,
+    lead.phoneE164 ? [id, blocked, actor.name, lead.phoneE164] : [id, blocked, actor.name]
+  );
+  await addEvent(id, "block", { action: blocked ? "blocked" : "unblocked" }, actor);
+  return getLead(id);
+}
+
+// Is this number blocked on any lead? (Calls coming in.)
+export async function isNumberBlocked(e164: string): Promise<boolean> {
+  if (!e164) return false;
+  const rows = await query(`SELECT 1 FROM crm_leads WHERE phone_e164 = $1 AND blocked_at IS NOT NULL LIMIT 1`, [e164]);
+  return rows.length > 0;
 }

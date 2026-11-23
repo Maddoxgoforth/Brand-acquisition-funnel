@@ -227,6 +227,9 @@ export function useDialer(onCallEnded: (lead: Lead) => void, onAnswered?: (lead:
   const call = useCallback(
     async (lead: Lead) => {
       if (callRef.current) return;
+      if (lead.blockedAt) {
+        return fail("This number is blocked.");
+      }
       if (lead.status === "do_not_call") {
         return fail("This lead is marked do not call.");
       }

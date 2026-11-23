@@ -52,6 +52,9 @@ function describe(event: LeadEvent) {
     if (event.data.result === "voicemail") return `They left a ${event.data.seconds ?? ""}s voicemail`;
     return "📞 They called back and nobody answered";
   }
+  if (event.type === "block") {
+    return event.data.action === "unblocked" ? "Unblocked their number" : "🚫 Blocked their number";
+  }
   if (event.type === "claim") {
     if (event.data.action === "released") return "Released the claim";
     if (event.data.action === "took over") return `Took over the lead from ${event.data.from ?? "a teammate"}`;
@@ -78,6 +81,7 @@ export default function LeadDrawer({
   me,
   isOwner,
   onClaim,
+  onBlock,
 }: {
   lead: Lead;
   askOutcome: boolean;
@@ -91,6 +95,7 @@ export default function LeadDrawer({
   me: string;
   isOwner: boolean;
   onClaim: (claim: boolean) => Promise<LeadEvent[] | null>;
+  onBlock: (blocked: boolean) => Promise<LeadEvent[] | null>;
 }) {
   const [name, setName] = useState(lead.name);
   const [phone, setPhone] = useState(lead.phone);
@@ -123,6 +128,11 @@ export default function LeadDrawer({
 
   const claim = (value: boolean) => async () => {
     const next = await onClaim(value);
+    if (next) setEvents(next);
+  };
+
+  const block = (value: boolean) => async () => {
+    const next = await onBlock(value);
     if (next) setEvents(next);
   };
 
@@ -369,7 +379,7 @@ export default function LeadDrawer({
               <button
                 type="button"
                 onClick={onCall}
-                disabled={!canCall || !lead.phoneE164 || lead.status === "do_not_call"}
+                disabled={!canCall || !lead.phoneE164 || lead.status === "do_not_call" || Boolean(lead.blockedAt)}
                 className="shrink-0 rounded-full bg-accent px-5 font-bold text-white transition-colors hover:bg-accent-dim disabled:opacity-40"
               >
                 Call
@@ -383,6 +393,33 @@ export default function LeadDrawer({
             ) : null}
             {lead.status === "do_not_call" ? (
               <p className="text-xs text-danger">Marked do not call. Calling is blocked.</p>
+            ) : null}
+            {lead.blockedAt ? (
+              <div className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+                <span className="flex-1 font-bold">
+                  🚫 Number blocked{lead.blockedByName ? ` by ${lead.blockedByName}` : ""} {timeAgo(lead.blockedAt)}.
+                  Their calls are rejected and the CRM won&apos;t dial them.
+                </span>
+                <button
+                  type="button"
+                  onClick={block(false)}
+                  className="shrink-0 rounded-full border border-red-300 px-3 py-1 font-bold hover:bg-red-100"
+                >
+                  Unblock
+                </button>
+              </div>
+            ) : lead.phone ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(`Block ${lead.phone}? They won't be able to call your number, and nobody can call them from the CRM.`)) {
+                    block(true)();
+                  }
+                }}
+                className="text-xs font-bold text-danger hover:underline"
+              >
+                🚫 Block this number
+              </button>
             ) : null}
             <input className={field} placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => saveIfChanged("email", email)} />
             <p className="text-xs text-muted">

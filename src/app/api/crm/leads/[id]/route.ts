@@ -12,6 +12,7 @@ import {
   deleteLead,
   getLead,
   listEvents,
+  setBlocked,
   setClaim,
   updateLead,
   type LeadPatch,
@@ -62,6 +63,13 @@ export async function PATCH(request: Request, { params }: Context) {
         }
         throw error;
       }
+    }
+
+    // { blocked: true } blocks the lead's number (no calls in or out).
+    if (typeof body.blocked === "boolean") {
+      const lead = await setBlocked(id, body.blocked, sessionActor(session));
+      if (!lead) return notFound();
+      return Response.json({ lead, events: await listEvents(id) });
     }
 
     const patch: LeadPatch = {};

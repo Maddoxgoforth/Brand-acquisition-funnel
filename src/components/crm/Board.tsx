@@ -216,6 +216,11 @@ export default function Board({
                       {lead.hasVoicemail ? " · 🎙️ voicemail" : ""}
                     </p>
                   ) : null}
+                  {lead.blockedAt ? (
+                    <p className="mt-0.5 mr-1 inline-block rounded-md bg-red-100 px-1.5 py-0.5 text-[11px] font-extrabold text-red-700">
+                      🚫 Blocked
+                    </p>
+                  ) : null}
                   <CallNowBadge lead={lead} className="mt-0.5 mr-1" />
                   <AffiliateBadge lead={lead} className="mt-0.5 mr-1" />
                   <ClaimBadge lead={lead} me={me} />
@@ -261,7 +266,7 @@ export default function Board({
                         ? `${lead.callCount} call${lead.callCount === 1 ? "" : "s"}`
                         : `Added ${timeAgo(lead.createdAt)}`}
                     </span>
-                    {status.id !== "do_not_call" && lead.phoneE164 ? (
+                    {status.id !== "do_not_call" && lead.phoneE164 && !lead.blockedAt ? (
                       <button
                         type="button"
                         disabled={!canCall}

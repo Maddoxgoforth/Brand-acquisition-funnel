@@ -4,6 +4,7 @@ import {
   getInboundCall,
   endLiveCall,
   getLead,
+  isNumberBlocked,
   lastCallerOf,
   markInboundMissed,
   saveVoicemail,
@@ -124,6 +125,8 @@ export async function POST(request: Request) {
 
     if (step === "start") {
       const from = params.From ?? "";
+      // Blocked numbers: reject without ringing anyone, no alert, no voicemail.
+      if (await isNumberBlocked(toE164(from) ?? from)) return twiml(`<Reject reason="busy"/>`);
       const lead = await findLeadByPhone(toE164(from) ?? from);
       await startInboundCall(callSid, lead?.id ?? null, from);
       const who = { leadId: lead?.id ?? "", name: lead?.name ?? "", phone: lead?.phone || from, callSid };

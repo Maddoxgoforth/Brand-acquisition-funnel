@@ -360,6 +360,23 @@ export default function CrmApp({
     [putLead, report]
   );
 
+  const blockLead = useCallback(
+    async (lead: Lead, blocked: boolean): Promise<LeadEvent[] | null> => {
+      try {
+        const data = await crmFetch<{ lead: Lead; events: LeadEvent[] }>(
+          `/api/crm/leads/${lead.id}`,
+          { method: "PATCH", body: { blocked } }
+        );
+        putLead(data.lead);
+        return data.events;
+      } catch (e) {
+        report(e);
+        return null;
+      }
+    },
+    [putLead, report]
+  );
+
   // Calling claims an unclaimed lead (the server records it). Calling a lead
   // someone else claimed asks first.
   function callLead(lead: Lead) {
@@ -662,6 +679,7 @@ export default function CrmApp({
           me={user.id}
           isOwner={user.role === "owner"}
           onClaim={(claim) => claimLead(selected, claim)}
+          onBlock={(blocked) => blockLead(selected, blocked)}
         />
       ) : null}
 
