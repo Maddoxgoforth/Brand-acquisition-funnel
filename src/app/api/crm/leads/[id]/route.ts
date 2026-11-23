@@ -1,6 +1,7 @@
 import { crmRoute, readJson } from "@/lib/crm/api";
 import { sessionActor, type Session } from "@/lib/crm/auth";
 import {
+  busyWithSomeoneElse,
   canAccess,
   isStatusId,
   zonedTimeToIso,
@@ -41,7 +42,8 @@ export async function GET(request: Request, { params }: Context) {
 export async function PATCH(request: Request, { params }: Context) {
   return crmRoute(request, async (session) => {
     const { id } = await params;
-    if (!(await findLead(session, id))) return notFound();
+    const current = await findLead(session, id);
+    if (!current) return notFound();
 
     const body = (await readJson(request)) as Record<string, unknown> | null;
     if (!body) {
@@ -79,6 +81,14 @@ export async function PATCH(request: Request, { params }: Context) {
     if (body.status !== undefined) {
       if (!isStatusId(body.status)) {
         return Response.json({ error: "Unknown status" }, { status: 400 });
+      }
+      // Don't let anyone move a lead a teammate is on the phone with.
+      if (body.status !== current.status && busyWithSomeoneElse(current, sessionActor(session).id)) {
+        const who = current.liveCall!.byName;
+        return Response.json(
+          { error: `${who} is on a call with this lead right now. Wait until they hang up to move it.` },
+          { status: 409 }
+        );
       }
       patch.status = body.status;
     }

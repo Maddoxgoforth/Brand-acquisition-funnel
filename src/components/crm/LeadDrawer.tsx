@@ -1,6 +1,7 @@
 "use client";
 
 import CallNowBadge, { AffiliateBadge } from "./CallNowBadge";
+import LiveCallBadge from "./LiveCallBadge";
 import { useEffect, useState } from "react";
 
 import {
@@ -173,6 +174,7 @@ export default function LeadDrawer({
         </header>
 
         <div className="space-y-6 px-6 py-5">
+          <LiveCallBadge lead={lead} me={me} large className="w-full text-center" />
           {lead.missedCallAt ? (
             <section className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm">
               <p className="font-extrabold text-red-700">

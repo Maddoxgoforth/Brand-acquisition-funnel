@@ -22,6 +22,13 @@ function twiml(body: string, status = 200) {
   );
 }
 
+function callStatusUrl(request: Request) {
+  const url = new URL(request.url);
+  const proto = request.headers.get("x-forwarded-proto") ?? "https";
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? url.host;
+  return `${proto}://${host}/api/crm/twilio/call-status`;
+}
+
 const say = (message: string) => twiml(`<Say>${escapeXml(message)}</Say>`);
 
 export async function POST(request: Request) {
@@ -60,9 +67,13 @@ export async function POST(request: Request) {
     }
     await recordCall(lead.id, params.CallSid ?? "", actor);
 
+    // Twilio reports when the lead picks up and when the call ends, so the
+    // CRM can show who's on the phone with them (see call-status).
+    const statusUrl = escapeXml(callStatusUrl(request));
     return twiml(
       `<Dial callerId="${escapeXml(process.env.TWILIO_PHONE_NUMBER!)}" answerOnBridge="true">` +
-        `<Number>${escapeXml(lead.phoneE164)}</Number></Dial>`
+        `<Number statusCallbackEvent="answered completed" statusCallback="${statusUrl}" statusCallbackMethod="POST">` +
+        `${escapeXml(lead.phoneE164)}</Number></Dial>`
     );
   } catch (error) {
     console.error("CRM voice webhook failed:", error);

@@ -1,11 +1,13 @@
 "use client";
 
 import CallNowBadge, { AffiliateBadge } from "./CallNowBadge";
+import LiveCallBadge from "./LiveCallBadge";
 import { useEffect, useMemo, useState, type DragEvent } from "react";
 
 import {
   SPEED_TO_LEAD_SECONDS,
   STATUSES,
+  busyWithSomeoneElse,
   formatAppointment,
   planLabel,
   formatDuration,
@@ -191,7 +193,8 @@ export default function Board({
               {items.slice(0, limit).map((lead) => (
                 <article
                   key={lead.id}
-                  draggable
+                  draggable={!busyWithSomeoneElse(lead, me)}
+                  title={busyWithSomeoneElse(lead, me) ? `${lead.liveCall!.byName} is on a call with this lead` : undefined}
                   onDragStart={(event) => {
                     event.dataTransfer.setData("text/lead-id", lead.id);
                     event.dataTransfer.effectAllowed = "move";
@@ -199,6 +202,7 @@ export default function Board({
                   onClick={() => onOpen(lead)}
                   className="cursor-grab rounded-lg border border-border bg-background px-2.5 py-2 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing"
                 >
+                  <LiveCallBadge lead={lead} me={me} className="mb-1" />
                   <p className="truncate text-sm font-bold leading-tight">{lead.name || "No name"}</p>
                   <p className="truncate text-xs leading-tight tabular-nums text-muted">
                     {lead.phone || "No phone"}

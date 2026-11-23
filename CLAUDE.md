@@ -702,6 +702,16 @@ floats to the top of its column, box in the lead panel with the voicemail
 player via `/api/crm/leads/[id]/voicemail`, which fetches the recording from
 Twilio with the account credentials). Calling the lead clears it. Each call is
 a row in `crm_inbound_calls`, so Twilio retries never alert twice.
+
+**Who's on a call (owner, Nov 22 2026):** `crm_leads.live_call_*` holds the
+call happening with a lead right now. `recordCall` sets it to `dialing` (who
+dialed); the `<Number>` status callback (`/api/crm/twilio/call-status`, keyed
+by ParentCallSid) flips it to `live` when they pick up and clears it when the
+call ends; answering a call back sets it `live` and the incoming route clears
+it. Stale rows expire (3 min dialing, 3 h live). `LiveCallBadge` shows
+"🔴 On a call with NAME · m:ss" on the card and in the lead panel; cards can't
+be dragged and PATCH refuses status moves (409) while someone else is on the
+call. Lists refresh every 10 s.
 Alerts (`src/lib/crm/notify.ts`): "📞 We have a missed call from "Name"
 (phone)" and, if they leave one, a voicemail alert, posted to
 `SLACK_MISSED_CALL_WEBHOOK_URL` (Slack incoming webhook) and

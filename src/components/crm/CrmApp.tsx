@@ -147,8 +147,8 @@ export default function CrmApp({
     };
   }, [view, report]);
 
-  // Reload the open list every 20 seconds so claims, calls and moves made by
-  // teammates show up without a refresh.
+  // Reload the open list every 10 seconds so claims, calls (who's on the
+  // phone with whom) and moves made by teammates show up without a refresh.
   useEffect(() => {
     if (isPage(view)) return;
     let stopped = false;
@@ -160,7 +160,7 @@ export default function CrmApp({
       } catch {
         // Try again next time.
       }
-    }, 20_000);
+    }, 10_000);
     return () => {
       stopped = true;
       clearInterval(timer);

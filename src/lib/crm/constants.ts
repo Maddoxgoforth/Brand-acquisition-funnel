@@ -196,6 +196,9 @@ export type Lead = {
   // someone calls them or answers their next call. hasVoicemail = they left one.
   missedCallAt: string | null;
   hasVoicemail: boolean;
+  // A teammate is calling ("dialing") or talking to ("live") this lead right
+  // now. since = when it started ringing / was picked up.
+  liveCall: LiveCall | null;
   // The affiliate whose link brought this lead in (organic opt-ins only).
   affiliateName: string | null;
   createdAt: string;
@@ -666,6 +669,13 @@ export type ActivityItem = {
   source: SourceId;
   createdAt: string;
 };
+
+export type LiveCall = { byId: string; byName: string; state: "dialing" | "live"; since: string };
+
+// Someone else is on the phone with this lead, so it shouldn't be moved.
+export function busyWithSomeoneElse(lead: Pick<Lead, "liveCall">, actorId: string) {
+  return lead.liveCall !== null && lead.liveCall.byId !== actorId;
+}
 
 // Ads opt-in form question (answer "Yes" / "No", saved in lead.extra).
 // Kept as the storage key even though the form now asks "We'll give you a

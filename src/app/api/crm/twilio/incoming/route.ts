@@ -2,6 +2,7 @@ import { FULL_ACCESS, SOURCES, canAccess, toE164, type Lead } from "@/lib/crm/co
 import {
   findLeadByPhone,
   getInboundCall,
+  endLiveCall,
   getLead,
   lastCallerOf,
   markInboundMissed,
@@ -134,8 +135,12 @@ export async function POST(request: Request) {
 
     // After a <Dial>: picked up and finished → hang up; the caller left →
     // count it as missed; nobody picked up → next step.
-    if (answered) return twiml(`<Hangup/>`);
+    if (answered) {
+      await endLiveCall(callSid);
+      return twiml(`<Hangup/>`);
+    }
     if (callerGone) {
+      await endLiveCall(callSid);
       await missed(callSid);
       return twiml(`<Hangup/>`);
     }

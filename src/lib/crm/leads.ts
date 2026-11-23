@@ -26,6 +26,7 @@ import {
   type Actor,
   type Lead,
   type LeadEvent,
+  type LiveCall,
   type OptInChannel,
   type SourceId,
   type StatRange,
@@ -66,6 +67,10 @@ type LeadRow = {
   payment_proof_id: string | null;
   missed_call_at?: string | Date | null;
   missed_voicemail_sid?: string | null;
+  live_call_by_id?: string | null;
+  live_call_by_name?: string | null;
+  live_call_state?: string | null;
+  live_call_at?: string | Date | null;
   affiliate_name?: string | null;
   created_at: string | Date;
   updated_at: string | Date;
@@ -92,6 +97,21 @@ function parseJson(value: Record<string, unknown> | string | null | undefined) {
 
 export function rawAttribution(row: { attribution?: Record<string, unknown> | string | null }) {
   return cleanExtra(parseJson(row.attribution));
+}
+
+// A call nobody cleared (missed status callback) stops showing after this
+// long: ringing can't last more than a couple of minutes, a real call rarely
+// runs past 3 hours.
+const DIALING_MAX_MS = 3 * 60_000;
+const LIVE_MAX_MS = 3 * 60 * 60_000;
+
+function liveCallOf(row: LeadRow): LiveCall | null {
+  const state = row.live_call_state;
+  if ((state !== "dialing" && state !== "live") || !row.live_call_at || !row.live_call_by_id) return null;
+  const since = new Date(row.live_call_at);
+  const age = Date.now() - since.getTime();
+  if (age > (state === "live" ? LIVE_MAX_MS : DIALING_MAX_MS)) return null;
+  return { byId: row.live_call_by_id, byName: row.live_call_by_name || "Someone", state, since: since.toISOString() };
 }
 
 function toLead(row: LeadRow): Lead {
@@ -128,6 +148,7 @@ function toLead(row: LeadRow): Lead {
     hasPaymentProof: Boolean(row.payment_proof_id),
     missedCallAt: iso(row.missed_call_at ?? null),
     hasVoicemail: Boolean(row.missed_voicemail_sid),
+    liveCall: liveCallOf(row),
     affiliateName: row.affiliate_name ?? null,
     createdAt: iso(row.created_at)!,
     updatedAt: iso(row.updated_at)!,
@@ -775,9 +796,11 @@ export async function recordCall(id: string, callSid: string, actor: Actor | nul
   await query(
     `UPDATE crm_leads
      SET call_count = call_count + 1, last_called_at = now(), updated_at = now(),
-         missed_call_at = NULL, missed_call_sid = NULL, missed_voicemail_sid = NULL
+         missed_call_at = NULL, missed_call_sid = NULL, missed_voicemail_sid = NULL,
+         live_call_sid = $2, live_call_by_id = $3, live_call_by_name = $4,
+         live_call_state = 'dialing', live_call_at = now()
      WHERE id = $1`,
-    [id]
+    [id, callSid || null, actor?.id ?? "unknown", actor?.name ?? "Someone"]
   );
   await addEvent(id, "call", { callSid }, actor);
   // The first person to call a lead claims it.
@@ -1453,9 +1476,11 @@ export async function markInboundAnswered(callSid: string | null, leadId: string
   }
   await query(
     `UPDATE crm_leads SET missed_call_at = NULL, missed_call_sid = NULL,
-       missed_voicemail_sid = NULL, updated_at = now()
+       missed_voicemail_sid = NULL, updated_at = now(),
+       live_call_sid = $2, live_call_by_id = $3, live_call_by_name = $4,
+       live_call_state = 'live', live_call_at = now()
      WHERE id = $1`,
-    [leadId]
+    [leadId, callSid, actor.id, actor.name]
   );
   await markFirstContact(leadId);
   await addEvent(leadId, "inbound", { result: "answered" }, actor);
@@ -1487,4 +1512,23 @@ export async function voicemailSidFor(leadId: string): Promise<string | null> {
     [leadId]
   );
   return rows[0]?.missed_voicemail_sid ?? null;
+}
+
+// Twilio says the lead picked up (outbound) or the call ended. `sid` is the
+// call id saved by recordCall / markInboundAnswered.
+export async function markLiveCallAnswered(sid: string) {
+  await query(
+    `UPDATE crm_leads SET live_call_state = 'live', live_call_at = now()
+     WHERE live_call_sid = $1 AND live_call_state = 'dialing'`,
+    [sid]
+  );
+}
+
+export async function endLiveCall(sid: string) {
+  await query(
+    `UPDATE crm_leads SET live_call_sid = NULL, live_call_by_id = NULL, live_call_by_name = NULL,
+       live_call_state = NULL, live_call_at = NULL
+     WHERE live_call_sid = $1`,
+    [sid]
+  );
 }

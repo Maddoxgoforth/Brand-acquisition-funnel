@@ -187,6 +187,14 @@ const SCHEMA = [
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS missed_call_at timestamptz`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS missed_call_sid text`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS missed_voicemail_sid text`,
+  // The call happening with this lead right now (owner, Nov 22 2026: so
+  // nobody moves a lead while a teammate is talking to them). Set when a
+  // teammate dials or answers them, cleared when the call ends.
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS live_call_sid text`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS live_call_by_id text`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS live_call_by_name text`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS live_call_state text`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS live_call_at timestamptz`,
   // Affiliates (UGC creators who send people to the organic opt-in page with
   // their own link, owner's request Nov 15 2026). Separate accounts from the
   // team; see affiliates.ts. `code` is set when the owner approves them.
