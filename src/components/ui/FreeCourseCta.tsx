@@ -66,7 +66,7 @@ export default function FreeCourseCta({
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [country, setCountry] = useState<string>("US");
-  // Ads funnel only: "Can we call you in the next 5 minutes?" Either answer
+  // Ads funnel only: "We'll give you a quick call... Is that okay?" Either answer
   // opts them in as normal; the answer is saved on the lead.
   const askCall = funnel === "ads";
   const [callOk, setCallOk] = useState<"" | "Yes" | "No">("");
@@ -199,11 +199,12 @@ export default function FreeCourseCta({
                 {askCall ? (
                   <div className="mt-1">
                     <p className="text-sm font-bold">
-                      Can we call you in the next 5 minutes?
+                      We&apos;ll give you a quick call to get you set up with
+                      everything. Is that okay?
                     </p>
                     <p className="mt-0.5 text-xs text-muted">
-                      My team will call to give you access to everything and
-                      get you set up. It only takes a few minutes.
+                      My team will call to give you access to everything. It
+                      only takes a few minutes.
                     </p>
                     <div className="mt-2 grid grid-cols-2 gap-2">
                       {(["Yes", "No"] as const).map((v) => (
@@ -220,7 +221,7 @@ export default function FreeCourseCta({
                               : "border-border bg-background-elevated text-foreground"
                           }`}
                         >
-                          {v === "Yes" ? "✅ Yes" : "Not right now"}
+                          {v === "Yes" ? "✅ Yes, call me" : "Not right now"}
                         </button>
                       ))}
                     </div>

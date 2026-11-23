@@ -668,6 +668,9 @@ export type ActivityItem = {
 };
 
 // Ads opt-in form question (answer "Yes" / "No", saved in lead.extra).
+// Kept as the storage key even though the form now asks "We'll give you a
+// quick call to get you set up with everything. Is that okay?" (owner, Nov 22
+// 2026), so older and newer answers stay together.
 export const CALL_QUESTION = "Can we call you in the next 5 minutes?";
 
 // Owner, Nov 22 2026: an ad-funnel opt-in is reported to Meta/TikTok as a
