@@ -1102,7 +1102,7 @@ export async function getStats(
          FROM crm_leads l
          LEFT JOIN active a ON a.lead_id = l.id
          LEFT JOIN closes c ON c.lead_id = l.id
-         WHERE l.source IN ('dial_free_course', 'dial_high_ticket')
+         WHERE l.source = 'dial_free_course'
        )
        SELECT source,
          count(*)::int AS total,

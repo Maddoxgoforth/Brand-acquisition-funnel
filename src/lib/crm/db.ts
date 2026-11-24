@@ -199,6 +199,36 @@ const SCHEMA = [
   // Their calls to the Twilio number are rejected and the CRM won't dial them.
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS blocked_at timestamptz`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS blocked_by_name text`,
+  // One-time data changes: each runs once, recorded by id here.
+  `CREATE TABLE IF NOT EXISTS crm_migrations (
+    id text PRIMARY KEY,
+    ran_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  // Owner, Nov 23 2026: merge the two past-lead lists into one ("Past leads"),
+  // tag former mentorship applicants, and send every no-answer / not-
+  // interested past lead back to To dial (logged in each lead's history).
+  `WITH once AS (
+     INSERT INTO crm_migrations (id) VALUES ('2026-11-23-merge-past-leads')
+     ON CONFLICT (id) DO NOTHING RETURNING id
+   ), logged AS (
+     INSERT INTO crm_events (lead_id, type, data, actor_id, actor_name)
+     SELECT id, 'status', jsonb_build_object('from', status, 'to', 'new'), 'owner', 'Owner'
+     FROM crm_leads
+     WHERE source IN ('dial_free_course', 'dial_high_ticket')
+       AND status IN ('no_answer', 'no_answer_2', 'no_answer_3', 'not_interested')
+       AND EXISTS (SELECT 1 FROM once)
+     RETURNING 1
+   )
+   UPDATE crm_leads SET
+     extra = CASE WHEN source = 'dial_high_ticket'
+                  THEN coalesce(extra, '{}'::jsonb) || '{"List": "High-ticket mentorship"}'::jsonb
+                  ELSE extra END,
+     status = CASE WHEN status IN ('no_answer', 'no_answer_2', 'no_answer_3', 'not_interested')
+                   THEN 'new' ELSE status END,
+     source = 'dial_free_course',
+     updated_at = now()
+   WHERE source IN ('dial_free_course', 'dial_high_ticket')
+     AND EXISTS (SELECT 1 FROM once)`,
   // Affiliates (UGC creators who send people to the organic opt-in page with
   // their own link, owner's request Nov 15 2026). Separate accounts from the
   // team; see affiliates.ts. `code` is set when the owner approves them.

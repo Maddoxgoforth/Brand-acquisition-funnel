@@ -16,17 +16,14 @@ export const SOURCES = [
     description:
       "Free course opt-ins from the ad funnel (/free-training quiz + video): cold traffic.",
   },
+  // One list since Nov 23 2026 (owner): the old "Past free course" and
+  // "High-ticket mentorship applications" lists were merged here. Former
+  // mentorship applicants carry List = "High-ticket mentorship" in Other info.
   {
     id: "dial_free_course",
-    label: "Past free course",
+    label: "Past leads",
     group: "dial",
-    description: "Older free-course leads you add yourself.",
-  },
-  {
-    id: "dial_high_ticket",
-    label: "High-ticket mentorship applications",
-    group: "dial",
-    description: "Past mentorship applicants you add yourself.",
+    description: "Older free-course leads and past high-ticket mentorship applicants.",
   },
 ] as const;
 
