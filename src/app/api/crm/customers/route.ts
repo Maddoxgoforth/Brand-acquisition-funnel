@@ -1,7 +1,7 @@
 import { crmRoute, noAccess, readJson } from "@/lib/crm/api";
 import { sessionActor } from "@/lib/crm/auth";
 import { isCustomerStatus } from "@/lib/crm/constants";
-import { NotACustomerError, listCustomers, setCustomerStatus } from "@/lib/crm/customers";
+import { NotACustomerError, listCustomers, setCustomerNotes, setCustomerStatus } from "@/lib/crm/customers";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -15,10 +15,16 @@ export async function GET(request: Request) {
 }
 
 // { id, status }: move a customer to another column.
+// { id, notes: { field: text } }: save check-in notes.
 export async function POST(request: Request) {
   return crmRoute(request, async (session) => {
     if (!session.access.applications && !session.access.dial) return noAccess();
     const b = (await readJson(request)) as Record<string, unknown> | null;
+    if (b && typeof b.id === "string" && UUID.test(b.id) && b.notes && typeof b.notes === "object") {
+      const lead = await setCustomerNotes(b.id, b.notes as Record<string, unknown>);
+      if (!lead) return Response.json({ error: "Customer not found" }, { status: 404 });
+      return Response.json({ lead });
+    }
     if (!b || typeof b.id !== "string" || !UUID.test(b.id) || !isCustomerStatus(b.status)) {
       return Response.json({ error: "Invalid request" }, { status: 400 });
     }

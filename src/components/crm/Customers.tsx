@@ -148,6 +148,11 @@ export default function Customers({
                       👤 {lead.claimedById === me ? "You" : lead.claimedByName}
                     </p>
                   ) : null}
+                  {Object.keys(lead.customerNotes).length ? (
+                    <p className="mt-0.5 mr-1 inline-block rounded-md bg-accent/10 px-1.5 py-0.5 text-[11px] font-bold text-accent">
+                      📝 Check-in notes{lead.customerNotes.fit ? ` · ${lead.customerNotes.fit.slice(0, 30)}` : ""}
+                    </p>
+                  ) : null}
                   {lead.customerNextAt && (status.id === "base44" || status.id === "not_interested") ? (
                     <p className="mt-0.5 truncate rounded-md bg-sky-50 px-1.5 py-0.5 text-[11px] font-bold text-sky-800">
                       📞 Check-in {formatAppointment(lead.customerNextAt, null)}

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { CUSTOMER_STATUSES, customerStatusLabel, type Actor, type CustomerStatusId, type Lead } from "./constants";
+import { CHECKIN_NOTE_IDS, CUSTOMER_STATUSES, customerStatusLabel, type Actor, type CustomerStatusId, type Lead } from "./constants";
 import { query } from "./db";
 import { getLead, leadFromRow, type LeadRow } from "./leads";
 
@@ -44,6 +44,26 @@ export async function setCustomerStatus(id: string, to: CustomerStatusId, actor:
     `INSERT INTO crm_events (lead_id, type, data, actor_id, actor_name)
      VALUES ($1, 'customer', $2::jsonb, $3, $4)`,
     [id, JSON.stringify({ from: current.customerStatus, to }), actor.id, actor.name]
+  );
+  return rows[0] ? leadFromRow(rows[0]) : null;
+}
+
+// Saves the check-in notes (only known fields, trimmed; an empty field is
+// removed). Changes one field at a time so two people typing in different
+// fields don't overwrite each other.
+export async function setCustomerNotes(id: string, notes: Record<string, unknown>): Promise<Lead | null> {
+  const set: Record<string, string> = {};
+  const drop: string[] = [];
+  for (const [key, value] of Object.entries(notes)) {
+    if (!CHECKIN_NOTE_IDS.includes(key) || typeof value !== "string") continue;
+    const v = value.trim().slice(0, 4000);
+    if (v) set[key] = v;
+    else drop.push(key);
+  }
+  const rows = await query<LeadRow>(
+    `UPDATE crm_leads SET cust_notes = (coalesce(cust_notes, '{}'::jsonb) - $3::text[]) || $2::jsonb, updated_at = now()
+     WHERE id = $1 AND cust_status IS NOT NULL RETURNING *`,
+    [id, JSON.stringify(set), drop]
   );
   return rows[0] ? leadFromRow(rows[0]) : null;
 }

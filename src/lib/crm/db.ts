@@ -258,6 +258,8 @@ const SCHEMA = [
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS cust_status text`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS cust_next_at timestamptz`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS cust_moved_at timestamptz`,
+  // Answers from the 7-day check-in call, keyed by CHECKIN_NOTE_FIELDS ids.
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS cust_notes jsonb NOT NULL DEFAULT '{}'::jsonb`,
   `CREATE INDEX IF NOT EXISTS crm_leads_cust_idx ON crm_leads (cust_status, cust_next_at) WHERE cust_status IS NOT NULL`,
   // Every customer closed before the board existed joins it once: closed
   // within the last 7 days -> Closed · Base44 (check-in 7 days after the

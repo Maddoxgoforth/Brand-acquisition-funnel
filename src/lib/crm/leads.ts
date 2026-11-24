@@ -80,6 +80,7 @@ export type LeadRow = {
   cust_status?: string | null;
   cust_next_at?: string | Date | null;
   cust_moved_at?: string | Date | null;
+  cust_notes?: Record<string, string> | string | null;
   created_at: string | Date;
   updated_at: string | Date;
 };
@@ -165,6 +166,8 @@ function toLead(row: LeadRow): Lead {
     customerStatus: isCustomerStatus(row.cust_status) ? row.cust_status : null,
     customerNextAt: iso(row.cust_next_at ?? null),
     customerMovedAt: iso(row.cust_moved_at ?? null),
+    customerNotes:
+      (typeof row.cust_notes === "string" ? JSON.parse(row.cust_notes) : row.cust_notes) ?? {},
     createdAt: iso(row.created_at)!,
     updatedAt: iso(row.updated_at)!,
   };

@@ -704,6 +704,12 @@ only while it's still in Closed · Base44. Backfill migration
 `2026-11-24-customers-board`: closes from the last 7 days → Closed · Base44,
 older → Check-in quietly (no ping). Visible to anyone with opt-in or dial
 access. Check-in script: https://claude.ai/artifact/X7PJBaRxTUBexdVLfCQfyr
+**Check-in notes** (`crm_leads.cust_notes` jsonb, `CHECKIN_NOTE_FIELDS`,
+`CheckinNotes.tsx`): a box on a customer's lead card with the script's
+answers (progress, why stuck, goal, hours, income, investing, 1-on-1 vs
+group, fit, Meet time, other), saved per field on blur via POST
+`/api/crm/customers { id, notes }` (merges keys, empty removes). Cards show
+"📝 Check-in notes · <fit>".
 
 **KPIs and strikes** (owner, Nov 24 2026; `src/lib/crm/kpis.ts`, tab "🎯
 KPIs", `/api/crm/kpis`). Applies to active team members with dial access

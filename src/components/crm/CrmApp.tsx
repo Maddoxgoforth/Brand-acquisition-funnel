@@ -782,6 +782,8 @@ export default function CrmApp({
           isOwner={user.role === "owner"}
           onClaim={(claim) => claimLead(selected, claim)}
           onBlock={(blocked) => blockLead(selected, blocked)}
+          onLeadUpdated={putLead}
+          onError={report}
         />
       ) : null}
 

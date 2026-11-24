@@ -15,6 +15,7 @@ import {
   type StatusId,
 } from "@/lib/crm/constants";
 import CallEntry from "./CallEntry";
+import CheckinNotes from "./CheckinNotes";
 import { crmFetch, timeAgo } from "./api";
 
 export type LeadPatch = Partial<
@@ -94,6 +95,8 @@ export default function LeadDrawer({
   isOwner,
   onClaim,
   onBlock,
+  onLeadUpdated,
+  onError,
 }: {
   lead: Lead;
   askOutcome: boolean;
@@ -108,6 +111,8 @@ export default function LeadDrawer({
   isOwner: boolean;
   onClaim: (claim: boolean) => Promise<LeadEvent[] | null>;
   onBlock: (blocked: boolean) => Promise<LeadEvent[] | null>;
+  onLeadUpdated: (lead: Lead) => void;
+  onError: (e: unknown) => void;
 }) {
   const [name, setName] = useState(lead.name);
   const [phone, setPhone] = useState(lead.phone);
@@ -439,6 +444,10 @@ export default function LeadDrawer({
               {lead.lastCalledAt ? `, last ${timeAgo(lead.lastCalledAt)}` : ""}
             </p>
           </section>
+
+          {lead.customerStatus ? (
+            <CheckinNotes lead={lead} onSaved={onLeadUpdated} onError={onError} />
+          ) : null}
 
           <section>
             <h3 className="text-xs font-bold uppercase tracking-widest text-muted">

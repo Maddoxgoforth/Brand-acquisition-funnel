@@ -207,6 +207,9 @@ export type Lead = {
   customerStatus: CustomerStatusId | null;
   customerNextAt: string | null;
   customerMovedAt: string | null;
+  // Answers from the 7-day check-in call (CHECKIN_NOTE_FIELDS keys), so
+  // whoever runs the strategy call has them.
+  customerNotes: Record<string, string>;
   createdAt: string;
   updatedAt: string;
 };
@@ -229,6 +232,23 @@ export type CustomerStatusId = (typeof CUSTOMER_STATUSES)[number]["id"];
 export function isCustomerStatus(value: unknown): value is CustomerStatusId {
   return CUSTOMER_STATUSES.some((s) => s.id === value);
 }
+// Check-in notes on a customer's lead card, in the order the check-in script
+// asks them (owner, Nov 24 2026).
+export const CHECKIN_NOTE_FIELDS = [
+  { id: "progress", label: "What they've done so far", placeholder: "Went through the course? Built anything? Posted? Made a sale?" },
+  { id: "stuck", label: "Why no results yet (biggest reason)", placeholder: "Time, what to build, getting buyers, staying consistent…" },
+  { id: "goal", label: "Their goal and why it matters", placeholder: "Their own words" },
+  { id: "if_nothing_changes", label: "If nothing changes in a month", placeholder: "What they said" },
+  { id: "hours", label: "Hours per week they can put in", placeholder: "e.g. 10" },
+  { id: "income", label: "Job / income", placeholder: "Working? Roughly how much a month?" },
+  { id: "investing", label: "Open to investing in help?", placeholder: "Yes / maybe / no, and what they said" },
+  { id: "format", label: "1-on-1 or group?", placeholder: "What they'd prefer" },
+  { id: "fit", label: "Fit", placeholder: "High ticket or mid ticket, and why" },
+  { id: "meet", label: "Strategy call (Google Meet)", placeholder: "Day, time and time zone" },
+  { id: "other", label: "Anything else", placeholder: "Objections, parents involved, anything useful for the call" },
+] as const;
+export const CHECKIN_NOTE_IDS: readonly string[] = CHECKIN_NOTE_FIELDS.map((f) => f.id);
+
 export const customerStatusLabel = (id: string | undefined) =>
   CUSTOMER_STATUSES.find((s) => s.id === id)?.label ?? id ?? "";
 
