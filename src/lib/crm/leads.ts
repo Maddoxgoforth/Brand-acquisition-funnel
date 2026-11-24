@@ -6,6 +6,7 @@ import { sendMetaEvent } from "@/lib/meta";
 import { sendTikTokEvent } from "@/lib/tiktok";
 
 import { query } from "./db";
+import { giveDueStrikes } from "./kpis";
 import {
   ANSWERED_STATUS_IDS,
   CLOSE_PLANS,
@@ -269,6 +270,7 @@ export async function releaseStaleNoAnswerClaims(): Promise<number> {
 
 export async function listLeads(source: SourceId): Promise<Lead[]> {
   await releaseStaleNoAnswerClaims().catch((e) => console.error("no-answer release failed", e));
+  await giveDueStrikes().catch((e) => console.error("KPI strikes failed", e));
   // New applications show newest first (call them while they're warm). The
   // hand-filled dial lists show in the order the leads were added, so the
   // first ones you put in are the first ones to call.

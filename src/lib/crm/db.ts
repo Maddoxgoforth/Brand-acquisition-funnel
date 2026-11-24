@@ -209,6 +209,20 @@ const SCHEMA = [
     created_at timestamptz NOT NULL DEFAULT now()
   )`,
   `CREATE INDEX IF NOT EXISTS crm_optin_ips_ip_idx ON crm_optin_ips (ip, created_at DESC)`,
+  // KPI strikes (owner, Nov 24 2026; see kpis.ts). period makes each automatic
+  // strike unique (a date for dials, the week's Monday for plan mix); manual
+  // strikes get a random one. Removed strikes stay for history.
+  `CREATE TABLE IF NOT EXISTS crm_strikes (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL,
+    kind text NOT NULL,
+    period text NOT NULL,
+    reason text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    removed_at timestamptz,
+    removed_by text,
+    UNIQUE (user_id, kind, period)
+  )`,
   // One-time data changes: each runs once, recorded by id here.
   `CREATE TABLE IF NOT EXISTS crm_migrations (
     id text PRIMARY KEY,

@@ -688,6 +688,18 @@ from each browser asks for microphone permission. The browser never chooses
 the number to dial: it sends a lead id, and the voice route looks the number
 up in the CRM database.
 
+**KPIs and strikes** (owner, Nov 24 2026; `src/lib/crm/kpis.ts`, tab "🎯
+KPIs", `/api/crm/kpis`). Applies to active team members with dial access
+(not the owner), from Nov 25 2026 on, and not on the day they join:
+75 dials every weekday (Mon–Fri ET, every dial counts) and ≥30% yearly plans
+(Starter Yearly or Builder Yearly) over the last 10 closes, checked per
+finished week with a close in it. Each miss = 1 strike (`crm_strikes`,
+unique per user/kind/period so never given twice; removed strikes stay
+removed). Strikes expire 30 days after given; 3 active = "fired" flag (the
+owner deactivates the account himself). Owner can remove (excuse), restore,
+or add strikes. Members see only their own card. `giveDueStrikes` runs from
+the board refresh (at most every 10 min) and the KPI page.
+
 **Opt-in limit per IP** (owner, Nov 24 2026). `/api/free-course-lead` accepts
 at most 3 opt-ins per IP per hour (`allowOptInFromIp`, table
 `crm_optin_ips`; IP from Vercel's x-forwarded-for). A 4th returns 429 and

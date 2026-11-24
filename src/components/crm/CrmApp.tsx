@@ -33,13 +33,14 @@ import Affiliates from "./Affiliates";
 import Content from "./Content";
 import Team from "./Team";
 import TeamPay from "./TeamPay";
+import Kpis from "./Kpis";
 import MyPay from "./MyPay";
 import { crmFetch } from "./api";
 import { armChime, playChime, soundSetting } from "./chime";
 import { useDialer } from "./useDialer";
 
 // Screens that load their own data (everything except the lead boards).
-const PAGES = ["dashboard", "leaderboard", "analytics", "pay", "team", "affiliates", "content", "mypay"] as const;
+const PAGES = ["dashboard", "leaderboard", "kpis", "analytics", "pay", "team", "affiliates", "content", "mypay"] as const;
 type Page = (typeof PAGES)[number];
 type View = Page | SourceId;
 const isPage = (view: View): view is Page => (PAGES as readonly string[]).includes(view);
@@ -487,6 +488,11 @@ export default function CrmApp({
           <button type="button" className={tab(view === "leaderboard")} onClick={() => go("leaderboard")}>
             🏆 Leaderboard
           </button>
+          {user.role === "owner" || user.access.dial ? (
+            <button type="button" className={tab(view === "kpis")} onClick={() => go("kpis")}>
+              🎯 KPIs
+            </button>
+          ) : null}
           {user.access.applications
             ? OPT_IN_SOURCES.map((src) => (
                 <button key={src} type="button" className={tab(view === src)} onClick={() => go(src)}>
@@ -562,6 +568,10 @@ export default function CrmApp({
       ) : view === "leaderboard" ? (
         <main className="flex-1 overflow-y-auto bg-background-elevated/40">
           <Leaderboard me={user.id} onError={report} />
+        </main>
+      ) : view === "kpis" ? (
+        <main className="flex-1 overflow-y-auto bg-background-elevated/40">
+          <Kpis isOwner={user.role === "owner"} onError={report} />
         </main>
       ) : view === "mypay" && user.role === "member" ? (
         <main className="flex-1 overflow-y-auto bg-background-elevated/40">
