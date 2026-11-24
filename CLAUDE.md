@@ -688,6 +688,13 @@ from each browser asks for microphone permission. The browser never chooses
 the number to dial: it sends a lead id, and the voice route looks the number
 up in the CRM database.
 
+**Opt-in limit per IP** (owner, Nov 24 2026). `/api/free-course-lead` accepts
+at most 3 opt-ins per IP per hour (`allowOptInFromIp`, table
+`crm_optin_ips`; IP from Vercel's x-forwarded-for). A 4th returns 429 and
+is not saved, posted to Slack/Discord, or reported to Meta/TikTok; the form
+says "Too many sign-ups from this connection". No per-phone limit (owner's
+call). If the check errors, the opt-in goes through.
+
 **No-answer claims expire** (owner's request Nov 23 2026). A claimed lead in
 No answer 1/2/3 is unclaimed after 8 hours (`releaseStaleNoAnswerClaims` in
 `leads.ts`, run from `listLeads` at most once a minute). The clock is the

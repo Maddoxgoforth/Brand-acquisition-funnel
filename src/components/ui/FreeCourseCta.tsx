@@ -61,7 +61,7 @@ export default function FreeCourseCta({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<
-    "idle" | "submitting" | "success" | "error"
+    "idle" | "submitting" | "success" | "error" | "limited"
   >("idle");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -108,6 +108,10 @@ export default function FreeCourseCta({
         }),
       });
 
+      if (res.status === 429) {
+        setStatus("limited");
+        return;
+      }
       if (!res.ok) throw new Error("Request failed");
       // Same event id as the server's Conversions API event: Meta keeps one.
       if (reportLead) {
@@ -244,6 +248,11 @@ export default function FreeCourseCta({
                 {status === "error" ? (
                   <p className="text-sm text-danger">
                     Something went wrong. Try again.
+                  </p>
+                ) : null}
+                {status === "limited" ? (
+                  <p className="text-sm text-danger">
+                    Too many sign-ups from this connection. Please try again in an hour.
                   </p>
                 ) : null}
 

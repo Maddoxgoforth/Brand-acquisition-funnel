@@ -199,6 +199,16 @@ const SCHEMA = [
   // Their calls to the Twilio number are rejected and the CRM won't dial them.
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS blocked_at timestamptz`,
   `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS blocked_by_name text`,
+  // Opt-in limit per IP (owner, Nov 24 2026): at most 3 accepted opt-ins per
+  // IP address per hour, against bots flooding the form. Rows older than a
+  // day are cleared as new ones come in.
+  `CREATE TABLE IF NOT EXISTS crm_optin_ips (
+    id bigserial PRIMARY KEY,
+    ip text NOT NULL,
+    allowed boolean NOT NULL DEFAULT false,
+    created_at timestamptz NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS crm_optin_ips_ip_idx ON crm_optin_ips (ip, created_at DESC)`,
   // One-time data changes: each runs once, recorded by id here.
   `CREATE TABLE IF NOT EXISTS crm_migrations (
     id text PRIMARY KEY,

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { CALL_QUESTION, isMinor, qualifiesForAds } from "@/lib/crm/constants";
 import { attributeLeads } from "@/lib/crm/affiliates";
-import { addLeads, recordSiteEvent } from "@/lib/crm/leads";
+import { addLeads, allowOptInFromIp, recordSiteEvent } from "@/lib/crm/leads";
 import { requestContext, sendMetaEvent } from "@/lib/meta";
 import { sendTikTokEvent } from "@/lib/tiktok";
 
@@ -183,6 +183,19 @@ export async function POST(request: Request) {
   const answers = pickStrings(body.answers, undefined, 300);
   const affiliate = typeof body.affiliate === "string" ? body.affiliate.trim().toLowerCase().slice(0, 40) : "";
   const { ip, userAgent } = requestContext(request);
+  // Max 3 opt-ins per IP per hour (owner, Nov 24 2026). A blocked attempt is
+  // not saved, not posted to Slack/Discord and not reported to Meta/TikTok.
+  // If the check itself fails, the opt-in goes through.
+  const allowed = await allowOptInFromIp(ip).catch((e) => {
+    console.error("Opt-in IP limit check failed:", e);
+    return true;
+  });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many sign-ups from this connection. Please try again in an hour." },
+      { status: 429 }
+    );
+  }
   const attribution: Record<string, string> = {
     ...pickStrings(body.attribution, ATTRIBUTION_KEYS),
     ...(ip ? { ip } : {}),

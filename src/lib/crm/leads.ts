@@ -926,6 +926,29 @@ function funnel(dialed: number, answered: number, closed: number, base: number) 
 // Closed during the range. Conversion = closed / dialed.
 // Page tracking: one row per visitor per step, at most once per hour so
 // refreshes don't pile up rows.
+export const OPT_INS_PER_IP_PER_HOUR = 3;
+
+// Records an opt-in attempt from this IP and says whether it may go through:
+// only the first 3 accepted opt-ins per IP in the last hour do. Blocked
+// attempts are kept (allowed = false) but don't count toward the limit, so a
+// real person behind a shared IP gets back in an hour after their 3rd.
+export async function allowOptInFromIp(ip: string): Promise<boolean> {
+  if (!ip) return true;
+  const [row] = await query<{ allowed: boolean }>(
+    `WITH prior AS (
+       SELECT count(*)::int AS n FROM crm_optin_ips
+       WHERE ip = $1 AND allowed AND created_at > now() - interval '1 hour'
+     )
+     INSERT INTO crm_optin_ips (ip, allowed)
+     SELECT $1, n < $2 FROM prior RETURNING allowed`,
+    [ip.slice(0, 100), OPT_INS_PER_IP_PER_HOUR]
+  );
+  if (Math.random() < 0.05) {
+    await query(`DELETE FROM crm_optin_ips WHERE created_at < now() - interval '1 day'`).catch(() => {});
+  }
+  return row?.allowed ?? true;
+}
+
 export async function recordSiteEvent(
   visitorId: string,
   funnelId: string,
