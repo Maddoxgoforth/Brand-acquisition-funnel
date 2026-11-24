@@ -3,7 +3,8 @@ import "server-only";
 import { query } from "./db";
 
 // Closer KPIs and strikes (owner, Nov 24 2026).
-//  - Daily: 75 dials every weekday (Mon–Fri, Eastern time). Missing it = 1 strike.
+//  - Daily: 75 dials every day, weekends included (Eastern time; owner,
+//    Nov 24 2026). Missing it = 1 strike.
 //  - Plan mix: at least 30% yearly plans (Starter Yearly or Builder Yearly)
 //    over each closer's last 10 closes. Checked when a week ends (Sunday,
 //    Eastern) if they closed something that week; under 30% = 1 strike.
@@ -55,10 +56,8 @@ const addDays = (date: string, n: number) => {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 };
-const isWorkday = (date: string) => {
-  const dow = new Date(`${date}T12:00:00Z`).getUTCDay();
-  return dow >= 1 && dow <= 5;
-};
+// Every day is a dial day, weekends included (owner, Nov 24 2026).
+const isWorkday = (date: string) => date.length === 10;
 const mondayOf = (date: string) => {
   const dow = new Date(`${date}T12:00:00Z`).getUTCDay();
   return addDays(date, -((dow + 6) % 7));
@@ -77,12 +76,11 @@ export async function giveDueStrikes(force = false) {
   const today = etToday();
   if (today <= KPI.start) return;
 
-  // Missed dial days: every weekday from the start (or the day they joined)
+  // Missed dial days: every day from the start (or the day they joined)
   // through yesterday with fewer than 75 dials.
   await query(
     `WITH days AS (
        SELECT d::date AS d FROM generate_series($1::date, $2::date - 1, interval '1 day') d
-       WHERE extract(isodow FROM d) <= 5
      ), people AS (
        SELECT id, (created_at AT TIME ZONE '${TZ}')::date AS joined
        FROM crm_users WHERE status = 'active' AND can_dial
