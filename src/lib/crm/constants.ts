@@ -683,18 +683,16 @@ export function busyWithSomeoneElse(lead: Pick<Lead, "liveCall">, actorId: strin
 // 2026), so older and newer answers stay together.
 export const CALL_QUESTION = "Can we call you in the next 5 minutes?";
 
-// Owner, Nov 22 2026: an ad-funnel opt-in is reported to Meta/TikTok as a
-// Lead when they're 16+ (job or not: 16-17s in school were buying too) AND
-// said Yes to committing to the quiz AND Yes to the 5-minute call question.
-// Under-16s and everyone else are still saved and called, just not reported.
-// Replaces the Nov 17 "16+ with a job" rule.
+// Owner, Nov 24 2026: every ad-funnel opt-in aged 16+ is reported to
+// Meta/TikTok as a Lead, whatever they answered to committing to the quiz or
+// the call question. The stricter Nov 17/22 rules left TikTok with 1-2 leads a
+// day, too few to optimize on (cost per click tripled). Under-16s are still
+// saved and called, just not reported.
 const TOO_YOUNG = ["Under 16", "Under 18"]; // "Under 18" = old quiz, can't tell 16-17 apart
 
 export function qualifiesForAds(answers: Record<string, string> | undefined) {
   const age = answers?.["Age"] ?? "";
-  const committed = answers?.["Committed to the quiz"] === "Yes";
-  const callNow = answers?.[CALL_QUESTION] === "Yes";
-  return committed && callNow && Boolean(age) && !TOO_YOUNG.includes(age);
+  return Boolean(age) && !TOO_YOUNG.includes(age);
 }
 
 // 16-17: still reported, but with no email/phone attached (minor's data).
