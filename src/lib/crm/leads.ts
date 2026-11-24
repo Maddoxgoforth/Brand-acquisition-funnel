@@ -1562,3 +1562,22 @@ export async function isNumberBlocked(e164: string): Promise<boolean> {
   const rows = await query(`SELECT 1 FROM crm_leads WHERE phone_e164 = $1 AND blocked_at IS NOT NULL LIMIT 1`, [e164]);
   return rows.length > 0;
 }
+
+// A CRM call's recording is ready (Twilio recording callback). `callSid` is
+// the dialer's call, saved on the "call" event by recordCall.
+export async function attachCallRecording(callSid: string, recordingSid: string, seconds: number) {
+  await query(
+    `UPDATE crm_events SET data = data || jsonb_build_object('recordingSid', $2::text, 'recordingSeconds', $3::text)
+     WHERE type = 'call' AND data->>'callSid' = $1`,
+    [callSid, recordingSid, String(seconds)]
+  );
+}
+
+// The recording on one call in a lead's history, if any.
+export async function callRecordingSid(leadId: string, eventId: number): Promise<string | null> {
+  const rows = await query<{ sid: string | null }>(
+    `SELECT data->>'recordingSid' AS sid FROM crm_events WHERE id = $2 AND lead_id = $1 AND type = 'call'`,
+    [leadId, eventId]
+  );
+  return rows[0]?.sid ?? null;
+}

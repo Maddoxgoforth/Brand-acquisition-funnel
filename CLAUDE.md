@@ -719,6 +719,14 @@ panel (PATCH `{ blocked }` → `setBlocked`) sets `crm_leads.blocked_at` /
 blocked number get `<Reject reason="busy"/>` (no ring, alert or voicemail);
 the voice route, dialer and Call buttons refuse to dial them. Card shows
 "🚫 Blocked"; Unblock in the same spot.
+
+**Call recordings (owner, Nov 23 2026):** the voice route's `<Dial>` has
+`record="record-from-answer-dual"`; Twilio's recording callback
+(`/api/crm/twilio/recording`, CallSid = the dialer's call) saves
+`recordingSid` / `recordingSeconds` on that "call" event. `CallEntry` shows a
+player that streams `/api/crm/leads/[id]/calls/[eventId]/recording` (proxied
+from Twilio with account credentials). No automated "this call may be
+recorded" message (owner's call); callers say it themselves.
 Alerts (`src/lib/crm/notify.ts`): "📞 We have a missed call from "Name"
 (phone)" and, if they leave one, a voicemail alert, posted to
 `SLACK_MISSED_CALL_WEBHOOK_URL` (Slack incoming webhook) and

@@ -73,8 +73,13 @@ export async function POST(request: Request) {
     // Twilio reports when the lead picks up and when the call ends, so the
     // CRM can show who's on the phone with them (see call-status).
     const statusUrl = escapeXml(callStatusUrl(request));
+    // Every answered call is recorded (both sides, owner Nov 23 2026); the
+    // recording is attached to this call in the lead's history (../recording).
+    const recordingUrl = escapeXml(callStatusUrl(request).replace(/call-status$/, "recording"));
     return twiml(
-      `<Dial callerId="${escapeXml(process.env.TWILIO_PHONE_NUMBER!)}" answerOnBridge="true">` +
+      `<Dial callerId="${escapeXml(process.env.TWILIO_PHONE_NUMBER!)}" answerOnBridge="true" ` +
+        `record="record-from-answer-dual" recordingStatusCallback="${recordingUrl}" ` +
+        `recordingStatusCallbackEvent="completed" recordingStatusCallbackMethod="POST">` +
         `<Number statusCallbackEvent="answered completed" statusCallback="${statusUrl}" statusCallbackMethod="POST">` +
         `${escapeXml(lead.phoneE164)}</Number></Dial>`
     );
