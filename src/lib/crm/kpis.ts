@@ -3,7 +3,7 @@ import "server-only";
 import { query } from "./db";
 
 // Closer KPIs and strikes (owner, Nov 24 2026).
-//  - Daily: 75 different people dialed every day, weekends included (Eastern
+//  - Daily: 50 different people dialed every day, weekends included (Eastern
 //    time; owner, Nov 24 2026). Missing it = 1 strike.
 //  - Plan mix: at least 30% yearly plans (Starter Yearly or Builder Yearly)
 //    over each closer's last 10 closes. Checked when a week ends (Sunday,
@@ -15,7 +15,7 @@ import { query } from "./db";
 // owner). The owner can remove a strike (excused day) or add one by hand.
 export const KPI = {
   start: "2026-11-25",
-  dialsPerDay: 75,
+  dialsPerDay: 50,
   yearlyShare: 0.3,
   mixWindow: 10,
   strikeDays: 30,

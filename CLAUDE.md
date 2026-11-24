@@ -691,7 +691,7 @@ up in the CRM database.
 **KPIs and strikes** (owner, Nov 24 2026; `src/lib/crm/kpis.ts`, tab "🎯
 KPIs", `/api/crm/kpis`). Applies to active team members with dial access
 (not the owner), from Nov 25 2026 on, and not on the day they join:
-75 different people dialed every day incl. weekends (ET; same person/phone twice = 1) and ≥30% yearly plans
+50 different people dialed every day incl. weekends (ET; same person/phone twice = 1) and ≥30% yearly plans
 (Starter Yearly or Builder Yearly) over the last 10 closes, checked per
 finished week with a close in it. Each miss = 1 strike (`crm_strikes`,
 unique per user/kind/period so never given twice; removed strikes stay
