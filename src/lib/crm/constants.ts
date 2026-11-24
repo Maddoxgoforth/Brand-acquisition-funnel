@@ -201,9 +201,36 @@ export type Lead = {
   blockedByName: string | null;
   // The affiliate whose link brought this lead in (organic opt-ins only).
   affiliateName: string | null;
+  // Customers board (upsells after the Base44 sale): the column, when it
+  // moves itself to Check-in next (7 days after the sale, or 14 days after
+  // Not interested), and when it last changed column. null = not a customer.
+  customerStatus: CustomerStatusId | null;
+  customerNextAt: string | null;
+  customerMovedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
+
+// Customers board (owner, Nov 24 2026). A lead lands in "Closed · Base44"
+// when it's closed; 7 days later it moves itself to Check-in (Slack + Discord
+// ping) so a closer calls to upsell the mid- or high-ticket program. Not
+// interested comes back to Check-in 14 days later.
+export const CUSTOMER_STATUSES = [
+  { id: "base44", label: "Closed · Base44", hint: "Bought Base44. Check-in in 7 days" },
+  { id: "checkin", label: "Check-in", hint: "Call now: 7-day check-in script" },
+  { id: "no_answer", label: "No answer", hint: "Called, didn't pick up. Try again" },
+  { id: "mid_call", label: "Mid-ticket call booked", hint: "Strategy call booked, mid-ticket fit" },
+  { id: "high_call", label: "High-ticket call booked", hint: "Strategy call booked, high-ticket fit" },
+  { id: "mid_closed", label: "Mid-ticket closed", hint: "Bought group coaching" },
+  { id: "high_closed", label: "High-ticket closed", hint: "Bought 1-on-1 mentorship" },
+  { id: "not_interested", label: "Not interested", hint: "Back to Check-in in 14 days" },
+] as const;
+export type CustomerStatusId = (typeof CUSTOMER_STATUSES)[number]["id"];
+export function isCustomerStatus(value: unknown): value is CustomerStatusId {
+  return CUSTOMER_STATUSES.some((s) => s.id === value);
+}
+export const customerStatusLabel = (id: string | undefined) =>
+  CUSTOMER_STATUSES.find((s) => s.id === id)?.label ?? id ?? "";
 
 // Who made a change: "owner", a team member's account id, or "website" /
 // "webhook" for leads that arrived on their own.
@@ -211,7 +238,7 @@ export type Actor = { id: string; name: string };
 
 export type LeadEvent = {
   id: number;
-  type: "status" | "call" | "created" | "appointment" | "reoptin" | "claim" | "close" | "inbound" | "block";
+  type: "status" | "call" | "created" | "appointment" | "reoptin" | "claim" | "close" | "inbound" | "block" | "customer";
   // For calls: callSid and, once added, notes.
   data: Record<string, string>;
   actorName: string | null;

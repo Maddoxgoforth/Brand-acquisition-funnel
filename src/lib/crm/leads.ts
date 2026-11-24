@@ -6,12 +6,14 @@ import { sendMetaEvent } from "@/lib/meta";
 import { sendTikTokEvent } from "@/lib/tiktok";
 
 import { query } from "./db";
+import { moveDueCheckins } from "./customers";
 import { giveDueStrikes } from "./kpis";
 import {
   ANSWERED_STATUS_IDS,
   CLOSE_PLANS,
   TIMED_STATUSES,
   isClosePlan,
+  isCustomerStatus,
   type ClosePlan,
   FUNNEL_STEPS,
   OPT_IN_SOURCES,
@@ -39,7 +41,7 @@ import {
   type Revenue,
 } from "./constants";
 
-type LeadRow = {
+export type LeadRow = {
   id: string;
   source: SourceId;
   name: string;
@@ -75,6 +77,9 @@ type LeadRow = {
   blocked_at?: string | Date | null;
   blocked_by_name?: string | null;
   affiliate_name?: string | null;
+  cust_status?: string | null;
+  cust_next_at?: string | Date | null;
+  cust_moved_at?: string | Date | null;
   created_at: string | Date;
   updated_at: string | Date;
 };
@@ -117,6 +122,8 @@ function liveCallOf(row: LeadRow): LiveCall | null {
   return { byId: row.live_call_by_id, byName: row.live_call_by_name || "Someone", state, since: since.toISOString() };
 }
 
+export const leadFromRow = (row: LeadRow) => toLead(row);
+
 function toLead(row: LeadRow): Lead {
   const rawExtra =
     typeof row.extra === "string" ? JSON.parse(row.extra) : row.extra ?? {};
@@ -155,6 +162,9 @@ function toLead(row: LeadRow): Lead {
     blockedAt: iso(row.blocked_at ?? null),
     blockedByName: row.blocked_by_name ?? null,
     affiliateName: row.affiliate_name ?? null,
+    customerStatus: isCustomerStatus(row.cust_status) ? row.cust_status : null,
+    customerNextAt: iso(row.cust_next_at ?? null),
+    customerMovedAt: iso(row.cust_moved_at ?? null),
     createdAt: iso(row.created_at)!,
     updatedAt: iso(row.updated_at)!,
   };
@@ -271,6 +281,7 @@ export async function releaseStaleNoAnswerClaims(): Promise<number> {
 export async function listLeads(source: SourceId): Promise<Lead[]> {
   await releaseStaleNoAnswerClaims().catch((e) => console.error("no-answer release failed", e));
   await giveDueStrikes().catch((e) => console.error("KPI strikes failed", e));
+  await moveDueCheckins().catch((e) => console.error("Customer check-ins failed", e));
   // New applications show newest first (call them while they're warm). The
   // hand-filled dial lists show in the order the leads were added, so the
   // first ones you put in are the first ones to call.
@@ -611,7 +622,10 @@ export async function updateLead(
          close_amount = CASE WHEN $12 THEN NULL ELSE close_amount END,
          closed_at = CASE WHEN $12 THEN NULL ELSE closed_at END,
          closed_by_id = CASE WHEN $12 THEN NULL ELSE closed_by_id END,
-         closed_by_name = CASE WHEN $12 THEN NULL ELSE closed_by_name END
+         closed_by_name = CASE WHEN $12 THEN NULL ELSE closed_by_name END,
+         cust_next_at = CASE WHEN $12 AND cust_status = 'base44' THEN NULL ELSE cust_next_at END,
+         cust_moved_at = CASE WHEN $12 AND cust_status = 'base44' THEN NULL ELSE cust_moved_at END,
+         cust_status = CASE WHEN $12 AND cust_status = 'base44' THEN NULL ELSE cust_status END
      WHERE id = $1 RETURNING *`,
     [
       id,
@@ -678,9 +692,14 @@ export async function closeLead(
      SET status = 'closed', close_plan = $2, close_amount = $3, closed_at = now(),
          closed_by_id = $4, closed_by_name = $5, payment_proof_id = $6,
          appointment_at = NULL, appointment_tz = NULL, updated_at = now(),
-         claimed_by_id = coalesce(claimed_by_id, $4),
-         claimed_by_name = CASE WHEN claimed_by_id IS NULL THEN $5 ELSE claimed_by_name END,
-         claimed_at = coalesce(claimed_at, now())
+         -- The closer owns the customer from here on (Customers board
+         -- upsells included; owner, Nov 24 2026).
+         claimed_by_id = $4,
+         claimed_by_name = $5,
+         claimed_at = CASE WHEN claimed_by_id = $4 THEN coalesce(claimed_at, now()) ELSE now() END,
+         cust_next_at = CASE WHEN cust_status IS NULL THEN now() + interval '7 days' ELSE cust_next_at END,
+         cust_moved_at = CASE WHEN cust_status IS NULL THEN now() ELSE cust_moved_at END,
+         cust_status = coalesce(cust_status, 'base44')
      WHERE id = $1 RETURNING *`,
     [id, plan, amount, actor.id, actor.name, saved.id]
   );

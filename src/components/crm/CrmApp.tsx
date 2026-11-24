@@ -13,8 +13,10 @@ import { logout } from "@/app/crm/actions";
 import {
   OPT_IN_SOURCES,
   SOURCES,
+  busyWithSomeoneElse,
   classifyField,
   type Access,
+  type CustomerStatusId,
   type Lead,
   type LeadEvent,
   type SourceId,
@@ -33,6 +35,7 @@ import Affiliates from "./Affiliates";
 import Content from "./Content";
 import Team from "./Team";
 import TeamPay from "./TeamPay";
+import Customers from "./Customers";
 import Kpis from "./Kpis";
 import MyPay from "./MyPay";
 import { crmFetch } from "./api";
@@ -40,7 +43,7 @@ import { armChime, playChime, soundSetting } from "./chime";
 import { useDialer } from "./useDialer";
 
 // Screens that load their own data (everything except the lead boards).
-const PAGES = ["dashboard", "leaderboard", "kpis", "analytics", "pay", "team", "affiliates", "content", "mypay"] as const;
+const PAGES = ["dashboard", "leaderboard", "kpis", "customers", "analytics", "pay", "team", "affiliates", "content", "mypay"] as const;
 type Page = (typeof PAGES)[number];
 type View = Page | SourceId;
 const isPage = (view: View): view is Page => (PAGES as readonly string[]).includes(view);
@@ -59,6 +62,10 @@ function hasMisfiledContact(lead: Lead) {
 }
 
 const POLL_MS = 10_000;
+
+// The 7-day check-in script for the Customers board (a Claude doc; owner
+// shares it with the team).
+const CHECKIN_SCRIPT_URL = "https://claude.ai/artifact/X7PJBaRxTUBexdVLfCQfyr";
 
 const tab = (active: boolean) =>
   `rounded-full px-4 py-2 text-sm font-bold transition-colors ${
@@ -112,7 +119,11 @@ export default function CrmApp({
 
   const source = isPage(view) ? null : view;
   const leads = source ? cache[source] : undefined;
-  const selected = leads?.find((l) => l.id === selectedId) ?? null;
+  // Customers board (upsells after the Base44 sale): its own list, since its
+  // leads come from every opt-in list.
+  const [customers, setCustomers] = useState<Lead[] | null>(null);
+  const selected =
+    (view === "customers" ? customers : leads)?.find((l) => l.id === selectedId) ?? null;
 
   const report = useCallback((e: unknown) => {
     setError(e instanceof Error ? e.message : "Something went wrong.");
@@ -123,7 +134,42 @@ export default function CrmApp({
       ...c,
       [lead.source]: c[lead.source]?.map((l) => (l.id === lead.id ? lead : l)),
     }));
+    setCustomers((list) => list?.map((l) => (l.id === lead.id ? lead : l)) ?? list);
   }, []);
+
+  // Load the Customers board and refresh it every 10 seconds while it's open.
+  useEffect(() => {
+    if (view !== "customers") return;
+    let stopped = false;
+    const load = () =>
+      crmFetch<{ leads: Lead[] }>("/api/crm/customers")
+        .then((data) => !stopped && setCustomers(data.leads))
+        .catch((e) => !stopped && report(e));
+    load();
+    const timer = setInterval(() => !document.hidden && load(), 10_000);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, [view, report]);
+
+  async function moveCustomer(lead: Lead, status: CustomerStatusId) {
+    if (busyWithSomeoneElse(lead, user.id)) {
+      report(new Error(`${lead.liveCall!.byName} is on a call with ${lead.name || "this customer"} right now.`));
+      return;
+    }
+    setCustomers((list) => list?.map((l) => (l.id === lead.id ? { ...l, customerStatus: status } : l)) ?? list);
+    try {
+      const data = await crmFetch<{ lead: Lead }>("/api/crm/customers", {
+        method: "POST",
+        body: { id: lead.id, status },
+      });
+      putLead(data.lead);
+    } catch (e) {
+      setCustomers((list) => list?.map((l) => (l.id === lead.id ? lead : l)) ?? list);
+      report(e);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -488,6 +534,11 @@ export default function CrmApp({
           <button type="button" className={tab(view === "leaderboard")} onClick={() => go("leaderboard")}>
             🏆 Leaderboard
           </button>
+          {user.access.applications || user.access.dial ? (
+            <button type="button" className={tab(view === "customers")} onClick={() => go("customers")}>
+              ⭐ Customers
+            </button>
+          ) : null}
           {user.role === "owner" || user.access.dial ? (
             <button type="button" className={tab(view === "kpis")} onClick={() => go("kpis")}>
               🎯 KPIs
@@ -568,6 +619,47 @@ export default function CrmApp({
       ) : view === "leaderboard" ? (
         <main className="flex-1 overflow-y-auto bg-background-elevated/40">
           <Leaderboard me={user.id} onError={report} />
+        </main>
+      ) : view === "customers" ? (
+        <main className="flex min-h-0 flex-1 flex-col">
+          <div className="flex flex-wrap items-center gap-3 px-6 py-4">
+            <p className="text-sm text-muted">
+              {customers ? `${customers.length} customers. ` : ""}
+              Everyone who bought Base44. They move to Check-in 7 days after the sale; call them with the{" "}
+              <a href={CHECKIN_SCRIPT_URL} target="_blank" rel="noopener noreferrer" className="font-bold text-accent hover:underline">
+                check-in script
+              </a>
+              .
+            </p>
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setOnlyMine((v) => !v)}
+                className={`rounded-full border px-4 py-2 text-sm font-bold ${
+                  onlyMine ? "border-accent bg-accent text-white" : "border-border hover:border-accent"
+                }`}
+              >
+                My customers
+              </button>
+              <input
+                type="search"
+                placeholder="Search name, phone, email…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-64 rounded-full border border-border px-4 py-2 text-sm outline-none focus:border-accent"
+              />
+            </div>
+          </div>
+          <Customers
+            leads={customers}
+            me={user.id}
+            canCall={canCall}
+            onlyMine={onlyMine}
+            search={search}
+            onOpen={(lead) => setSelectedId(lead.id)}
+            onMove={moveCustomer}
+            onCall={callLead}
+          />
         </main>
       ) : view === "kpis" ? (
         <main className="flex-1 overflow-y-auto bg-background-elevated/40">

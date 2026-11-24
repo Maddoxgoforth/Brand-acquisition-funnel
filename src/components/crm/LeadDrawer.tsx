@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import {
   SOURCES,
   STATUSES,
+  customerStatusLabel,
   formatAppointment,
   planLabel,
   type Lead,
@@ -51,6 +52,14 @@ function describe(event: LeadEvent) {
     if (event.data.result === "answered") return "Answered their call back";
     if (event.data.result === "voicemail") return `They left a ${event.data.seconds ?? ""}s voicemail`;
     return "📞 They called back and nobody answered";
+  }
+  if (event.type === "customer") {
+    if (event.data.auto) {
+      return `📞 Moved to ${customerStatusLabel(event.data.to)} automatically (${
+        event.data.from === "not_interested" ? "14 days after Not interested" : "7 days after the sale"
+      })`;
+    }
+    return `Customers board: ${customerStatusLabel(event.data.from)} → ${customerStatusLabel(event.data.to)}`;
   }
   if (event.type === "block") {
     return event.data.action === "unblocked" ? "Unblocked their number" : "🚫 Blocked their number";

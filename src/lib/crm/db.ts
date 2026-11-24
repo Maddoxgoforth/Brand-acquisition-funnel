@@ -253,6 +253,32 @@ const SCHEMA = [
      updated_at = now()
    WHERE source IN ('dial_free_course', 'dial_high_ticket')
      AND EXISTS (SELECT 1 FROM once)`,
+  // Customers board (owner, Nov 24 2026; see customers.ts): the column, when
+  // it moves itself to Check-in next, and when it last changed column.
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS cust_status text`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS cust_next_at timestamptz`,
+  `ALTER TABLE crm_leads ADD COLUMN IF NOT EXISTS cust_moved_at timestamptz`,
+  `CREATE INDEX IF NOT EXISTS crm_leads_cust_idx ON crm_leads (cust_status, cust_next_at) WHERE cust_status IS NOT NULL`,
+  // Every customer closed before the board existed joins it once: closed
+  // within the last 7 days -> Closed · Base44 (check-in 7 days after the
+  // sale); older -> straight to Check-in, quietly (no Slack/Discord ping for
+  // the backlog). The closer becomes the claimer, as for new closes.
+  `WITH once AS (
+     INSERT INTO crm_migrations (id) VALUES ('2026-11-24-customers-board')
+     ON CONFLICT (id) DO NOTHING RETURNING id
+   )
+   UPDATE crm_leads SET
+     cust_status = CASE WHEN coalesce(closed_at, updated_at) > now() - interval '7 days'
+                        THEN 'base44' ELSE 'checkin' END,
+     cust_next_at = CASE WHEN coalesce(closed_at, updated_at) > now() - interval '7 days'
+                         THEN coalesce(closed_at, updated_at) + interval '7 days' END,
+     cust_moved_at = now(),
+     claimed_by_id = coalesce(closed_by_id, claimed_by_id),
+     claimed_by_name = CASE WHEN closed_by_id IS NOT NULL THEN closed_by_name ELSE claimed_by_name END,
+     claimed_at = CASE WHEN closed_by_id IS NOT NULL AND closed_by_id IS DISTINCT FROM claimed_by_id
+                       THEN now() ELSE claimed_at END
+   WHERE status = 'closed' AND cust_status IS NULL
+     AND EXISTS (SELECT 1 FROM once)`,
   // Affiliates (UGC creators who send people to the organic opt-in page with
   // their own link, owner's request Nov 15 2026). Separate accounts from the
   // team; see affiliates.ts. `code` is set when the owner approves them.

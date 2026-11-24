@@ -688,6 +688,23 @@ from each browser asks for microphone permission. The browser never chooses
 the number to dial: it sends a lead id, and the voice route looks the number
 up in the CRM database.
 
+**⭐ Customers board** (owner, Nov 24 2026; `src/lib/crm/customers.ts`,
+`Customers.tsx`, `GET/POST /api/crm/customers`). Upsells after the Base44
+sale. `closeLead` puts every closed lead in `crm_leads.cust_status = 'base44'`
+("Closed · Base44") with `cust_next_at` = 7 days out, and makes the closer
+the claimer (they own the customer). `moveDueCheckins` (from `listLeads` /
+`listCustomers`, at most once a minute, SKIP LOCKED) moves due customers to
+`checkin` and posts one Slack + Discord message (`CUSTOMER_SLACK_WEBHOOK_URL`
+/ `CUSTOMER_DISCORD_WEBHOOK_URL`, else the free-course opt-in webhooks).
+Columns (`CUSTOMER_STATUSES`): Closed · Base44, Check-in, No answer,
+Mid-ticket call booked, High-ticket call booked, Mid-ticket closed,
+High-ticket closed, Not interested (→ back to Check-in 14 days later). Moves
+log `customer` events. Moving a lead out of Closed drops it from the board
+only while it's still in Closed · Base44. Backfill migration
+`2026-11-24-customers-board`: closes from the last 7 days → Closed · Base44,
+older → Check-in quietly (no ping). Visible to anyone with opt-in or dial
+access. Check-in script: https://claude.ai/artifact/X7PJBaRxTUBexdVLfCQfyr
+
 **KPIs and strikes** (owner, Nov 24 2026; `src/lib/crm/kpis.ts`, tab "🎯
 KPIs", `/api/crm/kpis`). Applies to active team members with dial access
 (not the owner), from Nov 25 2026 on, and not on the day they join:
