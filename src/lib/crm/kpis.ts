@@ -3,8 +3,8 @@ import "server-only";
 import { query } from "./db";
 
 // Closer KPIs and strikes (owner, Nov 24 2026).
-//  - Daily: 75 dials every day, weekends included (Eastern time; owner,
-//    Nov 24 2026). Missing it = 1 strike.
+//  - Daily: 75 different people dialed every day, weekends included (Eastern
+//    time; owner, Nov 24 2026). Missing it = 1 strike.
 //  - Plan mix: at least 30% yearly plans (Starter Yearly or Builder Yearly)
 //    over each closer's last 10 closes. Checked when a week ends (Sunday,
 //    Eastern) if they closed something that week; under 30% = 1 strike.
@@ -23,6 +23,10 @@ export const KPI = {
 } as const;
 
 const TZ = "America/New_York";
+// A "dial" = a different person called that day (owner, Nov 24 2026): calling
+// the same person twice counts once. Same phone number on two leads = one
+// person.
+const PEOPLE_DIALED = "count(DISTINCT coalesce(l.phone_e164, e.lead_id::text))::int";
 const YEARLY_PLANS = ["yearly", "builder_yearly"];
 
 export type Strike = {
@@ -85,9 +89,9 @@ export async function giveDueStrikes(force = false) {
        SELECT id, (created_at AT TIME ZONE '${TZ}')::date AS joined
        FROM crm_users WHERE status = 'active' AND can_dial
      ), dials AS (
-       SELECT actor_id, (created_at AT TIME ZONE '${TZ}')::date AS d, count(*)::int AS n
-       FROM crm_events
-       WHERE type = 'call' AND created_at >= ($1::date)::timestamp AT TIME ZONE '${TZ}'
+       SELECT e.actor_id, (e.created_at AT TIME ZONE '${TZ}')::date AS d, ${PEOPLE_DIALED} AS n
+       FROM crm_events e LEFT JOIN crm_leads l ON l.id = e.lead_id
+       WHERE e.type = 'call' AND e.created_at >= ($1::date)::timestamp AT TIME ZONE '${TZ}'
        GROUP BY 1, 2
      )
      INSERT INTO crm_strikes (user_id, kind, period, reason)
@@ -156,10 +160,10 @@ export async function kpiReport(onlyUserId: string | null): Promise<{ rules: typ
 
   const [dials, closes, strikes] = await Promise.all([
     query<{ actor_id: string; d: string; n: number }>(
-      `SELECT actor_id, to_char((created_at AT TIME ZONE '${TZ}')::date, 'YYYY-MM-DD') AS d, count(*)::int AS n
-       FROM crm_events
-       WHERE type = 'call' AND actor_id = ANY($1::text[])
-         AND created_at >= ($2::date)::timestamp AT TIME ZONE '${TZ}'
+      `SELECT e.actor_id, to_char((e.created_at AT TIME ZONE '${TZ}')::date, 'YYYY-MM-DD') AS d, ${PEOPLE_DIALED} AS n
+       FROM crm_events e LEFT JOIN crm_leads l ON l.id = e.lead_id
+       WHERE e.type = 'call' AND e.actor_id = ANY($1::text[])
+         AND e.created_at >= ($2::date)::timestamp AT TIME ZONE '${TZ}'
        GROUP BY 1, 2`,
       [ids, yesterday < monday ? yesterday : monday]
     ),

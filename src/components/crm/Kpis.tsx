@@ -77,8 +77,8 @@ export default function Kpis({ isOwner, onError }: { isOwner: boolean; onError: 
       <div className="grid gap-3 md:grid-cols-2">
         <div className="rounded-2xl border border-border bg-background p-5">
           <p className="text-xs font-bold uppercase tracking-widest text-muted">Daily</p>
-          <p className="mt-1 text-lg font-extrabold">{r.dialsPerDay} dials every day</p>
-          <p className="text-sm text-muted">Every day including weekends, Eastern time. Every dial counts, answered or not.</p>
+          <p className="mt-1 text-lg font-extrabold">{r.dialsPerDay} different people dialed every day</p>
+          <p className="text-sm text-muted">Every day including weekends, Eastern time. Calling the same person twice counts once; answered or not doesn&apos;t matter.</p>
         </div>
         <div className="rounded-2xl border border-border bg-background p-5">
           <p className="text-xs font-bold uppercase tracking-widest text-muted">Plan mix</p>
