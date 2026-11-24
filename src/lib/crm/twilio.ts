@@ -139,3 +139,49 @@ export function escapeXml(value: string) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
+
+// Streams a Twilio recording (call or voicemail) to the CRM, fetched with the
+// account credentials so it never needs a public link. Answers HTTP Range
+// requests with 206 + Content-Range: Safari only lets you scrub/skip (and
+// otherwise shows "Live Broadcast") when the server supports byte ranges.
+export async function twilioRecordingResponse(request: Request, recordingSid: string) {
+  const account = process.env.TWILIO_ACCOUNT_SID ?? "";
+  const auth = Buffer.from(`${account}:${process.env.TWILIO_AUTH_TOKEN ?? ""}`).toString("base64");
+  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${account}/Recordings/${recordingSid}.mp3`, {
+    headers: { Authorization: `Basic ${auth}` },
+  });
+  if (!res.ok) return Response.json({ error: "Couldn't load the recording" }, { status: 502 });
+  const audio = new Uint8Array(await res.arrayBuffer());
+  const size = audio.byteLength;
+  const headers = {
+    "Content-Type": "audio/mpeg",
+    "Accept-Ranges": "bytes",
+    "Cache-Control": "private, max-age=3600",
+  };
+
+  const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get("range") ?? "");
+  if (!range || (range[1] === "" && range[2] === "")) {
+    return new Response(audio, { headers: { ...headers, "Content-Length": String(size) } });
+  }
+  let start: number;
+  let end: number;
+  if (range[1] === "") {
+    // "bytes=-500": the last 500 bytes.
+    start = Math.max(0, size - Number(range[2]));
+    end = size - 1;
+  } else {
+    start = Number(range[1]);
+    end = range[2] === "" ? size - 1 : Math.min(Number(range[2]), size - 1);
+  }
+  if (start >= size || start > end) {
+    return new Response(null, { status: 416, headers: { ...headers, "Content-Range": `bytes */${size}` } });
+  }
+  return new Response(audio.slice(start, end + 1), {
+    status: 206,
+    headers: {
+      ...headers,
+      "Content-Length": String(end - start + 1),
+      "Content-Range": `bytes ${start}-${end}/${size}`,
+    },
+  });
+}
