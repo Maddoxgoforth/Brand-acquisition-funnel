@@ -56,6 +56,9 @@ function describe(event: LeadEvent) {
     return event.data.action === "unblocked" ? "Unblocked their number" : "🚫 Blocked their number";
   }
   if (event.type === "claim") {
+    if (event.data.action === "released" && event.data.reason === "no_answer_8h") {
+      return `Unclaimed automatically after 8 hours in No answer${event.data.from ? ` (was ${event.data.from})` : ""}`;
+    }
     if (event.data.action === "released") return "Released the claim";
     if (event.data.action === "took over") return `Took over the lead from ${event.data.from ?? "a teammate"}`;
     return "Claimed the lead";

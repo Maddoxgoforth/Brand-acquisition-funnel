@@ -229,7 +229,46 @@ export function normalizeLeadInput(raw: unknown): LeadInput | null {
   };
 }
 
+// A claimed lead that has sat in a No answer column for 8 hours goes back to
+// unclaimed so anyone can call it. The clock is the latest of: when it moved
+// into its column, its last call, and when it was (re)claimed. Runs at most
+// once a minute per server, from the board's list refresh.
+const NO_ANSWER_RELEASE_HOURS = 8;
+let lastNoAnswerSweep = 0;
+
+export async function releaseStaleNoAnswerClaims(): Promise<number> {
+  if (Date.now() - lastNoAnswerSweep < 60_000) return 0;
+  lastNoAnswerSweep = Date.now();
+  const rows = await query<{ id: string }>(
+    `WITH stale AS (
+       SELECT l.id, l.claimed_by_name FROM crm_leads l
+       WHERE l.status IN ('no_answer', 'no_answer_2', 'no_answer_3')
+         AND l.claimed_by_id IS NOT NULL
+         AND greatest(
+               coalesce((SELECT max(e.created_at) FROM crm_events e
+                         WHERE e.lead_id = l.id AND e.type = 'status'), l.created_at),
+               coalesce(l.last_called_at, 'epoch'),
+               coalesce(l.claimed_at, 'epoch')
+             ) < now() - $1::int * interval '1 hour'
+     ), released AS (
+       UPDATE crm_leads l
+       SET claimed_by_id = NULL, claimed_by_name = NULL, claimed_at = NULL, updated_at = now()
+       FROM stale s WHERE l.id = s.id AND l.claimed_by_id IS NOT NULL
+       RETURNING l.id, s.claimed_by_name
+     )
+     INSERT INTO crm_events (lead_id, type, data, actor_id, actor_name)
+     SELECT id, 'claim',
+            jsonb_build_object('action', 'released', 'by', 'CRM', 'reason', 'no_answer_8h',
+                               'from', coalesce(claimed_by_name, '')),
+            'system', 'CRM'
+     FROM released RETURNING lead_id AS id`,
+    [NO_ANSWER_RELEASE_HOURS]
+  );
+  return rows.length;
+}
+
 export async function listLeads(source: SourceId): Promise<Lead[]> {
+  await releaseStaleNoAnswerClaims().catch((e) => console.error("no-answer release failed", e));
   // New applications show newest first (call them while they're warm). The
   // hand-filled dial lists show in the order the leads were added, so the
   // first ones you put in are the first ones to call.

@@ -688,6 +688,12 @@ from each browser asks for microphone permission. The browser never chooses
 the number to dial: it sends a lead id, and the voice route looks the number
 up in the CRM database.
 
+**No-answer claims expire** (owner's request Nov 23 2026). A claimed lead in
+No answer 1/2/3 is unclaimed after 8 hours (`releaseStaleNoAnswerClaims` in
+`leads.ts`, run from `listLeads` at most once a minute). The clock is the
+latest of: moving into its column, its last call, its claim. Logged as a
+"claim" event with `reason: no_answer_8h`, actor "CRM".
+
 **Calls back to the Twilio number** (`/api/crm/twilio/incoming`, owner's
 request Nov 9 2026). Every open CRM tab registers its Twilio device for
 incoming calls (token grant `incoming.allow`). When someone calls the number:
