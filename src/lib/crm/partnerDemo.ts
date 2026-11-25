@@ -81,6 +81,6 @@ export const DEMO_PAYOUT_METHOD = {
   bankName: "Chase",
   accountType: "checking" as const,
   routingLast4: "1813",
-  accountLast4: "4827",
+  accountLast4: "5713",
   updatedAt: new Date(Date.UTC(2026, 10, 1)).toISOString(),
 };
