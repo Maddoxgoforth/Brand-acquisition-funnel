@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getPartnerSession } from "@/lib/crm/partnerAuth";
 import { partnerPayouts, partnerTotals } from "@/lib/crm/partners";
 import { partnerBatches, type Batch } from "@/lib/crm/partnerBatches";
-import { payoutSummary, type PayoutSummary } from "@/lib/crm/payoutDetails";
+import { accountTypeLabel, isBusinessAccount, payoutSummary, type PayoutSummary } from "@/lib/crm/payoutDetails";
 import { savePartnerPayoutDetails } from "../actions";
 import Shell from "../Shell";
 import { Segmented, tableWrap, td, th } from "../ui";
@@ -44,8 +44,15 @@ function PayoutForm({ current, error }: { current: PayoutSummary | null; error?:
   return (
     <form action={savePartnerPayoutDetails} className="mt-4 grid gap-4 sm:grid-cols-2" autoComplete="off">
       <div className="sm:col-span-2">
+        <label className={label} htmlFor="payee">Pay to</label>
+        <select id="payee" name="payee" defaultValue={current && isBusinessAccount(current.accountType) ? "business" : "individual"} className={input}>
+          <option value="individual">Individual (personal account)</option>
+          <option value="business">Business (business account)</option>
+        </select>
+      </div>
+      <div className="sm:col-span-2">
         <label className={label} htmlFor="holderName">Name on the account</label>
-        <input id="holderName" name="holderName" required defaultValue={current?.holderName ?? ""} className={input} />
+        <input id="holderName" name="holderName" required defaultValue={current?.holderName ?? ""} placeholder="Your full name, or the business's legal name" className={input} />
       </div>
       <div>
         <label className={label} htmlFor="bankName">Bank name</label>
@@ -53,7 +60,7 @@ function PayoutForm({ current, error }: { current: PayoutSummary | null; error?:
       </div>
       <div>
         <label className={label} htmlFor="accountType">Account type</label>
-        <select id="accountType" name="accountType" defaultValue={current?.accountType ?? "checking"} className={input}>
+        <select id="accountType" name="accountType" defaultValue={current?.accountType.endsWith("savings") ? "savings" : "checking"} className={input}>
           <option value="checking">Checking</option>
           <option value="savings">Savings</option>
         </select>
@@ -134,7 +141,7 @@ export default async function PartnerPaymentsPage({ searchParams }: { searchPara
             <div className="min-w-0">
               <p className="truncate text-[15px] text-slate-950">
                 Your next payout will be sent to {method.holderName} · Bank Transfer ·{" "}
-                {method.bankName || "Bank account"} •••• {method.accountLast4}
+                {method.bankName || "Bank account"} ({accountTypeLabel(method.accountType)}) •••• {method.accountLast4}
                 {next ? ` · Next payout ${longDay(next.readyOn)}` : ""}
               </p>
               <p className="text-sm text-slate-600">Saved securely for your payouts</p>

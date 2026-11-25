@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getPartnerSession } from "@/lib/crm/partnerAuth";
-import { payoutSummary } from "@/lib/crm/payoutDetails";
+import { accountTypeLabel, payoutSummary } from "@/lib/crm/payoutDetails";
 import { changePartnerPasswordAction, savePartnerProfileAction } from "../actions";
 import Shell from "../Shell";
 
@@ -99,7 +99,7 @@ export default async function PartnerSettingsPage({ searchParams }: { searchPara
             <p className={sectionTitle}>Payout method</p>
             <p className="mt-2 text-sm font-semibold text-slate-950">
               {method
-                ? `${method.bankName || "Bank account"} · ${method.accountType === "savings" ? "Savings" : "Checking"} •••• ${method.accountLast4}`
+                ? `${method.bankName || "Bank account"} · ${accountTypeLabel(method.accountType)} •••• ${method.accountLast4}`
                 : "Not set up yet"}
             </p>
             {!method ? <p className="text-sm text-slate-600">Add your bank details to get paid.</p> : null}

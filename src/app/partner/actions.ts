@@ -43,6 +43,7 @@ export async function savePartnerPayoutDetails(formData: FormData) {
   const result = await savePayoutDetails(partner.id, {
     holderName: text(formData, "holderName"),
     bankName: text(formData, "bankName"),
+    payee: text(formData, "payee"),
     accountType: text(formData, "accountType"),
     routing: text(formData, "routing"),
     account: text(formData, "account"),

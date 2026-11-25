@@ -34,7 +34,7 @@ type PartnerRow = {
   payoutMethod: {
     holderName: string;
     bankName: string;
-    accountType: "checking" | "savings";
+    accountType: "checking" | "savings" | "business_checking" | "business_savings";
     routingLast4: string;
     accountLast4: string;
     updatedAt: string;
@@ -86,7 +86,7 @@ function PayoutMethod({ p, onError }: { p: PartnerRow; onError: (e: unknown) => 
     <div className="rounded-lg bg-background-elevated px-3 py-2 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p>
-          <span className="font-bold">Payout:</span> {m.bankName || "Bank"} · {m.accountType === "savings" ? "Savings" : "Checking"} ••••{" "}
+          <span className="font-bold">Payout:</span> {m.bankName || "Bank"} · {m.accountType.startsWith("business_") ? "Business " : ""}{m.accountType.endsWith("savings") ? (m.accountType.startsWith("business_") ? "savings" : "Savings") : m.accountType.startsWith("business_") ? "checking" : "Checking"} ••••{" "}
           {m.accountLast4} · {m.holderName}
         </p>
         <button type="button" className={pill} disabled={busy} onClick={() => (full ? setFull(null) : show())}>

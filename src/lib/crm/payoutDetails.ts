@@ -11,7 +11,15 @@ import { DEMO_PAYOUT_METHOD, isDemoId } from "./partnerDemo";
 // The partner only ever sees the last 4 digits back; only the owner can read
 // the full numbers (GET /api/crm/partners/[id]/payout-details).
 
-export type AccountType = "checking" | "savings";
+// Nov 25 2026 (owner): payouts can go to a business account too. Stored in
+// account_type as checking | savings | business_checking | business_savings.
+export type AccountType = "checking" | "savings" | "business_checking" | "business_savings";
+const ACCOUNT_TYPES: AccountType[] = ["checking", "savings", "business_checking", "business_savings"];
+export const toAccountType = (v: string): AccountType =>
+  ACCOUNT_TYPES.includes(v as AccountType) ? (v as AccountType) : "checking";
+export const isBusinessAccount = (t: AccountType) => t.startsWith("business_");
+export const accountTypeLabel = (t: AccountType) =>
+  `${isBusinessAccount(t) ? "Business " : ""}${t.endsWith("savings") ? "savings" : "checking"}`.replace(/^./, (c) => c.toUpperCase());
 
 export type PayoutSummary = {
   holderName: string;
@@ -65,7 +73,7 @@ export type SaveResult =
 
 export async function savePayoutDetails(
   partnerId: string,
-  input: { holderName: string; bankName: string; accountType: string; routing: string; account: string; accountConfirm: string }
+  input: { holderName: string; bankName: string; payee: string; accountType: string; routing: string; account: string; accountConfirm: string }
 ): Promise<SaveResult> {
   const k = key();
   if (!k) return "not_configured";
@@ -78,7 +86,8 @@ export async function savePayoutDetails(
   if (!validRouting(routing)) return "bad_routing";
   if (!/^\d{4,17}$/.test(account)) return "bad_account";
   if (account !== confirm) return "account_mismatch";
-  const accountType: AccountType = input.accountType === "savings" ? "savings" : "checking";
+  const kind = input.accountType === "savings" ? "savings" : "checking";
+  const accountType: AccountType = input.payee === "business" ? `business_${kind}` : kind;
   const secret = encrypt(JSON.stringify({ routing, account }), k);
   await query(
     `INSERT INTO crm_partner_payout_details (partner_id, holder_name, bank_name, account_type, routing_last4, account_last4, secret, updated_at)
@@ -103,7 +112,7 @@ type Row = {
 const summary = (r: Row): PayoutSummary => ({
   holderName: r.holder_name,
   bankName: r.bank_name,
-  accountType: r.account_type === "savings" ? "savings" : "checking",
+  accountType: toAccountType(r.account_type),
   routingLast4: r.routing_last4,
   accountLast4: r.account_last4,
   updatedAt: new Date(r.updated_at).toISOString(),
