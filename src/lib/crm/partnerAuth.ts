@@ -73,8 +73,10 @@ export const demoPartner = (): Partner => ({
   email: "demo@madmedia.co",
   name: "Maddox Goforth",
   status: "active",
-  subid: null,
-  linkSubid: process.env.PARTNER_OWNER_SUBID || "mad-media",
+  // Owner, Nov 25 2026: demo links look like a real partner's
+  // (subid=mad-media&sharedid=maddoxgoforth). Display only.
+  subid: "maddoxgoforth",
+  linkSubid: null,
   rates: { ...DEMO_RATES },
   createdAt: new Date(Date.UTC(2026, 9, 1)).toISOString(),
   lastLoginAt: null,
