@@ -70,7 +70,7 @@ export async function ownerSignedIn() {
 
 export const demoPartner = (): Partner => ({
   id: DEMO_ID,
-  email: "demo@madmedia.co",
+  email: process.env.PARTNER_DEMO_EMAIL || "demo@madmedia.co", // owner's email, set in Vercel (repo is public)
   name: "Maddox Goforth",
   status: "active",
   // Owner, Nov 25 2026: demo links look like a real partner's
