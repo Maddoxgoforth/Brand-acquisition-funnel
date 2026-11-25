@@ -56,11 +56,22 @@ export async function demoEventRows(): Promise<DemoEventRow[]> {
     out.push({ kind: "purchase", plan_key: plan, country: "US", commission: rate(plan), occurred_at: at, order_ref: `crm-${c.id}` });
   }
   // Owner, Nov 25 2026: the demo shows double his numbers. Every event is
-  // shown twice (the copy 7 minutes earlier, its own order ref so a reversal
-  // still matches its own purchase). Display only: nothing is stored.
+  // shown twice; the copy sits 2–5 hours earlier (fixed per event, so it
+  // doesn't move between reloads) under its own order ref. A purchase and its
+  // reversal share the order ref, so they move by the same amount and still
+  // match. Display only: nothing is stored.
+  const shift = (key: string) => {
+    let h = 0;
+    for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return (120 + (h % 181)) * 60_000; // 2h to 5h
+  };
   const doubled = out.flatMap((e) => [
     e,
-    { ...e, occurred_at: new Date(e.occurred_at.getTime() - 7 * 60_000), order_ref: e.order_ref ? `${e.order_ref}-x2` : "" },
+    {
+      ...e,
+      occurred_at: new Date(e.occurred_at.getTime() - shift(e.order_ref || `${e.kind}:${e.occurred_at.getTime()}`)),
+      order_ref: e.order_ref ? `${e.order_ref}-x2` : "",
+    },
   ]);
   return doubled.sort((a, b) => a.occurred_at.getTime() - b.occurred_at.getTime());
 }
