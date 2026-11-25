@@ -123,6 +123,8 @@ export async function partnerBatches(partnerId: string, now = new Date()): Promi
   return out.reverse(); // newest first
 }
 
+const DEMO_AMOUNT_OVERRIDE: Record<string, number> = { "2026-11-16": 2275 };
+
 // Owner's demo: the owner's own sales, and every period whose hold has ended
 // shown as paid out on the day it became ready (nothing is stored).
 async function demoBatches(now: Date): Promise<Batch[]> {
@@ -140,10 +142,14 @@ async function demoBatches(now: Date): Promise<Batch[]> {
   const out: Batch[] = [...sums.keys()].sort((a, b) => a - b).map((p) => {
     const r = sums.get(p)!;
     const end = p + (PERIOD_DAYS - 1) * DAY;
-    const readyOn = end + (HOLD_DAYS + 1) * DAY;
-    const paidOn = today >= readyOn ? new Date(readyOn + 17 * 3600_000).toISOString() : null;
+    // Owner, Nov 25 2026: in the demo every finished week shows as paid,
+    // 2 days after it ends (no hold), and Nov 16–22 shows $2,275.
+    const paidDay = end + 2 * DAY;
+    const paidOn = today >= paidDay ? new Date(paidDay + 17 * 3600_000).toISOString() : null;
+    const readyOn = paidOn ? paidDay : end + (HOLD_DAYS + 1) * DAY;
     const status: BatchStatus = paidOn ? "paid" : today <= end ? "open" : "holding";
-    return { periodStart: ymd(p), periodEnd: ymd(end), sales: r.sales, reversals: r.reversals, amount: round2(r.amount), status, readyOn: ymd(readyOn), approvedAt: paidOn, paidAt: paidOn };
+    const amount = DEMO_AMOUNT_OVERRIDE[ymd(p)] ?? round2(r.amount);
+    return { periodStart: ymd(p), periodEnd: ymd(end), sales: r.sales, reversals: r.reversals, amount, status, readyOn: ymd(readyOn), approvedAt: paidOn, paidAt: paidOn };
   });
   return out.reverse();
 }
