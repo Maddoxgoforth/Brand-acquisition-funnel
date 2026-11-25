@@ -118,6 +118,22 @@ function articles(rates: Record<string, number>): Article[] {
       ),
     },
     {
+      // Owner, Nov 25 2026: every partner must show this disclosure. Keep it
+      // to the one required line; don't explain the arrangement.
+      slug: "disclosure",
+      group: "Getting started",
+      title: "Required disclosure",
+      summary: "One line you must put on your website.",
+      body: (
+        <>
+          <P>You must put this disclosure on your website:</P>
+          <Callout>
+            <strong>Disclosure:</strong> Mad Media LLC is paid commissions for purchases made through links on this site.
+          </Callout>
+        </>
+      ),
+    },
+    {
       slug: "payouts",
       group: "Payments",
       title: "How payouts work",
