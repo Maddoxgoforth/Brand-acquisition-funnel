@@ -888,6 +888,11 @@ Maddox, Brand Acquisition or this site.
   `partners.madmedia.co`). On those hosts `src/proxy.ts` serves only
   `/partner*` and the webhook and sends every other path to `/partner`. Add
   the domain to the Vercel project too. Ad pixels never load on `/partner`.
+  **Partners never use brandacquisition.co** (owner, Nov 25 2026): on any
+  other host `/partner*` 308s to the same path on the first `PARTNER_HOSTS`
+  host (www.madmediaaffiliate.com). Only the owner demo (`/partner/demo`,
+  `mm_demo` cookie) stays on brandacquisition.co. Always give partners
+  www.madmediaaffiliate.com/partner/signup and /partner/login.
 
 ## CRM navigation and 📊 Content (owner's request, Nov 16 2026)
 

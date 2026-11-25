@@ -48,7 +48,7 @@ function Icon({ d }: { d: string }) {
 }
 
 // Sidebar + page frame for the signed-in affiliate pages (Nov 21 2026: the
-// portal says "Affiliate", top left "Mad Media Affiliate", then the person's
+// portal says "Affiliate", top left "Media Affiliate" (Nov 25: owner dropped "Mad"), then the person's
 // name with "Affiliate" under it).
 export default function Shell({ partner, active, children }: { partner: Partner; active: string; children: React.ReactNode }) {
   return (
@@ -56,7 +56,7 @@ export default function Shell({ partner, active, children }: { partner: Partner;
       <aside className="sticky top-0 hidden h-screen w-[232px] shrink-0 flex-col border-r border-slate-200/70 bg-white px-3 pb-4 pt-5 md:flex">
         <div className="flex items-center gap-2 px-2">
           <span className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-slate-950 text-[10px] font-bold text-white">M</span>
-          <span className="text-[17px] font-semibold tracking-tight text-slate-950">Mad Media Affiliate</span>
+          <span className="text-[17px] font-semibold tracking-tight text-slate-950">Media Affiliate</span>
         </div>
 
         <div className="mt-6 flex items-center gap-2.5 rounded-lg px-2 py-1.5">

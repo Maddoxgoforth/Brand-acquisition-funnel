@@ -10,11 +10,11 @@ const ICON =
   );
 
 export const metadata: Metadata = {
-  title: "Mad Media Affiliates",
-  description: "Mad Media affiliate dashboard.",
+  title: "Media Affiliates",
+  description: "Media affiliate dashboard.",
   robots: { index: false, follow: false },
   icons: { icon: ICON },
-  openGraph: { title: "Mad Media Affiliates", description: "Mad Media affiliate dashboard.", images: [] },
+  openGraph: { title: "Media Affiliates", description: "Media affiliate dashboard.", images: [] },
 };
 
 export default function PartnerLayout({ children }: Readonly<{ children: React.ReactNode }>) {

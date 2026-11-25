@@ -385,7 +385,7 @@ export default function Partners({ onError }: { onError: (e: unknown) => void })
       <div>
         <h2 className="text-lg font-extrabold">Mad Media partners (Base44)</h2>
         <p className="mt-1 text-sm text-muted">
-          Partners sign up at <span className="font-mono text-foreground">/partner/signup</span> (or on the Mad Media domain). Approve them with a
+          Partners sign up at <span className="font-mono text-foreground">www.madmediaaffiliate.com/partner/signup</span> (never send them to brandacquisition.co; it forwards them there anyway). Approve them with a
           Shared ID: their links are your AffiliateConsulting links + &amp;sharedid=that ID, and sales carrying it go on their dashboard at
           the commission you set (everything else stays yours). Sales are grouped into weekly (Mon–Sun) payout periods; 14 days after a week ends
           it shows &quot;Ready to approve&quot; here. Approve it (they see Pending), pay them, then Mark paid (they see Paid out).
