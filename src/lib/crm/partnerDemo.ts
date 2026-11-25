@@ -9,6 +9,7 @@ import { query } from "./db";
 //   - AffiliateConsulting webhook events no affiliate brought in (Nov 16 on),
 //   - plus every CRM close from before the first webhook sale, shown as if it
 //     had come through the webhook.
+// Numbers are doubled (owner, Nov 25 2026; see demoEventRows).
 // Nothing is written: no fake rows in crm_partner_events or payout tables, so
 // real stats, reports and real affiliates' money are untouched. Payout periods
 // past their hold show as paid out, as the owner asked.
@@ -54,7 +55,14 @@ export async function demoEventRows(): Promise<DemoEventRow[]> {
     out.push({ kind: "signup", plan_key: "", country: "US", commission: 0, occurred_at: new Date(at.getTime() - 20 * 60_000), order_ref: "" });
     out.push({ kind: "purchase", plan_key: plan, country: "US", commission: rate(plan), occurred_at: at, order_ref: `crm-${c.id}` });
   }
-  return out.sort((a, b) => a.occurred_at.getTime() - b.occurred_at.getTime());
+  // Owner, Nov 25 2026: the demo shows double his numbers. Every event is
+  // shown twice (the copy 7 minutes earlier, its own order ref so a reversal
+  // still matches its own purchase). Display only: nothing is stored.
+  const doubled = out.flatMap((e) => [
+    e,
+    { ...e, occurred_at: new Date(e.occurred_at.getTime() - 7 * 60_000), order_ref: e.order_ref ? `${e.order_ref}-x2` : "" },
+  ]);
+  return doubled.sort((a, b) => a.occurred_at.getTime() - b.occurred_at.getTime());
 }
 
 export const DEMO_PAYOUT_METHOD = {
