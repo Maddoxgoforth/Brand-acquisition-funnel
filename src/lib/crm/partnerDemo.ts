@@ -78,9 +78,9 @@ export async function demoEventRows(): Promise<DemoEventRow[]> {
 
 export const DEMO_PAYOUT_METHOD = {
   holderName: "Maddox Goforth",
-  bankName: "Demo bank",
+  bankName: "Chase",
   accountType: "checking" as const,
-  routingLast4: "0000",
-  accountLast4: "0000",
+  routingLast4: "1813",
+  accountLast4: "4827",
   updatedAt: new Date(Date.UTC(2026, 10, 1)).toISOString(),
 };
