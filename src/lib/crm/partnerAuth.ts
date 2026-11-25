@@ -39,11 +39,30 @@ export async function destroyPartnerSession() {
   jar.delete(DEMO_COOKIE);
 }
 
-// Owner's demo (Nov 21 2026): /partner/demo sets DEMO_COOKIE when the owner is
-// signed in to the CRM; every /partner page then shows a pretend affiliate
-// filled with the owner's own sales (partnerDemo.ts). The owner session is
-// re-checked on every request, so the cookie alone opens nothing.
+// Owner's demo (Nov 21 2026): every /partner page shows a pretend affiliate
+// filled with the owner's own sales (partnerDemo.ts).
+// Nov 25 2026 (owner): the demo runs on the partner domain. His CRM sign-in
+// lives on brandacquisition.co, so /partner/demo there checks it and hands a
+// 60-second signed pass to /partner/demo?t= on the partner domain, which turns
+// it into a signed 12-hour DEMO_COOKIE. Only the owner can get a pass.
 export const DEMO_COOKIE = "mm_demo";
+export const DEMO_MAX_AGE_SECONDS = 60 * 60 * 12;
+const PASS_SECONDS = 60;
+const demoSign = (kind: string, expires: number) =>
+  createHmac("sha256", process.env.CRM_SESSION_SECRET || "").update(`partner-demo:${kind}:${expires}`).digest("hex");
+const signed = (kind: string, seconds: number) => {
+  const expires = Date.now() + seconds * 1000;
+  return `${expires}.${demoSign(kind, expires)}`;
+};
+function validSigned(kind: string, value: string | undefined) {
+  if (!process.env.CRM_SESSION_SECRET || !value) return false;
+  const [expires, signature] = value.split(".");
+  const at = Number(expires);
+  return Boolean(signature) && at > Date.now() && safeEqual(signature, demoSign(kind, at));
+}
+export const createDemoPass = () => signed("pass", PASS_SECONDS);
+export const validDemoPass = (value: string | undefined) => validSigned("pass", value);
+export const createDemoCookie = () => signed("cookie", DEMO_MAX_AGE_SECONDS);
 
 export async function ownerSignedIn() {
   return (await getSession())?.role === "owner";
@@ -65,7 +84,11 @@ export async function getPartnerSession(): Promise<Partner | null> {
   if (!isAuthConfigured()) return null;
   const jar = await cookies();
   const value = jar.get(COOKIE)?.value;
-  if (!value) return jar.get(DEMO_COOKIE)?.value === "1" && (await ownerSignedIn()) ? demoPartner() : null;
+  if (!value) {
+    const demo = jar.get(DEMO_COOKIE)?.value;
+    if (validSigned("cookie", demo)) return demoPartner();
+    return demo === "1" && (await ownerSignedIn()) ? demoPartner() : null;
+  }
   const [id, expires, signature] = value.split(".");
   if (!id || !expires || !signature || !UUID.test(id)) return null;
   if (!safeEqual(signature, sign(`${id}.${expires}`))) return null;

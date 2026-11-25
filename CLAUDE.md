@@ -890,8 +890,10 @@ Maddox, Brand Acquisition or this site.
   the domain to the Vercel project too. Ad pixels never load on `/partner`.
   **Partners never use brandacquisition.co** (owner, Nov 25 2026): on any
   other host `/partner*` 308s to the same path on the first `PARTNER_HOSTS`
-  host (www.madmediaaffiliate.com). Only the owner demo (`/partner/demo`,
-  `mm_demo` cookie) stays on brandacquisition.co. Always give partners
+  host (www.madmediaaffiliate.com). Owner demo link:
+  www.madmediaaffiliate.com/partner/demo — it bounces to brandacquisition.co
+  /partner/demo to check his CRM sign-in, which hands back a 60 s signed pass
+  (`?t=`) that becomes a signed 12 h `mm_demo` cookie on the partner domain. Always give partners
   www.madmediaaffiliate.com/partner/signup and /partner/login.
 
 ## CRM navigation and 📊 Content (owner's request, Nov 16 2026)

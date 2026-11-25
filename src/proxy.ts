@@ -6,8 +6,8 @@ import { NextResponse, type NextRequest } from "next/server";
 // /partner, so the rest of the site never shows on that domain.
 // Nov 25 2026 (owner): partners never land on brandacquisition.co. On any other
 // host, /partner* is sent to the same path on the partner domain (first host in
-// PARTNER_HOSTS). Only the owner's demo stays here (/partner/demo + its cookie),
-// because it needs his CRM sign-in, which lives on this domain.
+// PARTNER_HOSTS), except /partner/demo, which checks the owner's CRM sign-in
+// here and then hands the demo over to the partner domain.
 const hosts = () =>
   (process.env.PARTNER_HOSTS || "")
     .split(",")
@@ -20,8 +20,7 @@ export function proxy(request: NextRequest) {
   const partnerPath = pathname === "/partner" || pathname.startsWith("/partner/");
   if (!hosts().includes(host)) {
     const home = hosts()[0];
-    const ownerDemo = pathname === "/partner/demo" || request.cookies.get("mm_demo")?.value === "1";
-    if (!home || !partnerPath || ownerDemo) return NextResponse.next();
+    if (!home || !partnerPath || pathname === "/partner/demo") return NextResponse.next();
     return NextResponse.redirect(`https://${home}${pathname}${request.nextUrl.search}`, 308);
   }
   if (partnerPath || pathname === "/api/partner-webhook") {
