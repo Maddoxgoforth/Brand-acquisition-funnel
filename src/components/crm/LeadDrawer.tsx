@@ -6,12 +6,14 @@ import { useEffect, useState } from "react";
 
 import {
   SOURCES,
+  CUSTOMER_STATUSES,
   STATUSES,
   customerStatusLabel,
   formatAppointment,
   planLabel,
   type Lead,
   type LeadEvent,
+  type CustomerStatusId,
   type StatusId,
 } from "@/lib/crm/constants";
 import CallEntry from "./CallEntry";
@@ -97,6 +99,7 @@ export default function LeadDrawer({
   onBlock,
   onLeadUpdated,
   onError,
+  onCustomerMove,
 }: {
   lead: Lead;
   askOutcome: boolean;
@@ -113,6 +116,9 @@ export default function LeadDrawer({
   onBlock: (blocked: boolean) => Promise<LeadEvent[] | null>;
   onLeadUpdated: (lead: Lead) => void;
   onError: (e: unknown) => void;
+  // Set when opened from the Customers tab: the Status buttons are then the
+  // Customers board columns instead of the dialing statuses (owner, Nov 25).
+  onCustomerMove?: (status: CustomerStatusId) => void;
 }) {
   const [name, setName] = useState(lead.name);
   const [phone, setPhone] = useState(lead.phone);
@@ -246,6 +252,30 @@ export default function LeadDrawer({
             </p>
           ) : null}
 
+          {onCustomerMove && lead.customerStatus ? (
+          <section>
+            <h3 className="text-xs font-bold uppercase tracking-widest text-muted">
+              Customer status
+            </h3>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {CUSTOMER_STATUSES.map((status) => (
+                <button
+                  key={status.id}
+                  type="button"
+                  title={status.hint}
+                  onClick={() => status.id !== lead.customerStatus && onCustomerMove(status.id)}
+                  className={`rounded-lg border px-3 py-2 text-sm font-bold transition-colors ${
+                    status.id === lead.customerStatus
+                      ? "border-accent bg-accent text-white"
+                      : "border-border hover:border-accent"
+                  }`}
+                >
+                  {status.label}
+                </button>
+              ))}
+            </div>
+          </section>
+          ) : (
           <section>
             <h3 className="text-xs font-bold uppercase tracking-widest text-muted">
               Status
@@ -269,6 +299,7 @@ export default function LeadDrawer({
               ))}
             </div>
           </section>
+          )}
 
           {lead.status === "closed" ? (
             <section className="flex items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3">

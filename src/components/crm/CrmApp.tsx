@@ -784,6 +784,7 @@ export default function CrmApp({
           onBlock={(blocked) => blockLead(selected, blocked)}
           onLeadUpdated={putLead}
           onError={report}
+          onCustomerMove={view === "customers" ? (status) => moveCustomer(selected, status) : undefined}
         />
       ) : null}
 
