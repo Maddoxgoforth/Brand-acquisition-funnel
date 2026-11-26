@@ -940,6 +940,13 @@ Built for running Meta ads to the free course (owner's request, Oct 2026).
   page shows a placeholder and the button is unlocked, so the funnel works
   before the VSL exists. Small print (income + Base44 disclosure) is
   `Disclaimer.tsx`. Both pages are `noindex`.
+- **Quick-VSL test (owner, Nov 25 2026, 24 h from ~9 PM ET).** While
+  `QUICK_VSL_TEST` (AdFunnel.tsx) is true, the quiz skips the plan screen and
+  goes straight to **`/free-training/video`** (`QuickVsl.tsx`): the organic
+  home-page VSL (`mmgcz1a9lr`) with the opt-in button open (no watch-to-unlock).
+  Opt-ins still land in Ad opt-ins with quiz answers + the same ad reporting,
+  plus extra info "Funnel version: Quiz → organic VSL (test Nov 25)". Set it
+  to false to go back to plan → `/free-training/watch`.
 - **CRM split.** Opt-ins from `/free-training` go to the **Ad opt-ins** list
   (`ad_free_course_application`); the main page's go to **Organic opt-ins**
   (`free_course_application`). `FreeCourseCta` takes `funnel="ads"|"organic"`.

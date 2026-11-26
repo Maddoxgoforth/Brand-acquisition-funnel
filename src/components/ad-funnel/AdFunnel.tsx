@@ -8,6 +8,12 @@ import { pixelCustom, trackStep } from "@/lib/tracking";
 import Disclaimer from "./Disclaimer";
 import { ANSWERS_KEY, QUESTIONS, buildPlan, type Answers } from "./quiz";
 
+// 24-hour test (owner, Nov 25 2026, from ~9 PM ET): quiz → straight to the
+// organic VSL with the opt-in button open (/free-training/video), no plan
+// screen and no watch-to-unlock. Set to false to go back to the normal flow
+// (plan → /free-training/watch). Leads from the test carry "Funnel version".
+export const QUICK_VSL_TEST = true;
+
 type Stage = { kind: "intro" } | { kind: "question"; index: number } | { kind: "analyzing" } | { kind: "plan" };
 
 const ANALYZING_STEPS = [
@@ -113,7 +119,9 @@ export default function AdFunnel() {
           />
         ) : null}
 
-        {stage.kind === "analyzing" ? <Analyzing onDone={() => setStage({ kind: "plan" })} /> : null}
+        {stage.kind === "analyzing" ? (
+          <Analyzing onDone={() => (QUICK_VSL_TEST ? router.push("/free-training/video") : setStage({ kind: "plan" }))} />
+        ) : null}
 
         {stage.kind === "plan" ? (
           <Plan answers={answers} onUnlock={() => router.push("/free-training/watch")} />
