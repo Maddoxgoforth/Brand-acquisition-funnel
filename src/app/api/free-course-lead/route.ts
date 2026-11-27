@@ -205,9 +205,8 @@ export async function POST(request: Request) {
     typeof body.eventId === "string" && body.eventId ? body.eventId.slice(0, 100) : crypto.randomUUID();
 
   const crmUrl = new URL("/crm", request.url).toString();
-  // Ad opt-ins are reported as a Lead only when 16+ (see
-  // qualifiesForAds); everyone is still saved and called. 16-17s are reported
-  // without their email/phone.
+  // Ad opt-ins are reported as a Lead only when 18+ with a job (see
+  // qualifiesForAds); everyone is still saved and called.
   const reportLead = funnel !== "ads" || qualifiesForAds(answers);
   const shareContact = !(funnel === "ads" && isMinor(answers));
   await Promise.all([

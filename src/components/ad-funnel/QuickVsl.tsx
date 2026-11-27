@@ -11,7 +11,7 @@ import { ANSWERS_KEY, answersForCrm, type Answers } from "./quiz";
 // free-course VSL (same video as the home page) with the opt-in button open
 // underneath, so they can opt in without watching the whole thing. Opt-ins
 // still go to Ad opt-ins with the quiz answers and the same ad reporting
-// (qualifiesForAds); "Funnel version" marks them as from this test.
+// (qualifiesForAds: 18+ with a job); "Funnel version" marks them as from this test.
 export const TEST_VERSION = "Quiz → organic VSL (test Nov 25)";
 const ORGANIC_VSL_MEDIA_ID = "mmgcz1a9lr";
 
